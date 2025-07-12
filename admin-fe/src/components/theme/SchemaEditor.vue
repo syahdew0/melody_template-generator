@@ -1,0 +1,268 @@
+<template>
+  <div class="p-6">
+    <h1 class="text-2xl font-bold mb-4">Schema Editor</h1>
+    <p v-if="activeThemeName" class="text-sm text-gray-500 mb-4">
+      Theme aktif: <strong>{{ activeThemeName }}</strong>
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Sidebar -->
+      <div class="bg-gray-50 p-4 rounded">
+        <h2 class="text-lg font-semibold mb-2">Add New Page</h2>
+        <input v-model="newPageName" type="text" class="w-full mb-2 p-2 border rounded" placeholder="Page name" />
+        <button @click="addPage" class="bg-blue-600 text-white px-3 py-2 rounded w-full">Add Page</button>
+
+        <hr class="my-4" />
+
+        <h2 class="text-lg font-semibold mb-2">Pages</h2>
+        <ul>
+          <li
+            v-for="page in pages"
+            :key="page.name"
+            class="flex justify-between items-center px-3 py-2 rounded mb-1 hover:bg-gray-100"
+            :class="{ 'bg-blue-100 font-bold': selectedPage === page.name }"
+          >
+            <span @click="selectPage(page.name)" class="cursor-pointer flex-1">
+              {{ page.name }}
+            </span>
+            <button
+              @click.stop="deletePage(page.name)"
+              class="text-red-500 text-xs ml-2 hover:underline"
+              title="Delete page"
+            >
+              ✕
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Main Editor -->
+      <div class="md:col-span-2">
+        <div v-if="selectedPage">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Editing: {{ selectedPage }}</h2>
+            <div class="flex gap-2 mb-4">
+              <input v-model="newTagName" placeholder="Nama tag (misal: hero, badge)" class="w-full p-2 border rounded" />
+              <button @click="addTag" class="bg-green-600 text-white px-3 py-1 rounded whitespace-nowrap">Add Tag</button>
+              <button @click="saveSchema" class="bg-indigo-600 text-white px-3 py-1 rounded whitespace-nowrap">Save Schema</button>
+            </div>
+          </div>
+
+          <div
+            v-for="(tag, tagName) in getTagsForSelectedPage"
+            :key="tagName"
+            class="bg-white p-4 rounded shadow mb-4"
+          >
+            <div class="flex justify-between mb-2 items-center cursor-pointer" @click="toggleTag(tagName)">
+              <h3 class="text-lg font-semibold">
+                <span class="mr-2">
+                  <span v-if="collapsedTags[tagName]">▶</span>
+                  <span v-else>▼</span>
+                </span>
+                {{ tagName }}
+              </h3>
+              <button @click.stop="deleteTag(tagName)" class="text-red-600 text-sm">Delete</button>
+            </div>
+
+            <div v-show="!collapsedTags[tagName]" class="text-sm space-y-2">
+              <div
+                v-for="(field, fieldName) in tag"
+                :key="fieldName"
+                class="space-y-1 border p-3 rounded mb-3"
+              >
+                <div class="flex justify-between items-center">
+                  <label class="font-mono text-gray-800">
+                    {{ fieldName }}
+                    <span class="text-gray-500 text-xs">
+                      ({{ field.type }}{{ field.required ? ', required' : '' }})
+                    </span>
+                  </label>
+
+                  <!-- Dropdown hanya untuk 'content' -->
+                  <select
+                    v-if="fieldName === 'content'"
+                    v-model="state.custom_page[selectedPage][tagName][fieldName].type"
+                    class="text-sm border rounded px-2 py-1 bg-white"
+                  >
+                    <option value="text">Text</option>
+                    <option value="html">HTML</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="text-gray-500">Select a page to edit or create a new one.</div>
+
+        <!-- Preview Semua Schema -->
+        <div class="mt-6">
+          <h3 class="text-lg font-semibold mb-2">Preview Semua Schema</h3>
+          <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-[400px] whitespace-pre-wrap">
+            {{ JSON.stringify({ custom_page: state.custom_page }, null, 3) }}
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script setup>
+import { reactive, ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import API_ENDPOINTS from '@/config/api'
+
+const state = reactive({
+  custom_page: {}
+})
+
+const websiteId = ref(1)
+const newPageName = ref('')
+const newTagName = ref('static')
+const selectedPage = ref(null)
+const activeThemeName = ref('')
+const collapsedTags = reactive({})
+
+const pages = computed(() => Object.keys(state.custom_page).map(name => ({ name })))
+const getTagsForSelectedPage = computed(() => {
+  if (!selectedPage.value) return {}
+  return state.custom_page[selectedPage.value] || {}
+})
+
+
+
+function addPage() {
+  if (!newPageName.value) return
+  if (!state.custom_page[newPageName.value]) {
+    state.custom_page[newPageName.value] = {}
+  }
+  selectedPage.value = newPageName.value
+  newPageName.value = ''
+}
+
+function selectPage(name) {
+  selectedPage.value = name
+}
+
+function addTag() {
+  if (!selectedPage.value || !newTagName.value) return
+
+  let tagName = newTagName.value.trim()
+  let count = 1
+
+  while (state.custom_page[selectedPage.value][tagName]) {
+    tagName = `${newTagName.value.trim()}_${count++}`
+  }
+
+  // Default field: hanya content dengan dropdown tipe
+  state.custom_page[selectedPage.value][tagName] = {
+    content: {
+      type: 'text',
+      required: true
+    }
+  }
+
+  newTagName.value = ''
+}
+
+
+async function deleteTag(tagName) {
+  if (!selectedPage.value) return
+
+  const fullTag = `${selectedPage.value}-${tagName}`
+
+  if (!confirm(`Yakin ingin menghapus tag "${fullTag}"?`)) return
+
+  try {
+    // 1. Hapus dari state
+    delete state.custom_page[selectedPage.value][tagName]
+    delete collapsedTags[tagName]
+
+    // 2. Simpan ulang schema ke theme
+    const res = await axios.get(API_ENDPOINTS.activeTheme(websiteId.value))
+    const themeId = res.data.theme.id
+
+    await axios.put(API_ENDPOINTS.updateTheme(themeId), {
+      schema: { custom_page: state.custom_page }
+    })
+
+    alert(`Tag "${fullTag}" berhasil dihapus.`)
+  } catch (err) {
+    alert(`Gagal menghapus tag "${fullTag}".`)
+    console.error(err)
+  }
+}
+
+async function deletePage(pageName) {
+  if (!confirm(`Yakin ingin menghapus halaman "${pageName}" beserta semua tag-nya?`)) return;
+
+  try {
+    // Ambil semua tag dari halaman 
+    const tags = Object.keys(state.custom_page[pageName] || {})
+
+    // Kirim request delete untuk tiap tag
+    for (const tag of tags) {
+      const fullTag = `${pageName}-${tag}`
+      await axios.delete(API_ENDPOINTS.deleteByTag(fullTag))
+    }
+
+    // Hapus dari state
+    delete state.custom_page[pageName]
+    if (selectedPage.value === pageName) {
+      selectedPage.value = null
+    }
+
+    alert(`Halaman "${pageName}" dan semua tag-nya berhasil dihapus.`)
+  } catch (err) {
+    console.error(err)
+    alert('Gagal menghapus halaman dan tag-tag terkait.')
+  }
+}
+
+function toggleTag(tagName) {
+  collapsedTags[tagName] = !collapsedTags[tagName]
+}
+
+async function saveSchema() {
+  try {
+    const schemaToSend = {
+      custom_page: { ...state.custom_page }
+    }
+    const res = await axios.get(API_ENDPOINTS.activeTheme(websiteId.value))
+    const themeId = res.data.theme.id
+
+    await axios.put(API_ENDPOINTS.updateTheme(themeId), {
+      schema: schemaToSend
+    })
+
+    alert('Schema berhasil disimpan.')
+  } catch (err) {
+    console.error(err)
+    alert('Gagal menyimpan schema.')
+  }
+}
+
+async function loadSchema() {
+  try {
+    const res = await axios.get(API_ENDPOINTS.activeTheme(websiteId.value))
+    if (res.data.theme && res.data.theme.schema?.custom_page) {
+      state.custom_page = res.data.theme.schema.custom_page
+      activeThemeName.value = res.data.theme.name
+
+      for (const pageName in state.custom_page) {
+        const tags = state.custom_page[pageName]
+        for (const tagName in tags) {
+          collapsedTags[tagName] = true
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal memuat schema:', err)
+  }
+}
+
+onMounted(() => {
+  loadSchema()
+})
+</script>
