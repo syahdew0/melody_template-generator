@@ -52,6 +52,7 @@ app.use('/api', require('./routes/footerRoutes'));
 app.use('/api', require('./routes/visiMisiRoutes'));
 app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
 app.use('/api/custom-pages', require('./routes/customPagesRoutes'));
+app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/admin/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
