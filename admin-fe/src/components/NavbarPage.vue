@@ -1,7 +1,7 @@
 <template>
   <nav class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white px-4 py-3 flex justify-between items-center">
     <div class="flex items-center">
-      <button @click="$emit('toggleSidebar')" class="mr-2">
+      <button @click="$emit('toggleSidebar')" class="mr-2 relative z-50">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
              viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"

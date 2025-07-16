@@ -94,7 +94,7 @@
 <script>
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
-import MediaPicker from '@/components/MediaPicker.vue'
+import MediaPicker from '@/views/MediaPicker.vue'
 
 export default {
   name: "AdminTestimonials",

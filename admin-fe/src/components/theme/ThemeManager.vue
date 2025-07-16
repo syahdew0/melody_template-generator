@@ -40,7 +40,10 @@
   import { ref, onMounted } from 'vue'
   import axios from 'axios'
   import API_ENDPOINTS from '@/config/api'
+  import { useToast } from 'vue-toastification'
   
+  const toast = useToast()
+
   const websiteId = 1 // bisa dinamis
   const themes = ref([])
   
@@ -53,10 +56,10 @@
     try {
       await axios.put(`${API_ENDPOINTS.setActiveTheme(id)}`)
       await fetchThemes()
-      alert('Theme berhasil dijadikan aktif.')
+      toast.success('Theme berhasil dijadikan aktif.')
     } catch (err) {
       console.error('Gagal set aktif:', err)
-      alert('Gagal mengganti theme aktif.')
+      toast.error('Gagal mengganti theme aktif.')
     }
   }
   

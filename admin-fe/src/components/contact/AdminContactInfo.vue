@@ -129,7 +129,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
-import MediaPicker from '../MediaPicker.vue'
+import MediaPicker from '../../views/MediaPicker.vue'
 
 const isAdmin = ref(false)
 const showMediaPicker = ref(false)

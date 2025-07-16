@@ -111,8 +111,10 @@ import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import MediaPicker from '@/components/MediaPicker.vue'
+import MediaPicker from '@/views/MediaPicker.vue'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => route.params.page)
@@ -244,11 +246,11 @@ const submitForm = async () => {
       await axios.post(API_ENDPOINTS.customPages, payload)
     }
 
-    alert('Berhasil disimpan')
+toast.success('Berhasil disimpan')
     router.back()
   } catch (err) {
     console.error('Gagal menyimpan:', err)
-    alert('Gagal menyimpan')
+    toast.error('Gagal menyimpan')
   }
 }
 </script>

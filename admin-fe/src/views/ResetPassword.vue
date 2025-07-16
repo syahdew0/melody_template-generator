@@ -26,7 +26,7 @@
     }
   
     try {
-      const res = await fetch(`${API_ENDPOINTS}/api/auth/reset-password/${token}`, {
+      const res = await fetch(`${API_ENDPOINTS.auth.resetPassword}/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: password.value })

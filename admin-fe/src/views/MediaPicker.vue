@@ -48,7 +48,13 @@ const loadMedia = async () => {
 }
 
 const handleFileChange = (e) => {
-  selectedFile.value = e.target.files[0]
+  const file = e.target.files[0]
+  if (file && !file.name.match(/\.(ico|jpg|jpeg|png|gif|webp)$/i)) {
+    alert('Format file tidak didukung.')
+    e.target.value = null
+    return
+  }
+  selectedFile.value = file
 }
 
 const uploadMedia = async () => {
@@ -69,7 +75,7 @@ const uploadMedia = async () => {
   }
 }
 
-const isImage = (url) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+const isImage = (url) => /\.(ico|jpg|jpeg|png|gif|webp)$/i.test(url)
 
 onMounted(loadMedia)
 </script>

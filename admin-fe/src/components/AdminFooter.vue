@@ -123,7 +123,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import MediaPicker from '@/components/MediaPicker.vue'
+import MediaPicker from '@/views/MediaPicker.vue'
 import { API_ENDPOINTS } from '@/config/api'
 
 const form = ref({

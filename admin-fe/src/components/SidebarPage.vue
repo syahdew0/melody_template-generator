@@ -5,13 +5,7 @@
     :class="[isOpen ? 'translate-x-0' : '-translate-x-full']">
     <!-- Header -->
     <div class="p-6 border-b border-slate-700/50">
-      <router-link :to="{ name: 'AdminDashboard' }"
-        class="group flex items-center space-x-3 hover:text-amber-400 transition-colors duration-200"
-      >
-        <span class="font-bold text-xl tracking-wide group-hover:scale-105 transition-transform duration-200">
-          Dashboard
-        </span>
-      </router-link>
+     <H1 class="group flex items-center space-x-3 hover:text-amber-400 transition-colors duration-200"></H1>
     </div>
 
     <!-- Navigation Menu -->
@@ -19,7 +13,7 @@
       <ul class="space-y-2">
 
         <!-- Static -->
-        <li>
+        <!-- <li>
           <router-link 
             to="/admin/menus" 
             class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200"
@@ -27,10 +21,10 @@
           >
             <span class="font-medium">Navbar Menu</span>
           </router-link>
-        </li>
+        </li> -->
 
         <!-- Footer -->
-        <li>
+        <!-- <li>
           <router-link 
               to="/admin/adminfooter" 
               class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200"
@@ -38,160 +32,47 @@
             >
               <span class="font-medium">Footer</span>
             </router-link>
-        </li>
+        </li> -->
 
-        <!-- Konten Dropdown -->
-        <li class="relative">
-          <div
-            @click="toggleDropdown('konten')"
-            class="group flex items-center justify-between w-full px-4 py-3 text-left rounded-xl cursor-pointer hover:bg-slate-700/50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
-            :class="dropdownOpen === 'konten' ? 'bg-slate-700/70 text-amber-400' : 'text-slate-200'"
+    <li class="relative">
+      <div 
+        @click.stop="toggleSubDropdown('dashboard')" 
+        class="dropdown-btn flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition-colors duration-200"
+        :class="subDropdownOpen === 'dashboard' ? 'text-amber-400 bg-slate-700/50' : ''"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+        </svg>
+        <span class="font-regular text-md">Dashboard</span>
+        <svg class="w-3 h-3 ml-auto transform transition-transform duration-200" 
+            :class="subDropdownOpen === 'dashboard' ? 'rotate-180' : ''" 
+            fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+
+      <transition>
+        <ul v-show="subDropdownOpen === 'dashboard'" class="dropdown-submenu">
+          <router-link :to="{ name: 'AdminDashboard' }"
+            class=" transition-colors duration-200"
           >
-            <span class="font-medium">Konten</span>
-            <svg class="w-4 h-4 transition-transform duration-200" :class="dropdownOpen === 'konten' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-          </div>
-
-          <transition>
-            <ul v-show="dropdownOpen === 'konten'" class="mt-2 ml-4 space-y-1 border-l-2 border-amber-400/30 pl-4">
-              <!-- HOME -->
-              <li class="relative">
-                <div @click.stop="toggleSubDropdown('home')" class="dropdown-btn" :class="subDropdownOpen === 'home' ? 'text-amber-400 bg-slate-700/50' : ''">
-                  <span>Home</span>
-                  <svg class="w-3 h-3" :class="subDropdownOpen === 'home' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-                <transition>
-                  <ul v-show="subDropdownOpen === 'home'" class="dropdown-submenu">
-                    <li><router-link to="/admin/AdminHeroHome" class="submenu-link">Hero Home</router-link></li>
-                    <li><router-link to="/admin/aboutpreview" class="submenu-link">About Preview</router-link></li>
-                    <li><router-link to="/admin/whychooseusadmin" class="submenu-link">Why Choose Us</router-link></li>
-                    <!-- <li><router-link to="/admin/admintestimonials" class="submenu-link">Testimonials</router-link></li> -->
-                    <li><router-link to="/admin/portfoliopreview" class="submenu-link">Portfolio Preview</router-link></li>
-                  </ul>
-                </transition>
-              </li>
-
-              <!-- ABOUT -->
-              <li class="relative">
-                <div @click.stop="toggleSubDropdown('about')" class="dropdown-btn" :class="subDropdownOpen === 'about' ? 'text-amber-400 bg-slate-700/50' : ''">
-                  <span>About</span>
-                  <svg class="w-3 h-3" :class="subDropdownOpen === 'about' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-                <transition>
-                  <ul v-show="subDropdownOpen === 'about'" class="dropdown-submenu">
-                    <li><router-link to="/admin/abouthero" class="submenu-link">Hero About</router-link></li>
-                    <li><router-link to="/admin/ValueSection" class="submenu-link">Value</router-link></li>
-                    <li><router-link to="/admin/ourteam" class="submenu-link">Team</router-link></li>
-                    <li><router-link to="/admin/Visimisi" class="submenu-link">Visi Misi</router-link></li>
-                  </ul>
-                </transition>
-              </li>
-
-              <!-- SERVICES -->
-              <li class="relative">
-                <div @click.stop="toggleSubDropdown('services')" class="dropdown-btn" :class="subDropdownOpen === 'services' ? 'text-amber-400 bg-slate-700/50' : ''">
-                  <span>Services</span>
-                  <svg class="w-3 h-3" :class="subDropdownOpen === 'services' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-                <transition>
-                  <ul v-show="subDropdownOpen === 'services'" class="dropdown-submenu">
-                    <li><router-link to="/admin/heroservices" class="submenu-link">Hero Services</router-link></li>
-                    <li><router-link to="/admin/servicesList" class="submenu-link">Service List</router-link></li>
-                    <li><router-link to="/admin/AdminProcessSection" class="submenu-link">Process Services</router-link></li>
-                  </ul>
-                </transition>
-              </li>
-
-              <!-- CONTACT -->
-              <li class="relative">
-                <div @click.stop="toggleSubDropdown('contact')" class="dropdown-btn" :class="subDropdownOpen === 'contact' ? 'text-amber-400 bg-slate-700/50' : ''">
-                  <span>Contact</span>
-                  <svg class="w-3 h-3" :class="subDropdownOpen === 'contact' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-                <transition>
-                  <ul v-show="subDropdownOpen === 'contact'" class="dropdown-submenu">
-                    <li><router-link to="/admin/AdminContactHero" class="submenu-link">Hero Contact</router-link></li>
-                    <li><router-link to="/admin/AdminFormSetting" class="submenu-link">Message</router-link></li>
-                    <li><router-link to="/admin/AdminNewsletter" class="submenu-link">Subscriber</router-link></li>
-                    <li><router-link to="/admin/AdminContactInfo" class="submenu-link">Contact Info</router-link></li>
-                    <li><router-link to="/admin/AdminMapsSection" class="submenu-link">Maps</router-link></li>
-                    <li><router-link to="/admin/Adminfaq" class="submenu-link">FAQ</router-link></li>
-                  </ul>
-                </transition>
-              </li>
-
-            <!-- Blog -->
-            <!-- <li>
-              <router-link 
-                to="/Blog" 
-                class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200">
-                  <span class="font-regular">Blog</span>
-              </router-link>
-            </li> -->
-              <!-- PORTFOLIO & CTA -->
-              <li><router-link to="/admin/portfolio" class="submenu-link">Portfolio</router-link></li>
-              <li><router-link to="/admin/admincta" class="submenu-link">CTA</router-link></li>
-            </ul>
-          </transition>
-        </li>
-
-
-        <li>
-          <router-link 
-            to="/MediaManager" 
-            class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200"
-            :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/MediaManager') }"
-          >
-            <span class="font-medium">Media</span>
+            <span class="font-bold text-sm tracking-wide group-hover:scale-105 transition-transform duration-200">
+              Dashboard
+            </span>
           </router-link>
-        </li>
+        
+        </ul>
+      </transition>
+    </li>
 
-        <li>
-          <div
-            @click="toggleDropdown('theme')"
-            class="group flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 text-slate-200"
-            :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': dropdownOpen === 'theme' }"
-          >
-            <div class="flex items-center space-x-3">
-              <span class="font-medium">Theme</span>
-            </div>
-            <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'pages' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-          </svg>
-          </div>
-          <transition>
-            <ul
-              v-show="dropdownOpen === 'theme'"
-              class="dropdown-submenu">
-              <li>
-                <router-link
-                  to="/admintheme"
-                  class="submenu-link"
-                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/admintheme') }">
-                  List Theme
-                </router-link>
-              </li>
-            </ul>
-          </transition>
-        </li>
-
-     <!-- Posts -->
+   <!-- Posts -->
       <li class="relative">
         <div @click.stop="toggleSubDropdown('posts')" class="dropdown-btn flex items-center gap-2" :class="subDropdownOpen === 'posts' ? 'text-amber-400 bg-slate-700/50' : ''">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9 2a1 1 0 011 1v1.382a1 1 0 00.553.894l3.618 1.809A1 1 0 0114 7v1l3 5H3l3-5V7a1 1 0 01-.171-.915l3.618-1.809A1 1 0 0010 4.382V3a1 1 0 00-1-1z" />
             <path d="M7 13h6v2a3 3 0 01-6 0v-2z" />
           </svg>
-          <span>Posts</span>
+          <span class="font-regular text-md">Posts</span>
           <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'posts' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
           </svg>
@@ -202,11 +83,151 @@
             <router-link :to="{ name: 'PostCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PostCreate') }">Add Posts</router-link>
             <router-link :to="{ name: 'CategoryList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryList') }">All Categories</router-link>
             <router-link :to="{ name: 'CategoryCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryCreate') }">Add Category</router-link>
-            <!-- <router-link :to="{ name: 'TestimonialList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialList') }">All Testimonials</router-link> -->
-            <!-- <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link> -->
+            <router-link :to="{ name: 'TestimonialList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialList') }">All Testimonials</router-link>
+            <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link>
           </ul>
         </transition>
       </li>
+
+      <!-- Media -->
+      <li class="relative">
+        <div
+          @click.stop="toggleSubDropdown('media')"
+          class="dropdown-btn flex items-center gap-2"
+          :class="subDropdownOpen === 'media' ? 'text-amber-400 bg-slate-700/50' : ''"
+        >
+          <!-- Icon media -->
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25v13.5A2.25 2.25 0 0118.75 21H7.5l-4.5-4.5zM16.5 9.75a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+          </svg>
+          <span class="font-regular text-md">Media</span>
+
+          <!-- Icon panah -->
+          <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'media' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </div>
+
+        <transition>
+          <ul v-show="subDropdownOpen === 'media'" class="dropdown-submenu">
+            <router-link :to="{ name: 'MediaManager' }" class="submenu-link"
+              :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MediaManager') }">New Media</router-link>
+            <router-link :to="{ name: 'MediaList' }" class="submenu-link"
+              :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MediaList') }">Daftar Media</router-link>
+          </ul>
+        </transition>
+      </li>
+
+      <!-- Tampilan -->
+       <li>
+        <div
+          @click="toggleDropdown('tampilan')"
+          class="group flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 text-slate-200"
+          :class="{ 'bg-slate-700/70 text-amber-400 font-regular': dropdownOpen === 'tampilan' }"
+        >
+          <div class="flex items-center space-x-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M4 4h16v12H4z" />
+              <path d="M12 16v4" />
+              <path d="M8 20h8" />
+            </svg>
+            <span class="font-regular text-md">Tampilan</span>
+          </div>
+          <svg 
+            class="w-3 h-3 ml-auto transform transition-transform duration-200" 
+            :class="{ 'rotate-180': dropdownOpen === 'tampilan' }"
+            fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+
+        <!-- Submenu -->
+        <transition>
+          <ul v-show="dropdownOpen === 'tampilan'" class="dropdown-submenu">
+            <li>
+              <router-link
+                to="/admin/logomanager"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/adminlogo') }"
+              >
+                Logo
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/faviconmanager"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/adminicon') }"
+              >
+                Ikon
+              </router-link>
+
+              <router-link 
+                to="/admin/menus" 
+                class=" submenu-link "
+                :class="{ 'font-regular bg-slate-700/70 text-amber-400': isActivePath('/admin/menus') }"
+              >
+                <span class="font-medium">Daftar Menu</span>
+              </router-link>
+           
+            </li> 
+              <li>
+                <!-- <router-link
+                  to="/admin/adminfooter"
+                  class="submenu-link"
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-regular': isActivePath('/adminfooter') }"
+                >
+                  Menu Footer
+                </router-link> -->
+              </li>
+            </ul>
+          </transition>
+        </li>
+
+      <!-- THEME -->
+        <li>
+          <div
+            @click="toggleDropdown('theme')"
+            class="group flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 text-slate-200"
+            :class="{ 'bg-slate-700/70 text-amber-400 font-regular': dropdownOpen === 'theme' }"
+          >
+            <!-- Icon Pensil dan Label -->
+            <div class="flex items-center space-x-3">
+              <!-- Feather style pencil icon -->
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+              <span class="font-regular">Theme</span>
+            </div>
+
+            <!-- Icon Panah Bawah -->
+            <svg 
+              class="w-3 h-3 ml-auto transform transition-transform duration-200" 
+              :class="{ 'rotate-180': dropdownOpen === 'theme' }"
+              fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+
+          <!-- Submenu -->
+          <transition>
+            <ul v-show="dropdownOpen === 'theme'" class="dropdown-submenu">
+              <li>
+                <router-link
+                  to="/admintheme"
+                  class="submenu-link"
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/admintheme') }"
+                >
+                  List Theme
+                </router-link>
+              </li>
+            </ul>
+          </transition>
+        </li>
 
       <!-- Pages -->
       <li class="relative">
@@ -247,8 +268,63 @@
         </transition>
       </li>
 
+      <!-- Site Setting -->
+       <li class="relative">
+        <div
+          @click.stop="toggleSubDropdown('setting')"
+          class="dropdown-btn flex items-center gap-2"
+          :class="subDropdownOpen === 'setting' ? 'text-amber-400 bg-slate-700/50' : ''"
+        >
+          <!-- Icon setting -->
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11.983 2.25c.621 0 1.198.385 1.405.978l.347.98a1.162 1.162 0 001.494.723l.962-.321a1.374 1.374 0 011.61.628l.28.488a1.375 1.375 0 01-.268 1.684l-.77.77a1.125 1.125 0 000 1.59l.77.77a1.375 1.375 0 01.268 1.684l-.28.488a1.374 1.374 0 01-1.61.628l-.962-.321a1.162 1.162 0 00-1.494.723l-.347.98a1.417 1.417 0 01-1.405.978h-.002a1.417 1.417 0 01-1.405-.978l-.347-.98a1.162 1.162 0 00-1.494-.723l-.962.321a1.374 1.374 0 01-1.61-.628l-.28-.488a1.375 1.375 0 01.268-1.684l.77-.77a1.125 1.125 0 000-1.59l-.77-.77a1.375 1.375 0 01-.268-1.684l.28-.488a1.374 1.374 0 011.61-.628l.962.321a1.162 1.162 0 001.494-.723l.347-.98c.207-.593.784-.978 1.405-.978z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+
+          <span class="font-regular text-md">Setting</span>
+
+          <!-- Icon panah -->
+          <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'setting' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </div>
+
+        <transition>
+          <ul v-show="subDropdownOpen === 'setting'" class="dropdown-submenu">
+            <router-link
+              :to="{ name: 'SiteSetting' }"
+              class="submenu-link"
+              :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('SiteSetting') }"
+            >
+              Site Setting
+            </router-link>
+          </ul>
+        </transition>
+      </li>
+
+      <!-- <li class="relative">
+        <router-link
+          :to="{ name: 'SiteSetting' }"
+          class="dropdown-btn flex items-center gap-2"
+          :class="{ 'text-amber-400 bg-slate-700/50': isActiveName('SiteSetting') }"
+        >
+     
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11.983 2.25c.621 0 1.198.385 1.405.978l.347.98a1.162 1.162 0 001.494.723l.962-.321a1.374 1.374 0 011.61.628l.28.488a1.375 1.375 0 01-.268 1.684l-.77.77a1.125 1.125 0 000 1.59l.77.77a1.375 1.375 0 01.268 1.684l-.28.488a1.374 1.374 0 01-1.61.628l-.962-.321a1.162 1.162 0 00-1.494.723l-.347.98a1.417 1.417 0 01-1.405.978h-.002a1.417 1.417 0 01-1.405-.978l-.347-.98a1.162 1.162 0 00-1.494-.723l-.962.321a1.374 1.374 0 01-1.61-.628l-.28-.488a1.375 1.375 0 01.268-1.684l.77-.77a1.125 1.125 0 000-1.59l-.77-.77a1.375 1.375 0 01-.268-1.684l.28-.488a1.374 1.374 0 011.61-.628l.962.321a1.162 1.162 0 001.494-.723l.347-.98c.207-.593.784-.978 1.405-.978z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="font-regular text-md">Site Setting</span>
+        </router-link>
+      </li> -->
+
+
       <!-- Testimonials -->
-      <li class="relative">
+      <!-- <li class="relative">
         <div @click.stop="toggleSubDropdown('testimonials')" class="dropdown-btn flex items-center gap-2" :class="subDropdownOpen === 'testimonials' ? 'text-amber-400 bg-slate-700/50' : ''">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -264,7 +340,7 @@
             <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link>
           </ul>
         </transition>
-      </li>
+      </li> -->
 
   <!-- Category -->
         <!-- <li class="relative">

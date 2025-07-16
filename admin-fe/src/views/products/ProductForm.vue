@@ -139,7 +139,9 @@
   import { useRoute, useRouter } from 'vue-router'
   import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
+  import { useToast } from 'vue-toastification'
   
+  const toast = useToast()
   const route = useRoute()
   const router = useRouter()
   const isEdit = !!route.params.id
@@ -248,7 +250,7 @@ import { API_ENDPOINTS } from '@/config/api'
       router.push({ name: 'ProductList' })
     } catch (err) {
       console.error(err)
-      alert('Failed to save product.')
+      toast.error('Failed to save product.')
     }
   }
   

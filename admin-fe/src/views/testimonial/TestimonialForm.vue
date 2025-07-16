@@ -137,7 +137,7 @@
   import axios from 'axios'
   import { API_ENDPOINTS } from '@/config/api'
   import { QuillEditor } from '@vueup/vue-quill'
-  import MediaPickerModal from '@/components/MediaPicker.vue'
+  import MediaPickerModal from '@/views/MediaPicker.vue'
   import '@vueup/vue-quill/dist/vue-quill.snow.css'
   
   const route = useRoute()

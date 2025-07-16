@@ -112,7 +112,10 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import API_ENDPOINTS from '@/config/api'
+import { useToast } from 'vue-toastification'
 
+
+const toast = useToast()
 const state = reactive({
   custom_page: {}
 })
@@ -187,9 +190,9 @@ async function deleteTag(tagName) {
       schema: { custom_page: state.custom_page }
     })
 
-    alert(`Tag "${fullTag}" berhasil dihapus.`)
+    toast.success(`Tag "${fullTag}" berhasil dihapus.`)
   } catch (err) {
-    alert(`Gagal menghapus tag "${fullTag}".`)
+    toast.error(`Gagal menghapus tag "${fullTag}".`)
     console.error(err)
   }
 }
@@ -213,10 +216,10 @@ async function deletePage(pageName) {
       selectedPage.value = null
     }
 
-    alert(`Halaman "${pageName}" dan semua tag-nya berhasil dihapus.`)
+    toast.success(`Halaman "${pageName}" dan semua tag-nya berhasil dihapus.`)
   } catch (err) {
     console.error(err)
-    alert('Gagal menghapus halaman dan tag-tag terkait.')
+    toast.error('Gagal menghapus halaman dan tag-tag terkait.')
   }
 }
 
@@ -236,10 +239,10 @@ async function saveSchema() {
       schema: schemaToSend
     })
 
-    alert('Schema berhasil disimpan.')
+    toast.success('Schema berhasil disimpan.')
   } catch (err) {
     console.error(err)
-    alert('Gagal menyimpan schema.')
+    toast.error('Gagal menyimpan schema.')
   }
 }
 

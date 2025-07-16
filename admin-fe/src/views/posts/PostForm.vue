@@ -134,7 +134,7 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import axios from 'axios'
 import { API_ENDPOINTS, API_URL } from '@/config/api'
-import MediaPickerModal from '@/components/MediaPicker.vue'
+import MediaPickerModal from '@/views/MediaPicker.vue'
 
 export default {
   components: {

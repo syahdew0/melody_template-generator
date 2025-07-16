@@ -1,85 +1,143 @@
 <template>
   <div>
-    <!-- Layout admin kecuali di halaman login -->
     <div v-if="!isLoginPage" class="flex min-h-screen relative">
-      <!-- Overlay untuk mobile -->
-      <div
-        v-if="sidebarOpen && isMobile"
-        class="fixed inset-0 bg-black bg-opacity-50 z-40"
-        @click="sidebarOpen = false"
-      ></div>
-
-      <!-- Sidebar -->
-      <SidebarPage
-        :isOpen="sidebarOpen"
-        @closeSidebar="sidebarOpen = false"
-        class="z-50"
-      />
-
-      <!-- Konten utama -->
-      <div
-        class="flex-1 transition-all duration-300 min-h-screen"
-        :class="{
-          'ml-0': isMobile,
-          'ml-52': !isMobile && sidebarOpen,
-        }"
-      >
+      <SidebarPage :isOpen="sidebarOpen" @closeSidebar="sidebarOpen = false" class="z-50" />
+      <div class="flex-1 transition-all duration-300 min-h-screen" :class="{ 'ml-0': isMobile, 'ml-52': !isMobile && sidebarOpen }">
         <NavbarPage @toggleSidebar="sidebarOpen = !sidebarOpen" />
         <router-view />
       </div>
     </div>
-
-    <!-- Halaman login -->
     <div v-else>
       <router-view />
-      <router-view :key="$route.fullPath" />
-
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import SidebarPage from './components/SidebarPage.vue'
 import NavbarPage from './components/NavbarPage.vue'
+import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
+import store from './store'
 
-export default {
-  components: {
-    SidebarPage,
-    NavbarPage,
-  },
-  data() {
-    return {
-      sidebarOpen: false,
-      currentRouteName: this.$route.name,
-      isMobile: false,
+const router = useRouter()
+const route = useRoute()
+
+const sidebarOpen = ref(false)
+const isMobile = ref(false)
+const isLoginPage = computed(() => route.name === 'LoginPage')
+
+let checkInterval = null
+
+// Auto logout saat token tidak valid atau kadaluarsa
+function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  router.push('/login')
+}
+
+// Setup Interceptor: inject token dan refresh otomatis
+function setupAxiosInterceptors() {
+  axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
-  },
-  computed: {
-    isLoginPage() {
-      return this.currentRouteName === 'LoginPage'
+    return config
+  }, (error) => Promise.reject(error))
+
+  axios.interceptors.response.use((response) => {
+    const newToken = response.headers['x-refreshed-token']
+    if (newToken) {
+      localStorage.setItem('token', newToken)
+      console.log('[Axios] Token diperbarui otomatis.')
     }
-  },
-  watch: {
-    '$route.name'(newVal) {
-      this.currentRouteName = newVal
+    return response
+  }, (error) => {
+    if (error.response?.status === 401) {
+      console.warn('[Axios] Token tidak valid. Logout...')
+      logout()
     }
-  },
-  mounted() {
-    this.checkMobile()
-    window.addEventListener('resize', this.checkMobile)
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkMobile)
-  },
-  methods: {
-    checkMobile() {
-      this.isMobile = window.innerWidth < 768
-      if (this.isMobile) this.sidebarOpen = false
+    return Promise.reject(error)
+  })
+}
+
+//  Cek token expired setiap 5 detik
+function startTokenCheckLoop() {
+  checkInterval = setInterval(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const now = Math.floor(Date.now() / 1000)
+      if (payload.exp < now) {
+        console.warn('[Token] Sudah expired. Auto logout...')
+        logout()
+      }
+    } catch (e) {
+      console.error('[Token] Tidak valid:', e)
+      logout()
     }
+  }, 5000)
+}
+
+//  Cek lebar layar untuk sidebar
+function checkMobile() {
+  isMobile.value = window.innerWidth < 768
+  if (isMobile.value) sidebarOpen.value = false
+}
+function patchGlobalFetch() {
+  const originalFetch = window.fetch
+  window.fetch = async (...args) => {
+    const token = localStorage.getItem('token')
+    const [resource, config = {}] = args
+
+    config.headers = {
+      ...(config.headers || {}),
+      Authorization: `Bearer ${token}`,
+    }
+
+    const response = await originalFetch(resource, config)
+
+    const newToken = response.headers.get('x-refreshed-token')
+    if (newToken) {
+      localStorage.setItem('token', newToken)
+      console.log('[Fetch] Token diperbarui otomatis.')
+    }
+
+    if (response.status === 401) {
+      console.warn('[Fetch] Token expired. Auto logout...')
+      logout()
+    }
+
+    return response
   }
 }
+
+
+onMounted(() => {
+  
+  const init = async () => {
+    setupAxiosInterceptors()
+    patchGlobalFetch()
+    startTokenCheckLoop()
+    checkMobile()
+    await store.dispatch('fetchWebsiteIdFromServer')
+    window.addEventListener('resize', checkMobile)
+  }
+
+  init() // panggil async function
+})
+
+
+onBeforeUnmount(() => {
+  if (checkInterval) clearInterval(checkInterval)
+  window.removeEventListener('resize', checkMobile)
+})
 </script>
 
-<style scoped>
-/* Tambahkan transisi sidebar jika diperlukan */
+<style>
+/* Tambahkan styling tambahan jika perlu */
 </style>

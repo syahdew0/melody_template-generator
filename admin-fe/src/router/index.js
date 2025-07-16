@@ -5,7 +5,7 @@ import AdminUserManagement from '@/views/AdminUserManagement.vue'
 import ProfileManagement from '@/views/ProfileManagement.vue'
 import PortfolioPage from '@/components/portfolio/PortfolioPage.vue'
 import OurTeam from '@/components/about/OurTeam.vue'
-import MenuManager from '@/components/MenuManager.vue'
+import MenuManager from '@/components/menu/MenuManager.vue'
 import AboutPreview from '@/components/home/AboutPreview.vue'
 import AboutHero from '@/components/about/AboutHero.vue'
 import AdminTestimonials from '@/components/home/AdminTestimonials.vue'
@@ -23,7 +23,8 @@ import AdminMapsSection from '@/components/contact/AdminMapsSection.vue'
 import AdminContactHero from '@/components/contact/AdminContactHero.vue'
 import AdminNewsletter from '@/components/contact/AdminNewsletter.vue'
 import AdminContactInfo from '@/components/contact/AdminContactInfo.vue'
-import MediaManager from '@/views/MediaManager.vue'
+import MediaManager from '@/views/media/MediaManager.vue'
+import MediaList from '@/views/media/MediaList.vue'
 import AdminFooter from '@/components/AdminFooter.vue'
 import VisiMisi from '@/components/about/VisiMisi.vue'
 import AdminTheme from '@/components/theme/AdminTheme.vue'
@@ -38,6 +39,11 @@ import CategoryList from '@/views/category/CategoryList.vue'
 import CategoryForm from '@/views/category/CategoryForm.vue'
 import TestimonialForm from '@/views/testimonial/TestimonialForm.vue'
 import TestimonialList from '@/views/testimonial/TestimonialList.vue'
+import LogoManager from '@/components/LogoManager.vue'
+import FaviconManager from '@/components/FaviconManager.vue'
+import SiteSetting from '@/views/pengaturan/SiteSetting.vue'
+// import MenuDetailManager from '@/components/menu/MenuDetailManager.vue'
+import MenuTree from '@/components/menu/MenuTree.vue'
 
 
 const routes = [
@@ -68,10 +74,15 @@ const routes = [
   { path: '/admin/adminnewsletter', name: 'AdminNewsletter',component: AdminNewsletter,},
   { path: '/admin/admincontactinfo', name: 'AdminContactInfo',component: AdminContactInfo,},
   { path: '/mediamanager',name: 'MediaManager',component: MediaManager,},
+  { path: '/MediaList',name: 'MediaList',component: MediaList,},
   { path: '/admin/adminfooter',name: 'AdminFooter',component: AdminFooter,},
   { path: '/admin/visimisi',name: 'VisiMisi',component: VisiMisi,},
   { path: '/admintheme',name: 'AdminTheme',component: AdminTheme,},
-
+  { path: '/admin/logomanager',name: 'LogoManager',component: LogoManager,},
+  { path: '/admin/faviconmanager',name: 'FaviconManager',component: FaviconManager,},
+  {path: '/admin/pengaturan',name: 'SiteSetting',component: SiteSetting,},
+  // {path: '/admin/menumanager',name: 'MenuDetailManager',component: MenuDetailManager,},
+  {path: '/admin/menutree',name: 'MenuTree',component: MenuTree,},
   {
     path: '/admin/posts',
     name: 'PostList',
@@ -184,7 +195,21 @@ const routes = [
     name: 'SchemaEditor',
     component: () => import('@/components/theme/SchemaEditor.vue'),
     props: route => ({ themeId: route.query.theme_id })
+  },
+    {
+    path: '/admin/menus',
+    name: 'MenuPage',
+    component: () => import('@/components/menu/MenuPage.vue') // atau lokasi sesuai
+  },
+  {
+    path: '/admin/menus/:id',
+    name: 'MenuDetailManager',
+    component: () => import('@/components/menu/MenuDetailManager.vue'),
+    props: true,
   }
+
+
+
     
   // {
   //   path: '/admin/custom-pages/create',

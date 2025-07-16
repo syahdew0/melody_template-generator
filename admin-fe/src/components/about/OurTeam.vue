@@ -76,7 +76,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
-import MediaPicker from '@/components/MediaPicker.vue'
+import MediaPicker from '@/views/MediaPicker.vue'
 
 const teamHeader = ref({ title: '', subtitle: '' })
 const teamMembers = ref([])

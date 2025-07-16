@@ -73,7 +73,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
+import { useToast } from 'vue-toastification'
 
+
+const toast = useToast()
 // Router
 const route = useRoute()
 const router = useRouter()
@@ -155,10 +158,11 @@ const deleteItem = async (item) => {
   try {
     await axios.delete(`${API_ENDPOINTS.customPages}/${item.id}`)
     await fetchItems()
-    alert('Item berhasil dihapus')
+  toast.success('Berhasil dihapus')
+    router.back()
   } catch (err) {
-    console.error('Gagal hapus item:', err)
-    alert('Gagal menghapus item')
+    console.error('Gagal menyimpan:', err)
+    toast.error('Gagal menyimpan')
   }
 }
 
