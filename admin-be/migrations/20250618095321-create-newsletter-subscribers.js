@@ -4,7 +4,7 @@ module.exports = {
     await queryInterface.createTable('newsletter_subscribers', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       email: { type: Sequelize.STRING, allowNull: false,
-        unique: true 
+
       },
       createdAt: Sequelize.DATE,
       updatedAt: Sequelize.DATE

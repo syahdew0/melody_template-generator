@@ -19,10 +19,7 @@ module.exports = {
       subdomain: {
         type: Sequelize.STRING
       },
-      // schema: {
-      //   type: Sequelize.TEXT,
-      //   allowNull: true
-      // },
+     
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,

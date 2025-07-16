@@ -26,9 +26,15 @@ fs
     );
   })
   .forEach(file => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
+  const modelPath = path.join(__dirname, file);
+  const modelDef = require(modelPath);
+
+  if (typeof modelDef === 'function') {
+    const model = modelDef(sequelize, Sequelize.DataTypes);
     db[model.name] = model;
-  });
+  }
+});
+
 
 // Panggil fungsi associate jika ada
 Object.keys(db).forEach(modelName => {

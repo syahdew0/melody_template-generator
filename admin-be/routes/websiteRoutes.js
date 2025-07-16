@@ -13,9 +13,8 @@ router.delete('/:id', websiteController.deleteWebsite);
 // Optional shortcut
 router.get('/:id/active-theme', websiteController.getActiveTheme);
 
-
-// router.put('/websites/:id/schema', websiteController.updateSchema);
-// router.get('/websites/:id/schema', websiteController.getSchema); 
+router.get('/:id/settings', websiteController.getSettings);
+router.put('/:id/settings', websiteController.updateSettings);
 
 
 module.exports = router;

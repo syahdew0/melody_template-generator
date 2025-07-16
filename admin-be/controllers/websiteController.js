@@ -81,7 +81,7 @@ exports.deleteWebsite = async (req, res) => {
   }
 };
 
-// (Optional) Get active theme for a website (shortcut)
+// (Optional) Get active theme for a website 
 exports.getActiveTheme = async (req, res) => {
   try {
     const theme = await Theme.findOne({
@@ -98,29 +98,27 @@ exports.getActiveTheme = async (req, res) => {
   }
 };
 
+// Ambil setting website berdasarkan ID
+exports.getSettings = async (req, res) => {
+  try {
+    const website = await db.Website.findByPk(req.params.id);
+    if (!website) return res.status(404).json({ success: false, message: 'Website not found' });
 
-// const { Website } = require('../models');
+    res.json({ success: true, settings: website });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
-// exports.updateSchema = async (req, res) => {
-//   const { id } = req.params
-//   const { custom_page } = req.body
+// Update setting website berdasarkan ID
+exports.updateSettings = async (req, res) => {
+  try {
+    const website = await db.Website.findByPk(req.params.id);
+    if (!website) return res.status(404).json({ success: false, message: 'Website not found' });
 
-//   await Website.update(
-//     { schema: { custom_page } },
-//     { where: { id } }
-//   )
-
-//   res.json({ success: true })
-// }
-
-// exports.getSchema = async (req, res) => {
-//   try {
-//     const website = await Website.findByPk(req.params.id);
-//     if (!website) return res.status(404).json({ error: 'Not found' });
-
-//     res.json({ schema: website.schema });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
+    await website.update(req.body);
+    res.json({ success: true, website });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

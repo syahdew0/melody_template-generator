@@ -1,53 +1,88 @@
-const { Menu } = require('../models');
+const { menu_group, menu_item } = require('../models');
 
-exports.getNestedMenus = async (req, res) => {
+exports.getMenuGroups = async (req, res) => {
+  const data = await menu_group.findAll();
+  res.json(data);
+};
+
+exports.assignType = async (req, res) => {
+  const { id } = req.params;
+  const { type } = req.body;
+  const field = `is_${type}`; 
+
   try {
-    const menus = await Menu.findAll({
-      where: { parentId: null },
-      order: [['order', 'ASC']],
-      include: [
-        {
-          model: Menu,
-          as: 'children',
-          separate: true,
-          order: [['order', 'ASC']]
-        }
-      ]
-    });
-    res.json(menus);
+    await menu_group.update({ [field]: true }, { where: { id } });
+    res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Gagal assign type', error: err.message });
   }
 };
 
-exports.createMenu = async (req, res) => {
+
+exports.unassignType = async (req, res) => {
+  const { id } = req.params;
+  const { type } = req.body;
+  const field = `is_${type}`;
+  await menu_group.update({ [field]: false }, { where: { id } });
+  res.json({ success: true });
+};
+
+exports.getMenuItemsByGroup = async (req, res) => {
+  const groupId = req.params.groupId;
+  const items = await menu_item.findAll({ where: { menu_group_id: groupId } });
+  // console.log('menu items:', items.map(i => ({ id: i.id, name: i.name, path: i.path })));
+  res.json(items);
+};
+
+exports.getMenuItemsByQuery = async (req, res) => {
+  const { groupId } = req.query;
+  if (!groupId) return res.status(400).json({ message: 'groupId wajib diisi' });
+
+  const items = await menu_item.findAll({
+    where: { menu_group_id: groupId },
+    order: [['parent_id', 'ASC'], ['id', 'ASC']],
+  });
+
+  res.json(items);
+};
+
+exports.createMenuItem = async (req, res) => {
   try {
-    const { name, path, parent_id } = req.body;
-    const newMenu = await Menu.create({name,path, parentId: parent_id });
-    res.status(201).json(newMenu);
-  } catch (err) {
-    res.status(500).json({ message: 'Error creating menu' });
+    const item = await menu_item.create(req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal menambahkan menu', error: error.message });
   }
 };
 
-exports.updateMenu = async (req, res) => {
+exports.updateMenuItem = async (req, res) => {
   try {
-    const { name, path, parent_id } = req.body;
     const { id } = req.params;
-    await Menu.update({name,path,parentId: parent_id }, { where: { id }});      
-    res.json({ message: 'Menu updated' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating menu' });
+    await menu_item.update(req.body, { where: { id } });
+    const updated = await menu_item.findByPk(id);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengubah menu', error: error.message });
   }
-};
+}
 
-exports.deleteMenu = async (req, res) => {
+exports.deleteMenuItem = async (req, res) => {
   try {
     const { id } = req.params;
-    await Menu.destroy({ where: { id } });
-    res.json({ message: 'Menu deleted' });
+    await menu_item.destroy({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal menghapus menu', error: error.message });
+  }
+}
+
+exports.getMenuGroupById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const group = await menu_group.findByPk(id);
+    if (!group) return res.status(404).json({ message: 'Menu group tidak ditemukan' });
+    res.json(group);
   } catch (err) {
-    res.status(500).json({ message: 'Error deleting menu' });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

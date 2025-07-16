@@ -3,8 +3,8 @@ require('dotenv').config({
   });
   
   module.exports = {
-    port: process.env.PORT || 3001,
-    apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
+    port: process.env.PORT || 3002,
+    apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3002}`,
     isDev: process.env.NODE_ENV !== 'production',
     jwtSecret: process.env.JWT_SECRET,
     smtpEmail: process.env.SMTP_EMAIL,
