@@ -62,6 +62,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
+app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);
@@ -93,7 +94,7 @@ app.use('/api', require('./routes/contactInfoRoutes'));
 app.use('/api', require('./routes/mediaRoutes'));
 app.use('/api', require('./routes/footerRoutes'));
 app.use('/api', require('./routes/visiMisiRoutes'));
-app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
+
 app.use('/api/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/admin/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
