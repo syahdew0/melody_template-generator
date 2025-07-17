@@ -36,11 +36,14 @@ exports.setFavicon = async (req, res) => {
 exports.uploadFavicon = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'File tidak ditemukan' });
 
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  const protocol = req.protocol;
+  const host = req.get('host'); 
+  const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
   res.json({
     message: 'Upload berhasil',
-    url: fileUrl, 
-    value: fileUrl 
+    url: fileUrl,
+    value: fileUrl
   });
 };
+

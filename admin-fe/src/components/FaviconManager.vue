@@ -67,20 +67,25 @@ export default {
     },
 
     async uploadFavicon() {
-      if (!this.selectedFile) return
+  if (!this.selectedFile) return
 
-      const formData = new FormData()
-      formData.append('file', this.selectedFile)
+  const formData = new FormData()
+  formData.append('file', this.selectedFile)
 
-      try {
-        const res = await axios.post(API_ENDPOINTS.icons, formData)
-        this.form.favicon = res.data.value || res.data.url
-        this.selectedFile = null
-      } catch (err) {
-        console.error('Gagal upload favicon:', err)
-        alert('Gagal upload file favicon.')
-      }
-    },
+  try {
+    const res = await axios.post(API_ENDPOINTS.icons, formData)
+
+    // Paksa favicon URL jadi HTTPS
+    const url = res.data.value || res.data.url || ''
+    this.form.favicon = url.replace(/^http:\/\//, 'https://')
+
+    this.selectedFile = null
+  } catch (err) {
+    console.error('Gagal upload favicon:', err)
+    alert('Gagal upload file favicon.')
+  }
+},
+
 
     async saveFavicon() {
       try {
