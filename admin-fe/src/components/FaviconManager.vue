@@ -58,6 +58,7 @@ export default {
         this.form.favicon = res.data?.value || ''
       } catch (err) {
         console.warn('Gagal mengambil favicon:', err)
+        this.form.favicon = ''
       }
     },
 
@@ -73,10 +74,11 @@ export default {
 
       try {
         const res = await axios.post(API_ENDPOINTS.icons, formData)
-        this.form.favicon = res.data.url
+        this.form.favicon = res.data.value || res.data.url
         this.selectedFile = null
       } catch (err) {
         console.error('Gagal upload favicon:', err)
+        alert('Gagal upload file favicon.')
       }
     },
 

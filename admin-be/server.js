@@ -59,9 +59,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/icons', require('./routes/iconRoutes'));
+app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
-app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
+app.use('/api/custom-pages', require('./routes/customPagesRoutes'));
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);

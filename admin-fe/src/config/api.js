@@ -107,7 +107,7 @@ export const API_ENDPOINTS = {
     updateTheme: (id) => `${API_URL}/api/admin/themes/${id}`,
     themes: `${API_URL}/api/admin/themes`,
     setActiveTheme: (id) => `${API_URL}/api/admin/themes/${id}/active`,
-    websiteSchema: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
+    websiteSchema: (websiteId) => `${API_URL}/apis/admin/themes/${websiteId}/active-theme`,
     // deleteByTag: (tag) => `/custom_pages/deleteByTag/${tag}`,
     deleteByTag: (tag) => `${API_URL}/api/custom-pages/deleteByTag/${encodeURIComponent(tag)}`
   ,
@@ -132,10 +132,10 @@ export const API_ENDPOINTS = {
       DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
 
 
-    siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
-    favicon: `${API_URL}/api/icons/favicon`, 
-  icons: `${API_URL}/api/icons/upload`,    
-  saveFavicon: `${API_URL}/api/icons/save`, 
+    siteSettings: (id) => `${API_URL}/apis/admin/websites/${id}/settings`,
+    favicon: `${API_URL}/apis/icons/favicon`,        
+    icons: `${API_URL}/apis/icons/upload`,           
+    saveFavicon: `${API_URL}/apis/icons/save`,       
 }
 
 export default API_ENDPOINTS
