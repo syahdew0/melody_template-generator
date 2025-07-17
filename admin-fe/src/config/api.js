@@ -75,7 +75,7 @@ export const API_ENDPOINTS = {
     menuCreate: `${API_URL}/api/admin/menus`,
     menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
     menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,          
-    settingLogo: `${API_URL}/api/setting-logo`,
+    settingLogo: `${API_URL}/apis/setting-logo`,
 
   ctaAdmin: `${API_URL}/api/admin/cta`,
   cta: `${API_URL}/api/cta`,
