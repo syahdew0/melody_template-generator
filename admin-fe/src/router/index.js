@@ -47,7 +47,7 @@ import MenuTree from '@/components/menu/MenuTree.vue'
 
 
 const routes = [
-  { path: '/', name: 'LoginPage', component: LoginPage }, 
+  { path: '/',redirect: '/login' }, { path: '/login', name: 'LoginPage', component: LoginPage }, 
   { path: '/reset-password/:token', name: 'ResetPassword', component: () => import('@/views/ResetPassword.vue') },  
   { path: '/admin/users', component: () => import('@/views/AdminUserManagement.vue'), meta: { requiresAdmin: true }}, 
   { path: '/adminDashboard', name: 'AdminDashboard', component: AdminDashboard, meta: { requiresAuth: true } }, 

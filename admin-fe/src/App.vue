@@ -69,8 +69,15 @@ function startTokenCheckLoop() {
     const token = localStorage.getItem('token')
     if (!token) return
 
+    let payload = null 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (token && token.split('.').length === 3) {
+        payload = JSON.parse(atob(token.split('.')[1]))
+      } else {
+        console.warn('[Token] Tidak valid:', token)
+        return
+      }
+
       const now = Math.floor(Date.now() / 1000)
       if (payload.exp < now) {
         console.warn('[Token] Sudah expired. Auto logout...')
@@ -82,6 +89,7 @@ function startTokenCheckLoop() {
     }
   }, 5000)
 }
+
 
 //  Cek lebar layar untuk sidebar
 function checkMobile() {
@@ -115,7 +123,6 @@ function patchGlobalFetch() {
     return response
   }
 }
-
 
 onMounted(() => {
   

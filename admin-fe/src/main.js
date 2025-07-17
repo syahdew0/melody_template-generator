@@ -7,6 +7,7 @@ import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 import store from './store'
 
+
 console.log('App started!')
 
 const app = createApp(App)
