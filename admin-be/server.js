@@ -1,6 +1,10 @@
+
 // server.js
+// require('dotenv').config({
+//   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
+// });
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
+  path: '.env'
 });
 
 const express = require('express');
@@ -26,8 +30,7 @@ if (process.env.NODE_ENV === 'production') {
   );
 } else if (process.env.NODE_ENV === 'staging') {
   whitelist.push(
-    'https://staging.psggroup.id',
-    'https://office-staging.psggroup.id'
+    'https://compro.pasifiksgroup.com:8443',
   );
 } else {
   // development
@@ -56,7 +59,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/icons', require('./routes/iconRoutes'));
 app.use('/api/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));

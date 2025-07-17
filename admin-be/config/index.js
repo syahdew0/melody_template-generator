@@ -1,7 +1,9 @@
-require('dotenv').config({
-    path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
-  });
-  
+// require('dotenv').config({
+//     path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
+//   });
+  require('dotenv').config({
+  path: '.env'
+});
   module.exports = {
     port: process.env.PORT || 3002,
     apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3002}`,
