@@ -34,16 +34,37 @@ exports.setFavicon = async (req, res) => {
 };
 
 exports.uploadFavicon = async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'File tidak ditemukan' });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'File tidak ditemukan' });
+    }
 
-  const protocol = req.protocol;
-  const host = req.get('host'); 
-  const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    let fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
-  res.json({
-    message: 'Upload berhasil',
-    url: fileUrl,
-    value: fileUrl
-  });
+    if (process.env.NODE_ENV === 'staging') {
+      fileUrl = `${req.protocol}://${req.get('host')}:8443/uploads/${req.file.filename}`;
+    }
+
+    // Simpan atau update favicon di tabel icons
+    const [icon, created] = await Icon.findOrCreate({
+      where: { key: 'favicon' },
+      defaults: { value: fileUrl },
+    });
+
+    if (!created) {
+      icon.value = fileUrl;
+      await icon.save();
+    }
+
+    res.status(201).json({
+      message: 'Favicon berhasil diupload dan disimpan',
+      url: fileUrl,
+      value: fileUrl,
+      data: icon
+    });
+  } catch (err) {
+    console.error('Upload favicon error:', err);
+    res.status(500).json({ message: 'Gagal mengupload favicon' });
+  }
 };
 
