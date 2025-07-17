@@ -110,26 +110,26 @@ app.use('/api/admin/themes', require('./routes/themeRoutes'));
 
 
 // === Vue Fallback ===
-if (!isDev) {
+/*if (!isDev) {
   const vueDistPath = path.join(__dirname, 'dist');
   app.use(express.static(vueDistPath));
 
   app.get('*', (req, res) => {
     res.sendFile(path.join(vueDistPath, 'index.html'));
   });
-}
+}*/
 
 // === Sync Database & Start Server ===
-if (isDev) {
+//if (isDev) {
   db.sequelize.sync({ alter: true }).then(() => {
     console.log('Database synced with alter:true (dev mode)');
     startServer();
   }).catch((err) => {
     console.error('Failed to sync database:', err);
   });
-} else {
-  startServer();
-}
+//} else {
+//  startServer();
+//}
 
 function startServer() {
   app.listen(PORT, () => {
