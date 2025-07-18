@@ -63,6 +63,10 @@ app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/apis/setting-logo', require('./routes/settingLogoRoutes'));
+app.use('/apis/admin/posts', require('./routes/postRoutes'));// admin
+app.use('/apis/categories', require('./routes/categoryRoutes'));
+app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
+app.use('/apis/posts', require('./routes/postRoutes')); // publik
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);
@@ -94,12 +98,10 @@ app.use('/api', require('./routes/contactInfoRoutes'));
 app.use('/api', require('./routes/mediaRoutes'));
 app.use('/api', require('./routes/footerRoutes'));
 app.use('/api', require('./routes/visiMisiRoutes'));
-
 app.use('/api/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/admin/custom-pages', require('./routes/customPagesRoutes'));
-app.use('/api/posts', require('./routes/postRoutes'));
-app.use('/api/categories', require('./routes/categoryRoutes'));
-app.use('/api/testimonials', require('./routes/TestimonialRoutes'));
+
+
 app.use('/api/admin/themes', require('./routes/themeRoutes'));
 
 

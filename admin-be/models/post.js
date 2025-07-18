@@ -41,6 +41,12 @@ module.exports = (sequelize, DataTypes) => {
         as: 'post_categories',
         onDelete: 'NO ACTION',
       });
+      Post.belongsToMany(models.Category, {
+      through: models.PostCategory,
+      foreignKey: 'post_id',
+      otherKey: 'category_id',
+      as: 'categories'
+    });
     };
   
     return Post;

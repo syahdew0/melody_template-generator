@@ -1,8 +1,8 @@
 // export const API_URL = 'https://api-interuma.pasifiksgroup.com:8443'
-// export const API_URL = 'http://localhost:3001'
+export const API_URL = 'http://localhost:3001'
 // export const API_URL = process.env.VUE_APP_API_URL;
 // export const API_URL = 'compro.pasifiksgroup.com:8443'
-export const API_URL = process.env.VUE_APP_API_URL;
+// export const API_URL = process.env.VUE_APP_API_URL;
 
 
 export const API_ENDPOINTS = {
@@ -98,22 +98,26 @@ export const API_ENDPOINTS = {
   deleteUser: (id) => `${API_URL}/api/admin/users/${id}`,
   authMe: `${API_URL}/api/auth/me`,
 
+  posts: `${API_URL}/apis/admin/posts`,               
+  postBySlug: (slug) => `${API_URL}/apis/posts/slug/${slug}`,  
 
-  posts: `${API_URL}/api/admin/posts`,
-  categories: `${API_URL}/api/categories`,
-    pages: `${API_URL}/api/admin/posts`,
-    customPages: `${API_URL}/api/admin/custom-pages`,
-    activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
-    updateTheme: (id) => `${API_URL}/api/admin/themes/${id}`,
-    themes: `${API_URL}/api/admin/themes`,
-    setActiveTheme: (id) => `${API_URL}/api/admin/themes/${id}/active`,
-    websiteSchema: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
-    // deleteByTag: (tag) => `/custom_pages/deleteByTag/${tag}`,
-    deleteByTag: (tag) => `${API_URL}/api/custom-pages/deleteByTag/${encodeURIComponent(tag)}`
-  ,
+  categories: `${API_URL}/apis/categories`,          
 
-    testimonials: `${API_URL}/api/admin/posts?type=testimonial`,
-    testimonialDetail: (id) => `${API_URL}/api/admin/posts/${id}`,
+  pages: `${API_URL}/apis/admin/posts`,              
+pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
+  customPages: `${API_URL}/api/admin/custom-pages`,
+
+  activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
+  updateTheme: (id) => `${API_URL}/api/admin/themes/${id}`,
+  themes: `${API_URL}/api/admin/themes`,
+  setActiveTheme: (id) => `${API_URL}/api/admin/themes/${id}/active`,
+
+  websiteSchema: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
+
+  deleteByTag: (tag) => `${API_URL}/api/custom-pages/deleteByTag/${encodeURIComponent(tag)}`,
+
+  testimonials: `${API_URL}/apis/admin/posts?type=testimonial`,
+  testimonialDetail: (id) => `${API_URL}/apis/admin/posts/${id}`,
  
     // menuGroups: `${API_URL}/api/menu-groups`,
     // menuItems: `${API_URL}/api/menu-items`,

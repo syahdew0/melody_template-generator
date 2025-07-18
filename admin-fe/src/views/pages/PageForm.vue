@@ -66,6 +66,7 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 
+
 export default {
   components: {
     QuillEditor
@@ -92,37 +93,38 @@ export default {
         .replace(/ /g, '-')
         .replace(/[^\w-]+/g, '')
     },
-    async fetchPage(id) {
-      try {
-        const res = await axios.get(`${API_ENDPOINTS.posts}/${id}`)
-        this.form = {
-          ...res.data,
-          type: 'page'
-        }
-        this.isEdit = true
-      } catch (err) {
-        console.error('Failed to fetch page:', err)
-      }
-    },
-    async savePage() {
-      try {
-        if (this.isEdit) {
-          await axios.put(`${API_ENDPOINTS.posts}/${this.$route.params.id}`, this.form)
-        } else {
-          await axios.post(API_ENDPOINTS.posts, this.form)
-        }
-        this.$router.push('/admin/pages')
-      } catch (err) {
-        console.error('Failed to save page:', err)
-      }
-    }
-  },
-  mounted() {
-    const id = this.$route.params.id
-    if (id) {
-      this.fetchPage(id)
-    }
+   async fetchPageBySlug(slug) {
+  try {
+    const res = await axios.get(API_ENDPOINTS.pageBySlug(slug));
+    this.form = {
+      ...res.data,
+      type: 'page' // pastikan 'page', kalau tidak, saat submit bisa masuk ke type 'post'
+    };
+    this.isEdit = true;
+  } catch (err) {
+    console.error('Failed to fetch page by slug:', err);
   }
+},
+   async savePage() {
+  try {
+    if (this.isEdit) {
+      // Gunakan endpoint update berdasarkan slug (atau ID kalau lebih aman)
+      await axios.put(`${API_ENDPOINTS.pages}/slug/${this.form.slug}`, this.form)
+    } else {
+      await axios.post(API_ENDPOINTS.pages, this.form)
+    }
+    this.$router.push('/admin/pages')
+  } catch (err) {
+    console.error('Failed to save page:', err)
+  }
+}
+  },
+mounted() {
+  const slug = this.$route.params.slug;
+  if (slug) {
+    this.fetchPageBySlug(slug);
+  }
+}
 }
 </script>
 

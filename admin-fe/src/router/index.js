@@ -29,10 +29,10 @@ import AdminFooter from '@/components/AdminFooter.vue'
 import VisiMisi from '@/components/about/VisiMisi.vue'
 import AdminTheme from '@/components/theme/AdminTheme.vue'
 
-import PostList from '@/views/posts/PostList.vue'
-import PostForm from '@/views/posts/PostForm.vue'
-import PageList from '@/views/pages/PageList.vue'
-import PageForm from '@/views/pages/PageForm.vue'
+// import PostList from '@/views/posts/PostList.vue'
+// import PostForm from '@/views/posts/PostForm.vue'
+// import PageList from '@/views/pages/PageList.vue'
+// import PageForm from '@/views/pages/PageForm.vue'
 import ProductList from '@/views/products/ProductList.vue'
 import ProductForm from '@/views/products/ProductForm.vue'
 import CategoryList from '@/views/category/CategoryList.vue'
@@ -83,37 +83,12 @@ const routes = [
   {path: '/admin/pengaturan',name: 'SiteSetting',component: SiteSetting,},
   // {path: '/admin/menumanager',name: 'MenuDetailManager',component: MenuDetailManager,},
   {path: '/admin/menutree',name: 'MenuTree',component: MenuTree,},
-  {
-    path: '/admin/posts',
-    name: 'PostList',
-    component: PostList
-  },
-  {
-    path: '/admin/posts/create',
-    name: 'PostCreate',
-    component: PostForm
-  },
-  {
-    path: '/admin/posts/:id',
-    name: 'EditPost',
-    component: () => import('@/views/posts/PostForm.vue'),
-    props: true
-  },  
-  {
-    path: '/admin/pages',
-    name: 'PageList',
-    component: PageList
-  },
-  {
-    path: '/admin/pages/create',
-    name: 'PageCreate',
-    component: PageForm
-  },
-  {
-    path: '/admin/pages/:id',
-    name: 'EditPage',
-    component: () => import('@/views/pages/PageForm.vue'),
-    props: true
+  // {path: '/admin/posts', name: 'PostList', component: PostList},
+  // {path: '/admin/posts/create',name: 'PostCreate',component: PostForm},
+  // {path: '/admin/posts/:id', name: 'EditPost', component: () => import('@/views/posts/PostForm.vue'), props: true},  
+  // { path: '/admin/pages', name: 'PageList', component: PageList},
+  // {path: '/admin/pages/create', name: 'PageCreate', component: PageForm},
+  { path: '/admin/pages/:id', name: 'EditPage', component: () => import('@/views/pages/PageForm.vue'), props: true
   },  
 
   {
@@ -184,12 +159,6 @@ const routes = [
     name: 'CustomPageDetail',
     component: () => import('@/views/pages/CustomPageDetail.vue')
   },
-  // {
-  //   path: '/admin/custom-pages/schemaeditor',
-  //   name: 'SchemaEditor',
-  //   component: () => import('@/views/pages/SchemaEditor.vue'),
-  //   meta: { requiresAuth: true }
-  // }
   {
     path: '/schema-editor',
     name: 'SchemaEditor',
@@ -206,36 +175,51 @@ const routes = [
     name: 'MenuDetailManager',
     component: () => import('@/components/menu/MenuDetailManager.vue'),
     props: true,
-  }
+  },
+ {
+  path: '/admin/posts/:slug',
+  name: 'EditPost',
+  component: () => import('@/views/posts/PostForm.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/admin/posts',
+  name: 'PostList',
+  component: () => import('@/views/posts/PostList.vue')
+},
+{
+  path: '/admin/posts/create',
+  name: 'PostCreate',
+  component: () => import('@/views/posts/PostForm.vue')
+},
+{
+  path: '/admin/posts/edit/:slug',
+  name: 'PostEdit',
+  component: () => import('@/views/posts/PostForm.vue')
+},
+{
+  path: '/admin/pages/create',
+  name: 'PageCreate',
+  component: () => import('@/views/pages/PageForm.vue')
+},
+{
+  path: '/admin/pages/edit/:slug',
+  name: 'EditPage',
+  component: () => import('@/views/pages/PageForm.vue')
+},
+{
+  path: '/admin/pages/:slug',
+  name: 'PageListBySlug',
+  component: () => import('@/views/pages/PageList.vue')
+},
+{
+  path: '/admin/pages',
+  name: 'PageList',
+  component: () => import('@/views/pages/PageList.vue')
+},
 
-
-
-    
-  // {
-  //   path: '/admin/custom-pages/create',
-  //   name: 'CustomPageCreate',
-  //   component: () => import('@/views/pages/CustomPageForm.vue'),
-  //   meta: { requiresAuth: true }
-  // }
-  
-  
-  
-  
 ]
 
-
-// const currentPath = window.location.pathname
-// const base = '/' + currentPath.split('/')[1]
-
-
-// const router = createRouter({
-//   history: createWebHistory(base),
-//   routes,
-// })
-// const router = createRouter({
-//   history: createWebHistory(),
-//   routes,
-// })
 const base = process.env.VUE_APP_BASE_PATH || '/'
 const router = createRouter({
   history: createWebHistory(base),
