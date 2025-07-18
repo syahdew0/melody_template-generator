@@ -1,7 +1,9 @@
 // export const API_URL = 'https://api-interuma.pasifiksgroup.com:8443'
-export const API_URL = 'http://localhost:3002'
-// export const API_URL = 'compro.pasifiksgroup.com:8443'
+// export const API_URL = 'http://localhost:3001'
 // export const API_URL = process.env.VUE_APP_API_URL;
+// export const API_URL = 'compro.pasifiksgroup.com:8443'
+export const API_URL = process.env.VUE_APP_API_URL;
+
 
 export const API_ENDPOINTS = {
   // Value Section
@@ -56,7 +58,7 @@ export const API_ENDPOINTS = {
   // footerSettings: `${API_URL}/api/admin/footer`,
   // footerPublic: `${API_URL}/api/footer`,
 
-  // contact form (message)
+  // contact form (message),
   // contactSettings: `${API_URL}/api/admin/contact-settings`,
   // contactMessages: `${API_URL}/api/admin/contact-messages`,
   // contactMessageDetail: (id) => `${API_URL}/api/admin/contact-messages/${id}`,
@@ -73,7 +75,7 @@ export const API_ENDPOINTS = {
     menuCreate: `${API_URL}/api/admin/menus`,
     menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
     menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,          
-    settingLogo: `${API_URL}/api/setting-logo`,
+    settingLogo: `${API_URL}/apis/setting-logo`,
 
   ctaAdmin: `${API_URL}/api/admin/cta`,
   cta: `${API_URL}/api/cta`,
@@ -130,7 +132,10 @@ export const API_ENDPOINTS = {
       DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
 
 
-    siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`
+    siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
+    favicon: `${API_URL}/apis/icons/favicon`,        
+    icons: `${API_URL}/apis/icons/upload`,           
+    saveFavicon: `${API_URL}/apis/icons/save`,       
 }
 
 export default API_ENDPOINTS

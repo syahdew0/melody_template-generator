@@ -70,15 +70,6 @@ export default {
   
   async created() {
     
-//     this.websiteId = this.$store.state.auth?.user?.website_id;
-
-//     if (!this.websiteId) {
-//       console.warn('Website ID tidak ditemukan dari user login.');
-//       return;
-//     }
-
-//     await this.fetchSettings();
-//   },
 const websiteId = 1 // ← hardcode sementara
 
   if (!websiteId) {
