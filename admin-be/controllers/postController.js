@@ -1,6 +1,10 @@
 const { Op } = require('sequelize')
 const { Post, PostMeta, Category, ProductDetail, PostCategory } = require('../models')
 
+exports.index = (req, res) => {
+  res.json({ message: 'Post Controller is working.' });
+};
+
 // CREATE
 exports.create = async (req, res) => {
   try {
@@ -11,11 +15,22 @@ exports.create = async (req, res) => {
       meta = [], product_detail = {}, category_ids = []
     } = req.body
 
+    // SLUGIFY dulu sebelum create
+    const slugify = (text) =>
+      text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[\s\W-]+/g, '-')
+
+    const finalSlug = slug && slug !== '' ? slugify(slug) : slugify(title || 'untitled')
+
+    // Buat post hanya sekali!
     const post = await Post.create({
       website_id,
       user_id,
       title,
-      slug,
+      slug: finalSlug,
       content,
       excerpt,
       thumbnail_url,
@@ -26,6 +41,7 @@ exports.create = async (req, res) => {
       parent_id
     })
 
+    // Insert META
     if (meta.length > 0) {
       const metas = meta.map(m => ({
         post_id: post.id,
@@ -35,15 +51,16 @@ exports.create = async (req, res) => {
       await PostMeta.bulkCreate(metas)
     }
 
+    // Insert CATEGORY
     if (category_ids?.length > 0) {
-      // await post.setCategories(category_ids)
-      const data = category_ids.map(m => ({
+      const data = category_ids.map(category_id => ({
         post_id: post.id,
-        category_id: m
+        category_id
       }))
       await PostCategory.bulkCreate(data)
     }
 
+    // Insert PRODUCT DETAIL
     if (type === 'product' && product_detail) {
       await ProductDetail.create({
         ...product_detail,
@@ -51,9 +68,10 @@ exports.create = async (req, res) => {
       })
     }
 
+    // Kirim response
     res.status(201).json(post)
   } catch (err) {
-    console.error(err);
+    console.error(err)
     res.status(400).json({ message: err.message })
   }
 }
@@ -61,89 +79,102 @@ exports.create = async (req, res) => {
 // GET ALL 
 exports.getAll = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 10
-    const offset = (page - 1) * limit
-    const search = req.query.search || ''
-    const type = req.query.type || null
-    const status = req.query.status || null
-    const id = req.query.id || null
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-    const where = {}
-    if (type) where.type = type
-    if (status) where.status = status
-    if (id) where.id = id
-    if (search) where.title = { [Op.like]: `%${search}%` }
+    const search = req.query.search || '';
+    const type = req.query.type || null;
+    const status = req.query.status || null;
+    const id = req.query.id || null;
+    const slug = req.query.slug || null; // ✅ Tambahan untuk filter by slug
+    const categoryFilter = req.query.category;
 
-    // Jika ada ID, ambil langsung tanpa paginasi
+    const where = {};
+    if (type) where.type = type;
+    if (status) where.status = status;
+    if (id) where.id = id;
+    if (slug) where.slug = slug; // ✅ Tambahkan ke kondisi where
+    if (search) where.title = { [Op.like]: `%${search}%` };
+
+    const include = [
+      { model: PostMeta, as: 'meta' },
+      {
+        model: PostCategory,
+        as: 'post_categories',
+        include: [{ model: Category, as: 'category' }],
+        required: false // akan diubah ke true jika ada filter kategori
+      },
+      { model: ProductDetail, as: 'product_detail' }
+    ];
+
+    // Filter kategori jika ada
+    if (categoryFilter) {
+      const categoryIds = Array.isArray(categoryFilter)
+        ? categoryFilter.map(id => parseInt(id))
+        : [parseInt(categoryFilter)];
+
+      include[1].required = true;
+      include[1].where = {
+        category_id: { [Op.in]: categoryIds }
+      };
+    }
+
     if (id) {
       const posts = await Post.findAll({
         where,
-        include: [
-          { model: PostMeta, as: 'meta' },
-          {
-            model: PostCategory,
-            as: 'post_categories',
-            include: [
-              { model: Category, as: 'category' }
-            ]
-          },
-          { model: ProductDetail, as: 'product_detail' }
-        ]
-      })
+        include
+      });
 
       return res.json({
         data: posts,
         total: posts.length
-      })
+      });
     }
 
-    // Jika tidak ada ID, pakai paginasi biasa
+    // Default paginasi
     const { count, rows } = await Post.findAndCountAll({
       where,
       offset,
       limit,
       order: [['createdAt', 'DESC']],
-      include: [
-        { model: PostMeta, as: 'meta' },
-        // { model: Category, as: 'categories', through: { attributes: [] } },
-        {
-          model: PostCategory,
-          as: 'post_categories',
-          include: [
-            { model: Category, as: 'category' }
-          ]
-        },
-        { model: ProductDetail, as: 'product_detail' }
-      ]
-    })
+      include,
+      distinct: true
+    });
 
-    res.json({
+    return res.json({
       data: rows,
       total: count
-    })
+    });
+
   } catch (err) {
-    res.status(500).json({ message: err.message })
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
-}
+};
 
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
-    const post = await Post.findByPk(req.params.id, {
+    const post = await Post.findOne({
+  where: {
+    id: req.params.id,
+    type: 'post',          
+    status: 'published'     
+  },
+  include: [
+    { model: PostMeta, as: 'meta' },
+    {
+      model: PostCategory,
+      as: 'post_categories',
       include: [
-        { model: PostMeta, as: 'meta' },
-        // { model: Category, as: 'categories', through: { attributes: [] } },
-        {
-          model: PostCategory,
-          as: 'post_categories',
-          include: [
-            { model: Category, as: 'category' }
-          ]
-        },
-        { model: ProductDetail, as: 'product_detail' }
+        { model: Category, as: 'category' }
       ]
-    })
+    },
+    { model: ProductDetail, as: 'product_detail' }
+  ]
+});
+
 
     if (!post) return res.status(404).json({ message: 'Not found' })
     res.json(post)
@@ -217,7 +248,7 @@ exports.remove = async (req, res) => {
   try {
     const id = req.params.id
     await PostMeta.destroy({ where: { post_id: id } })
-    await ProductDetail.destroy({ where: { post_id: id } }) // ✅ Hapus juga detail produk
+    await ProductDetail.destroy({ where: { post_id: id } }) 
     await Post.destroy({ where: { id } })
     res.json({ message: 'Deleted successfully' })
   } catch (err) {
@@ -247,3 +278,67 @@ exports.getTestimonials = async (req, res) => {
   }
 }
 
+
+exports.getBySlug = async (req, res) => {
+  const { slug } = req.params;
+
+  // Tentukan type berdasarkan route yang digunakan
+  let type = 'post'; // default
+  if (req.originalUrl.includes('/page/')) type = 'page';
+  if (req.originalUrl.includes('/post/')) type = 'post';
+
+  try {
+    const post = await Post.findOne({
+      where: {
+        slug,
+        type,
+        status: {
+          [Op.in]: ['published', 'draft']
+        }
+      },
+      include: [
+        { model: PostMeta, as: 'meta' },
+        {
+          model: PostCategory,
+          as: 'post_categories',
+          include: [{ model: Category, as: 'category' }]
+        },
+        { model: ProductDetail, as: 'product_detail' }
+      ]
+    });
+
+    if (!post) return res.status(404).json({ message: `${type} not found` });
+    res.json(post);
+  } catch (err) {
+    console.error('Error in getBySlug:', err);
+    res.status(500).json({ message: err.message });
+  }
+}
+
+// exports.getPageBySlug = async (req, res) => {
+//   const page = await Post.findOne({
+//     where: {
+//       slug: req.params.slug,
+//       type: 'page',
+//       status: 'published, draft',
+//     },
+//     include: [
+//       { model: PostMeta, as: 'meta' },
+//     ]
+//   });
+//   if (!page) return res.status(404).json({ message: 'Page not found' });
+//   res.json(page);
+// }
+
+exports.deleteBySlug = async (req, res) => {
+  try {
+    const post = await Post.findOne({ where: { slug: req.params.slug, type: 'page' } })
+    if (!post) return res.status(404).json({ message: 'Page not found' })
+
+    await post.destroy()
+    res.json({ message: 'Page deleted successfully' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}

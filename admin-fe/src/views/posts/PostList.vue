@@ -18,14 +18,31 @@
       placeholder="Search posts..."
       class="border w-2/3 max-w-xl p-2 rounded"
     />
-    <select
-      v-model="statusFilter"
-      class="border p-2 rounded"
-    >
-      <option value="">All Status</option>
-      <option value="draft">Draft</option>
-      <option value="published">Published</option>
-    </select>
+   <!-- Filter Status -->
+      <select
+        v-model="statusFilter"
+        class="border p-2 rounded"
+      >
+        <option value="">All Status</option>
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+      </select>
+
+      <!-- Filter Kategori (Multiple Select Dropdown) -->
+      <!-- <select
+        v-model="selectedCategories"
+        class="border p-2 rounded"
+        multiple
+      >
+        <option
+          v-for="cat in categories"
+          :key="cat.id"
+          :value="cat.id"
+        >
+          {{ cat.name }}
+        </option>
+      </select> -->
+
   </div>
 
 
@@ -48,7 +65,7 @@
           </td>
           <td class="p-2 border text-right space-x-2">
             <router-link
-              :to="`/admin/posts/${post.id}`"
+              :to="`/admin/posts/${post.slug}`"
               class="text-blue-600 hover:underline"
             >
               Edit
@@ -103,6 +120,8 @@ export default {
       perPage: 10,
       search: '',
       statusFilter: '',
+      selectedCategories: [],
+      categories:[],
       total: 0,
       hasMore: false
     }
@@ -113,43 +132,49 @@ export default {
   },
   methods: {
     async fetchPosts() {
-      try {
-        const res = await axios.get(`${API_ENDPOINTS.posts}`, {
-          params: {
-            type: 'post',
-            page: this.page,
-            limit: this.perPage,
-            search: this.search,
-            status: this.statusFilter
-          }
-        })
+  try {
+    const res = await axios.get(API_ENDPOINTS.posts, {
+      params: {
+  type: 'post',
+  page: this.page,
+  limit: this.perPage,
+  search: this.search,
+  status: this.statusFilter,
+  category: this.selectedCategories.length === 1 
+    ? this.selectedCategories[0] 
+    : (this.selectedCategories.length > 1 
+        ? this.selectedCategories 
+        : undefined)
+}
+    })
 
-        const isPaginated = res.data && res.data.data && typeof res.data.total !== 'undefined'
-
-        if (isPaginated) {
-          this.posts = res.data.data
-          this.total = res.data.total
-          this.hasMore = this.page * this.perPage < this.total
-        } else if (Array.isArray(res.data)) {
-          // fallback non-paginated
-          this.posts = res.data
-          this.total = res.data.length
-          this.hasMore = false
-        } else {
-          this.posts = []
-          this.total = 0
-          this.hasMore = false
-        }
-      } catch (err) {
-        console.error('Failed to fetch posts:', err)
-      }
-    },
+    if (res.data?.data && typeof res.data.total !== 'undefined') {
+      this.posts = res.data.data;
+      this.total = res.data.total;
+      this.hasMore = this.page * this.perPage < this.total;
+    } else {
+      this.posts = [];
+      this.total = 0;
+      this.hasMore = false;
+    }
+  } catch (error) {
+    console.error('Failed to fetch posts:', error);
+  }
+},
     async deletePost(id) {
       if (confirm('Delete this post?')) {
         await axios.delete(`${API_ENDPOINTS.posts}/${id}`)
         await this.fetchPosts()
       }
     },
+    async fetchCategories() {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.categories}`)
+      this.categories = res.data
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
+    }
+  },
     formatDate(dateStr) {
       const date = new Date(dateStr)
       return date.toLocaleDateString('id-ID', {
@@ -176,10 +201,23 @@ export default {
     statusFilter() {
     this.page = 1
     this.fetchPosts()
+  },
+   selectedCategories() {
+    this.page = 1
+    this.fetchPosts()
   }
   },
   mounted() {
-    this.fetchPosts()
+  const queryCategory = this.$route.query.category;
+  if (queryCategory) {
+    this.selectedCategories = Array.isArray(queryCategory)
+      ? queryCategory.map(Number)
+      : [Number(queryCategory)];
   }
+
+  this.fetchCategories()
+  this.fetchPosts()
+}
+
 }
 </script>

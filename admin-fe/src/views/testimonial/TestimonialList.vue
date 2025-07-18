@@ -64,7 +64,7 @@
               </button>
             </td>
           </tr>
-          <tr v-if="testimonials.length === 0">
+          <tr v-if="testimonials?.length === 0">
             <td colspan="5" class="px-4 py-6 text-center text-gray-400">
               Tidak ada testimonial ditemukan.
             </td>

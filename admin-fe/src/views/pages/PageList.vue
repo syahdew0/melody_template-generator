@@ -45,7 +45,7 @@
           class="border-t hover:bg-gray-50 transition"
         >
           <td class="p-3 font-medium">
-            <router-link :to="`/admin/pages/${page.id}`" class="hover:underline">
+           <router-link :to="`/admin/pages/edit/${page.slug}`" class="hover:underline">
               {{ page.title }}
             </router-link>
           </td>
@@ -53,13 +53,13 @@
           <td class="p-3 text-center">{{ formatDate(page.createdAt) }}</td>
           <td class="p-3 text-right space-x-2">
             <router-link
-              :to="`/admin/pages/${page.id}`"
+              :to="`/admin/pages/edit/${page.slug}`"
               class="text-blue-600 hover:underline"
             >
               Edit
             </router-link>
             <button
-              @click="deletePage(page.id)"
+              @click="deletePage(page.slug)"
               class="text-red-600 hover:underline"
             >
               Delete
@@ -108,13 +108,17 @@ export default {
       perPage: 10,
       search: '',
       statusFilter: '',
+      slug: '',
       total: 0,
       hasMore: false
     }
   },
   created() {
-    this.debouncedFetch = debounce(this.fetchPages, 300)
-  },
+  this.slug = this.$route.params.slug || ''
+  console.log('[ROUTE] Slug sekarang:', this.slug) // ← pastikan ini muncul
+  this.debouncedFetch = debounce(this.fetchPages, 300)
+  this.fetchPages()
+},
   methods: {
     formatDate(date) {
       return new Date(date).toLocaleDateString('id-ID', {
@@ -128,6 +132,7 @@ export default {
         const res = await axios.get(`${API_ENDPOINTS.posts}`, {
           params: {
             type: 'page',
+            ...(this.slug ? { slug: this.slug } : {}),
             page: this.page,
             limit: this.perPage,
             search: this.search,
@@ -154,10 +159,10 @@ export default {
         console.error('Failed to fetch pages:', err)
       }
     },
-    async deletePage(id) {
+    async deletePage(slug) {
       if (confirm('Are you sure you want to delete this page?')) {
         try {
-          await axios.delete(`${API_ENDPOINTS.posts}/${id}`)
+          await axios.delete(`${API_ENDPOINTS.posts}/slug/${slug}`)
           this.fetchPages()
         } catch (err) {
           console.error('Failed to delete:', err)
@@ -165,7 +170,13 @@ export default {
       }
     }
   },
+  
   watch: {
+    '$route.params.slug'(newSlug) {
+      this.slug = newSlug || ''
+      this.page = 1
+      this.fetchPages()
+    },
     page() {
       this.fetchPages()
     },
@@ -177,9 +188,6 @@ export default {
       this.page = 1
       this.fetchPages()
     }
-  },
-  mounted() {
-    this.fetchPages()
   }
 }
 </script>
