@@ -4,15 +4,19 @@ module.exports = (sequelize, DataTypes) => {
   const MenuGroup = sequelize.define('menu_group', {
     name: DataTypes.STRING,
     slug: DataTypes.STRING,
-    is_top: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+    type: {
+      type: DataTypes.STRING, 
+      allowNull: false
     },
     is_main: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
     is_footer: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    is_top: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     }

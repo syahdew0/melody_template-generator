@@ -1,8 +1,8 @@
 // export const API_URL = 'https://api-interuma.pasifiksgroup.com:8443'
-export const API_URL = 'http://localhost:3001'
+
 // export const API_URL = process.env.VUE_APP_API_URL;
 // export const API_URL = 'compro.pasifiksgroup.com:8443'
-// export const API_URL = process.env.VUE_APP_API_URL;
+export const API_URL = process.env.VUE_APP_API_URL;
 
 
 export const API_ENDPOINTS = {
@@ -71,7 +71,7 @@ export const API_ENDPOINTS = {
   newsletterSettings: `${API_URL}/api/admin/newsletter-settings`,
   newsletterSubscribers: `${API_URL}/api/admin/newsletter-subscribers`,
 
-  menuList: `${API_URL}/api/admin/menus`,
+  menuList: `${API_URL}/apis/admin/menus`,
     menuCreate: `${API_URL}/api/admin/menus`,
     menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
     menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,          
@@ -126,14 +126,14 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     // addMenuToGroup: `${API_URL}/api/menu-groups/assign`,
     // removeMenuFromGroup: `${API_URL}/api/menu-groups/unassign`,
     // groupedItems: `${API_URL}/api/menu-groups/items`,
-      MENU_GROUPS: `${API_URL}/api/menu-groups`,
-      ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
-      UNASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/unassign`,
-      MENU_GROUP_DETAIL: (id) => `${API_URL}/api/admin/menu-groups/${id}`,
-      MENU_ITEMS: (groupId) => `${API_URL}/api/admin/menu-items?groupId=${groupId}`,
-      CREATE_MENU_ITEM: `${API_URL}/api/admin/menu-items`,
-      UPDATE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
-      DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
+      MENU_GROUPS: `${API_URL}/apis/menu-groups`,
+      ASSIGN_MENU: (id) => `${API_URL}/apis/menu-groups/${id}/assign`,
+      UNASSIGN_MENU: (id) => `${API_URL}/apis/menu-groups/${id}/unassign`,
+      MENU_GROUP_DETAIL: (id) => `${API_URL}/apis/admin/menu-groups/${id}`,
+      MENU_ITEMS: (groupId) => `${API_URL}/apis/admin/menu-items?groupId=${groupId}`,
+      CREATE_MENU_ITEM: `${API_URL}/apis/admin/menu-items`,
+      UPDATE_MENU_ITEM: (id) => `${API_URL}/apis/admin/menu-items/${id}`,
+      DELETE_MENU_ITEM: (id) => `${API_URL}/apis/admin/menu-items/${id}`,
 
 
     siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,

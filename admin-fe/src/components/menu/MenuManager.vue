@@ -74,16 +74,20 @@ export default {
         this.menuGroups = res.data;
       });
     },
-    assign(id, type) {
-      axios.post(API_ENDPOINTS.ASSIGN_MENU(id), { type }).then(() => {
-        this.fetchMenuGroups();
-      });
-    },
-    unassign(id, type) {
-      axios.post(API_ENDPOINTS.UNASSIGN_MENU(id), { type }).then(() => {
-        this.fetchMenuGroups();
-      });
-    },
+   assign(id, type) {
+  axios.post(API_ENDPOINTS.ASSIGN_MENU(id), { type })
+    .then(() => {
+      const index = this.menuGroups.findIndex(m => m.id === id);
+      if (index !== -1) this.menuGroups[index][`is_${type}`] = true;
+    })
+},
+unassign(id, type) {
+  axios.post(API_ENDPOINTS.UNASSIGN_MENU(id), { type })
+    .then(() => {
+      const index = this.menuGroups.findIndex(m => m.id === id);
+      if (index !== -1) this.menuGroups[index][`is_${type}`] = false;
+    });
+},
     goToDetail(id) {
       this.$router.push(`/admin/menus/${id}`);
     }

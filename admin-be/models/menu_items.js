@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
     order: {
       type: DataTypes.INTEGER,
       defaultValue: 0
-    }
+    },
+    is_active: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: true
+}
   }, {
     underscored: true,
     tableName: 'menu_items'
