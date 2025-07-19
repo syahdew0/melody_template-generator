@@ -7,7 +7,7 @@
           <th class="p-2">ID</th>
           <th class="p-2">Menu</th>
           <th class="p-2">Bahasa</th>
-          <th class="p-2">Top Menu</th>
+          <!-- <th class="p-2">Top Menu</th> -->
           <th class="p-2">Main Menu</th>
           <th class="p-2">Footer Menu</th>
         </tr>
@@ -20,32 +20,22 @@
           </td>
           <td class="p-2">Indonesia</td>
           <td class="p-2">
-            <span v-if="menu.is_top">
-              <span class="text-blue-600 font-semibold">Aktif</span> |
-              <a @click.prevent="unassign(menu.id, 'top')" href="#">Non-aktif</a>
-            </span>
-            <span v-else>
-              <a @click.prevent="assign(menu.id, 'top')" href="#">Aktifkan</a> |
-              <span class="text-blue-600">Non-aktif</span>
-            </span>
-          </td>
-          <td class="p-2">
             <span v-if="menu.is_main">
               <span class="text-blue-600 font-semibold">Aktif</span> |
-              <a @click.prevent="unassign(menu.id, 'main')" href="#">Non-aktif</a>
+              <a @click.prevent="unassignMain(menu.id)" href="#">Non-aktif</a>
             </span>
             <span v-else>
-              <a @click.prevent="assign(menu.id, 'main')" href="#">Aktifkan</a> |
+              <a @click.prevent="assignMain(menu.id)" href="#">Aktifkan</a> |
               <span class="text-blue-600">Non-aktif</span>
             </span>
           </td>
           <td class="p-2">
             <span v-if="menu.is_footer">
               <span class="text-blue-600 font-semibold">Aktif</span> |
-              <a @click.prevent="unassign(menu.id, 'footer')" href="#">Non-aktif</a>
+              <a @click.prevent="unassignFooter(menu.id)" href="#">Non-aktif</a>
             </span>
             <span v-else>
-              <a @click.prevent="assign(menu.id, 'footer')" href="#">Aktifkan</a> |
+              <a @click.prevent="assignFooter(menu.id)" href="#">Aktifkan</a> |
               <span class="text-blue-600">Non-aktif</span>
             </span>
           </td>
@@ -75,22 +65,38 @@ export default {
       });
     },
    assign(id, type) {
-  axios.post(API_ENDPOINTS.ASSIGN_MENU(id), { type })
-    .then(() => {
-      const index = this.menuGroups.findIndex(m => m.id === id);
-      if (index !== -1) this.menuGroups[index][`is_${type}`] = true;
-    })
-},
-unassign(id, type) {
-  axios.post(API_ENDPOINTS.UNASSIGN_MENU(id), { type })
-    .then(() => {
-      const index = this.menuGroups.findIndex(m => m.id === id);
-      if (index !== -1) this.menuGroups[index][`is_${type}`] = false;
-    });
-},
+      axios.post(API_ENDPOINTS.ASSIGN_MENU(id), { type })
+        .then(() => {
+          const index = this.menuGroups.findIndex(m => m.id === id);
+          if (index !== -1) this.menuGroups[index][`is_${type}`] = true;
+        })
+    },
+    unassign(id, type) {
+      axios.post(API_ENDPOINTS.UNASSIGN_MENU(id), { type })
+        .then(() => {
+          const index = this.menuGroups.findIndex(m => m.id === id);
+          if (index !== -1) this.menuGroups[index][`is_${type}`] = false;
+        });
+    },
     goToDetail(id) {
       this.$router.push(`/admin/menus/${id}`);
-    }
+    },
+    assignMain(id) {
+      this.assign(id, 'main');
+      this.unassign(id, 'footer')
+    },
+    unassignMain(id) {
+      this.unassign(id, 'main');
+      this.assign(id, 'footer');
+    },
+    assignFooter(id) {
+      this.assign(id, 'footer');
+      this.unassign(id, 'main')
+    },
+    unassignFooter(id) {
+      this.unassign(id, 'footer');
+      this.assign(id, 'main');
+    },
   },
 };
 </script>

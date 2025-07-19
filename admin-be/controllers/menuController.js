@@ -131,6 +131,7 @@ exports.getMenuGroupById = async (req, res) => {
   }
 };
 
+// this
 exports.getMenuBySlug = async (req, res) => {
   const { group } = req.query;
 
@@ -140,7 +141,7 @@ exports.getMenuBySlug = async (req, res) => {
 
   try {
     const groupData = await menu_group.findOne({
-      where: { slug: group },
+      where: { slug: group, is_main: 1, is_footer: 0 },
       include: [{
         model: menu_item,
         as: 'items',
@@ -157,6 +158,32 @@ exports.getMenuBySlug = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil menu', error: error.message });
   }
 };
+
+exports.getFooterMenus = async (req, res) => {
+  try {
+    const group = 'footer';
+    const footerGroup = await menu_group.findOne({
+      where: { slug: group, is_main: 0, is_footer: 1 }, 
+      include: [{
+        model: menu_item,
+        as: 'items',
+        // where: { is_active: true },
+        required: false,
+        // attributes: ['title', 'path'],
+      //   order: [['order', 'ASC']]
+      }]
+    });
+
+    if (!footerGroup) {
+      return res.status(404).json({ message: 'Menu footer tidak ditemukan' });
+    }
+
+    res.json(footerGroup.items);
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil footer menu', error: error.message });
+  }
+};
+
 
 
 exports.getMenuList = async (req, res) => {
@@ -187,26 +214,3 @@ exports.getMenuList = async (req, res) => {
   }
 };
 
-exports.getFooterMenus = async (req, res) => {
-  try {
-    const footerGroup = await menu_group.findOne({
-      where: { is_footer: true },
-      include: [{
-        model: menu_item,
-        as: 'items',
-        where: { is_active: true },
-        required: false,
-        attributes: ['title', 'path'],
-        order: [['order', 'ASC']]
-      }]
-    });
-
-    if (!footerGroup) {
-      return res.status(404).json({ message: 'Menu footer tidak ditemukan' });
-    }
-
-    res.json(footerGroup.items);
-  } catch (error) {
-    res.status(500).json({ message: 'Gagal mengambil footer menu', error: error.message });
-  }
-};
