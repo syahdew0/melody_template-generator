@@ -159,7 +159,6 @@ const deleteItem = async (item) => {
     await axios.delete(`${API_ENDPOINTS.customPages}/${item.id}`)
     await fetchItems()
   toast.success('Berhasil dihapus')
-    router.back()
   } catch (err) {
     console.error('Gagal menyimpan:', err)
     toast.error('Gagal menyimpan')

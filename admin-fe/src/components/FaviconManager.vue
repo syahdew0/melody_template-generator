@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white p-6 rounded-xl shadow max-w-3xl mx-auto">
+  <div class="bg-white p-6 rounded-xl shadow max-w-full mx-auto">
     <h1 class="text-xl font-bold text-gray-800 mb-4">Manajemen Favicon</h1>
 
     <div class="mb-4">

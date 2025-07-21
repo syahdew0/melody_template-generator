@@ -1,5 +1,15 @@
 <template>
   <div class="py-12 px-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Daftar Menu</h2>
+      <button
+  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+  @click="createMenuGroup"
+>
+  + Tambah Menu Group
+</button>
+    </div>
+
     <h2 class="text-xl font-bold mb-4">Daftar Menu</h2>
     <table class="w-full border text-sm">
       <thead class="bg-gray-100 text-left">
@@ -64,6 +74,18 @@ export default {
         this.menuGroups = res.data;
       });
     },
+    createMenuGroup() {
+  axios.post(API_ENDPOINTS.MENU_GROUPS, {
+    name: 'Menu Baru',
+    // Tambahan field lain jika perlu (misal: slug, bahasa, dsb.)
+  }).then(res => {
+    const newMenu = res.data;
+    this.$router.push(`/admin/menus/${newMenu.id}`);
+  }).catch(err => {
+    console.error('Gagal menambahkan menu:', err);
+    alert('Gagal membuat menu baru.');
+  });
+},
    assign(id, type) {
       axios.post(API_ENDPOINTS.ASSIGN_MENU(id), { type })
         .then(() => {
