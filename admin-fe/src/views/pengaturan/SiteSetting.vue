@@ -9,19 +9,24 @@
       </div>
 
       <div>
-        <label>Deskripsi Website</label>
-        <textarea v-model="form.site_description" class="form-textarea w-full"></textarea>
+        <label>Title</label>
+        <input v-model="form.title" type="text" class="form-input w-full" />
       </div>
 
+      <div>
+        <label>Deskripsi</label>
+        <textarea v-model="form.site_description" class="form-textarea w-full"></textarea>
+      </div>
+    
       <div>
         <label>Email Admin</label>
         <input v-model="form.admin_email" type="email" class="form-input w-full" />
       </div>
 
-      <div>
+      <!-- <div>
         <label>Logo URL</label>
         <input v-model="form.logo" type="text" class="form-input w-full" />
-      </div>
+      </div> -->
 
       <div>
         <label>SEO Keywords</label>
@@ -57,6 +62,7 @@ export default {
     return {
       websiteId: null,
       form: {
+          title: '',
         site_title: '',
         site_description: '',
         admin_email: '',

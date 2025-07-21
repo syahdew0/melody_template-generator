@@ -41,7 +41,7 @@
     </ul>
 
     <div class="mt-4">
-      <RouterLink to="/admin/menus" class="text-sm text-gray-500">← Kembali ke daftar grup</RouterLink>
+      <RouterLink to="/admin/menus" class="text-sm text-gray-500">← Kembali ke daftar menu</RouterLink>
     </div>
   </div>
 </template>
