@@ -132,16 +132,50 @@ exports.getMenuGroupById = async (req, res) => {
 };
 
 // this
+// exports.getMenuBySlug = async (req, res) => {
+//   const { group } = req.query;
+
+//   if (!group) {
+//     return res.status(400).json({ message: 'Parameter group diperlukan' });
+//   }
+
+//   try {
+//     const groupData = await menu_group.findOne({
+//       where: { slug: group, is_main: 1, is_footer: 0 },
+//       include: [{
+//         model: menu_item,
+//         as: 'items',
+//         required: false,
+//       }],
+//     });
+
+//     if (!groupData) {
+//       return res.status(404).json({ message: 'Grup menu tidak ditemukan' });
+//     }
+
+//     res.json(groupData.items);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Gagal mengambil menu', error: error.message });
+//   }
+// };
 exports.getMenuBySlug = async (req, res) => {
   const { group } = req.query;
 
   if (!group) {
     return res.status(400).json({ message: 'Parameter group diperlukan' });
   }
+  
+  if (group.toLowerCase() === 'footer') {
+    return res.status(403).json({ message: 'Akses ke menu footer tidak diizinkan dari endpoint ini' });
+  }
 
   try {
     const groupData = await menu_group.findOne({
-      where: { slug: group, is_main: 1, is_footer: 0 },
+      where: {
+        slug: group,
+        is_main: 1,
+        is_footer: 0
+      },
       include: [{
         model: menu_item,
         as: 'items',
@@ -171,7 +205,7 @@ exports.getFooterMenus = async (req, res) => {
     //     required: false,
     //   }],
     // });
-    const footerGroups = await menu_group.findAll({
+    const footerGroups = await menu_group.findOne({
       where: {
         is_footer: 1, is_main: 0 
       },
@@ -189,6 +223,7 @@ exports.getFooterMenus = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil menu footer' });
   }
 };
+
 
 
 // exports.getMenuList = async (req, res) => {
