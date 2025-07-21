@@ -4,8 +4,8 @@ const menuController = require('../controllers/menuController');
 const { requireAuth } = require('../middlewares/authMiddleware');
 
 router.get('/menu-list', menuController.getMenuBySlug);
-router.get('/menu-list-by-type', menuController.getMenuList);
-router.get('/menu-list', menuController.getMenuList);
+// router.get('/menu-list-by-type', menuController.getMenuList);
+// router.get('/menu-list', menuController.getMenuList);
 router.get('/menu-groups', menuController.getMenuGroups); 
 router.get('/menu-groups/:id', menuController.getMenuGroupById);
 router.get('/menu-items/:groupId', menuController.getMenuItemsByGroup);

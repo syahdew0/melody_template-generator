@@ -81,22 +81,37 @@ export default {
     goToDetail(id) {
       this.$router.push(`/admin/menus/${id}`);
     },
+    // assignMain(id) {
+    //   this.assign(id, 'main');
+    //   this.unassign(id, 'footer')
+    // },
+    // unassignMain(id) {
+    //   this.unassign(id, 'main');
+    //   this.assign(id, 'footer');
+    // },
+    // assignFooter(id) {
+    //   this.assign(id, 'footer');
+    //   this.unassign(id, 'main')
+    // },
+    // unassignFooter(id) {
+    //   this.unassign(id, 'footer');
+    //   this.assign(id, 'main');
+    // },
+
+    
     assignMain(id) {
-      this.assign(id, 'main');
-      this.unassign(id, 'footer')
-    },
-    unassignMain(id) {
-      this.unassign(id, 'main');
-      this.assign(id, 'footer');
-    },
-    assignFooter(id) {
-      this.assign(id, 'footer');
-      this.unassign(id, 'main')
-    },
-    unassignFooter(id) {
-      this.unassign(id, 'footer');
-      this.assign(id, 'main');
-    },
+  this.assign(id, 'main');
+},
+unassignMain(id) {
+  this.unassign(id, 'main');
+},
+assignFooter(id) {
+  this.assign(id, 'footer');
+},
+unassignFooter(id) {
+  this.unassign(id, 'footer');
+},
+
   },
 };
 </script>
