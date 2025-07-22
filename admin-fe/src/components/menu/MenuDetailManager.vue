@@ -29,6 +29,38 @@
           {{ item.title }}
         </option>
       </select>
+      <!-- <label class="block mb-2">Tipe Link</label>
+<select v-model="form.type" class="border rounded w-full mb-2 p-1">
+  <option value="custom">Custom</option>
+  <option value="page">Pages</option>
+  <option value="category">Category</option>
+</select> -->
+
+<!-- Show dropdown jika tipe page -->
+<div v-if="form.type === 'page'">
+  <label class="block mb-2">Pilih Pages</label>
+  <select v-model="form.slug" class="border rounded w-full mb-2 p-1">
+    <option v-for="page in pages" :key="page.slug" :value="page.slug">
+      {{ page.title }}
+    </option>
+  </select>
+</div>
+
+<!-- Show slug input jika tipe category -->
+<div v-else-if="form.type === 'category'">
+  <label class="block mb-2">Slug Kategori</label>
+  <input type="text" v-model="form.slug" class="border rounded w-full mb-2 p-1" />
+</div>
+
+
+
+
+<!-- Show path input jika custom -->
+<div v-else-if="form.type === 'custom'">
+  <label class="block mb-2">Path (Link)</label>
+  <input type="text" v-model="form.path" class="border rounded w-full mb-2 p-1" />
+</div>
+
       <button class="bg-green-600 text-white px-4 py-1 rounded mr-2" @click="submitForm">
         Simpan
       </button>
@@ -47,11 +79,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,  watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import MenuTree from './MenuTree.vue';
-import { API_ENDPOINTS } from '@/config/api'; // pastikan path ini benar
+import { API_ENDPOINTS } from '@/config/api'; 
 
 const route = useRoute();
 const groupId = route.params.id;
@@ -60,12 +92,36 @@ const group = ref({});
 const menuItems = ref([]);
 const treeData = ref([]);
 const showForm = ref(false);
-const form = ref({ title: '', path: '', parent_id: null });
+const form = ref({
+  title: '',
+  type: 'custom',
+  slug: '',
+  path: '',
+  parent_id: null,
+});
+
+const pages = ref([]);
 
 const loadGroup = async () => {
-  const res = await axios.get(API_ENDPOINTS.MENU_GROUP_DETAIL(groupId));
-  group.value = res.data;
+  try {
+    const res = await axios.get(API_ENDPOINTS.MENU_GROUP_DETAIL(groupId));
+    group.value = res.data;
+  } catch (error) {
+    console.error('Gagal memuat group menu:', error);
+  }
 };
+
+const loadPages = async () => {
+  try {
+    const res = await axios.get(`${API_ENDPOINTS.posts}`, {
+      params: { type: 'page', status: 'published', limit: 1000 },
+    });
+    pages.value = res.data.data || res.data;
+  } catch (err) {
+    console.error('Gagal ambil daftar halaman:', err);
+  }
+};
+
 
 const loadItems = async () => {
   const res = await axios.get(API_ENDPOINTS.MENU_ITEMS(groupId));
@@ -83,7 +139,12 @@ const buildTree = (items, parentId = null) => {
 };
 
 const submitForm = async () => {
-  console.log('Form data sebelum kirim:', form.value);
+  // Generate path otomatis
+  if (form.value.type === 'page') {
+    form.value.path = `/pages/${form.value.slug}`
+  } else if (form.value.type === 'category') {
+    form.value.path = `/category/${form.value.slug}`
+  }
 
   if (form.value.id) {
     await axios.put(API_ENDPOINTS.UPDATE_MENU_ITEM(form.value.id), form.value);
@@ -93,15 +154,62 @@ const submitForm = async () => {
       menu_group_id: groupId,
     });
   }
-  resetForm();
-  await loadItems();
+
+  await loadPages(); 
+  await loadItems(); // Refresh daftar menu
+
+  resetForm();       // Reset form setelah submit
 };
 
+const editItem = async (item) => {
+  await loadPages(); // Pastikan pages sudah dimuat dulu
 
-const editItem = (item) => {
-  form.value = { ...item };
+  // Tambahkan title dummy jika page tidak ada
+  if (item.type === 'page' && item.slug) {
+    const exists = pages.value.some(p => p.slug === item.slug);
+    if (!exists) {
+      pages.value.unshift({
+        slug: item.slug,
+        title: `(Halaman tidak ditemukan: ${item.slug})`
+      });
+    }
+  }
+
+  form.value = {
+    id: item.id,
+    title: item.title,
+    type: item.type || 'custom',
+    slug: item.slug || '',
+    path: item.path || '',
+    parent_id: item.parent_id || null,
+  };
+
   showForm.value = true;
 };
+
+
+const loadPagesIfNeeded = async (item) => {
+  try {
+    const res = await axios.get(`${API_ENDPOINTS.posts}`, {
+      params: { type: 'page', status: 'published', limit: 1000 },
+    });
+    pages.value = res.data.data || res.data;
+
+    // Inject page yang tidak ditemukan agar tetap muncul
+    if (item.type === 'page' && item.slug) {
+      const exists = pages.value.some(p => p.slug === item.slug);
+      if (!exists) {
+        pages.value.unshift({
+          slug: item.slug,
+          title: `(Halaman tidak ditemukan: ${item.slug})`,
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Gagal ambil daftar halaman:', err);
+  }
+};
+
 
 const deleteItem = async (item) => {
   if (confirm('Yakin ingin hapus menu ini?')) {
@@ -111,12 +219,30 @@ const deleteItem = async (item) => {
 };
 
 const resetForm = () => {
-  form.value = { name: '', path: '', parent_id: null };
+  form.value = {
+    title: '',
+    type: 'custom',
+    slug: '',
+    path: '',
+    parent_id: null,
+  };
   showForm.value = false;
 };
+
+watch(() => form.value.type, async (newType) => {
+  if (newType === 'page' && pages.value.length === 0) {
+    await loadPages();
+    if (!form.value.slug && pages.value.length > 0) {
+      form.value.slug = pages.value[0].slug;
+    }
+  }
+});
+
 
 onMounted(() => {
   loadGroup();
   loadItems();
+  loadPages();
+   loadPagesIfNeeded();
 });
 </script>

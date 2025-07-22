@@ -28,6 +28,7 @@
         </select>
       </div>
 
+      
     <!-- Table -->
     <table class="w-full border bg-white rounded shadow-sm text-sm" v-if="pages.length > 0">
       <thead class="bg-gray-100">

@@ -20,5 +20,6 @@ router.post('/', postController.create);
 router.put('/:id', postController.update);
 router.delete('/:id', postController.remove)
 router.get('/:id', postController.getById);
+router.put('/slug/:slug', postController.updateBySlug);
 
 module.exports = router;
