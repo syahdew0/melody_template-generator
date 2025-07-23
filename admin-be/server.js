@@ -69,8 +69,6 @@ app.use('/apis/categories', require('./routes/categoryRoutes'));
 app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
 app.use('/apis/posts', require('./routes/postRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
-app.use('/apis/menu-group', require('./routes/menuRoutes'));
-
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);

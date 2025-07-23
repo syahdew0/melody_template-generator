@@ -77,8 +77,8 @@ export default {
 
     // Paksa favicon URL jadi HTTPS
     const url = res.data.value || res.data.url || ''
-    const originProtocol = window.location.protocol; // "http:" atau "https:"
-this.form.favicon = url.replace(/^https?:\/\//, `${originProtocol}//`);
+    // this.form.favicon = url.replace(/^http:\/\//, 'https://')
+    this.form.favicon = url
 
     this.selectedFile = null
   } catch (err) {

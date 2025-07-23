@@ -1,4 +1,5 @@
 const { menu_group, menu_item, menu_group: MenuGroup, menu_item: MenuItem } = require('../models');
+// const { menu_group: MenuGroup, menu_item: MenuItem } = require('../models');
 
 
 // Get all menu groups
@@ -158,6 +159,7 @@ exports.getMenuGroupById = async (req, res) => {
 //     res.status(500).json({ message: 'Gagal mengambil menu', error: error.message });
 //   }
 // };
+
 exports.getMenuBySlug = async (req, res) => {
   const { group } = req.query;
 
@@ -224,32 +226,60 @@ exports.getFooterMenus = async (req, res) => {
   }
 };
 
+// Create new menu group
+exports.createMenuGroup = async (req, res) => {
+  try {
+    const { name, slug } = req.body;
 
+    if (!name || !slug) {
+      return res.status(400).json({ message: 'Name dan slug wajib diisi' });
+    }
 
-// exports.getMenuList = async (req, res) => {
-//   try {
-//     const groupSlug = req.query.group;
+    const newGroup = await menu_group.create({
+      name,
+      slug,
+      is_main: false,
+      is_footer: false,
+      is_after_login: false
+    });
 
-//     const menuGroup = await MenuGroup.findOne({
-//       where: { slug: groupSlug },
-//       include: [
-//         {
-//           model: MenuItem,
-//           as: 'items',
-//           where: { is_active: true },
-//           required: false
-//         }
-//       ],
-//       order: [[{ model: MenuItem, as: 'items' }, 'order', 'ASC']] 
-//     });
+    res.status(201).json(newGroup); // Ini akan berisi id dari menu_group baru
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal membuat menu group', error: error.message });
+  }
+};
 
-//     if (!menuGroup) {
-//       return res.status(404).json({ message: 'Menu group not found' });
-//     }
+exports.updateMenuGroupHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    // Misal kamu pakai ORM Sequelize atau query langsung
+    // Contoh dengan Sequelize (asumsikan model MenuGroup sudah diimport):
+    const menuGroup = await MenuGroup.findByPk(id);
+    if (!menuGroup) {
+      return res.status(404).json({ message: 'Menu group tidak ditemukan' });
+    }
+    menuGroup.name = name;
+    await menuGroup.save();
 
-//     res.json(menuGroup.items);
-//   } catch (error) {
-//     console.error('Error fetching menu list:', error); // tambahkan log error
-//     res.status(500).json({ message: 'Internal server error', error: error.message });
-//   }
-// };
+    res.json(menuGroup);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gagal update menu group' });
+  }
+};
+
+exports.deleteMenuGroupHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const menuGroup = await MenuGroup.findByPk(id);
+    if (!menuGroup) {
+      return res.status(404).json({ message: 'Menu group tidak ditemukan' });
+    }
+    await menuGroup.destroy();
+    res.json({ message: 'Menu group berhasil dihapus' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gagal hapus menu group' });
+  }
+};

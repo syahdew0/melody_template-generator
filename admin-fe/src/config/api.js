@@ -1,68 +1,12 @@
 // export const API_URL = 'https://api-interuma.pasifiksgroup.com:8443'
-
+// export const API_URL = 'http://localhost:3001'
 // export const API_URL = process.env.VUE_APP_API_URL;
 // export const API_URL = 'compro.pasifiksgroup.com:8443'
 export const API_URL = process.env.VUE_APP_API_URL;
 
 
 export const API_ENDPOINTS = {
-  // Value Section
-  // valueSection: `${API_URL}/api/value-section`,
-  // valueSectionDetail: (id) => `${API_URL}/api/value-section/${id}`,
 
-  // Hero About (Admin & Public)
-  // heroAbout: `${API_URL}/api/admin/hero-about`,
-  // heroAboutDetail: (id) => `${API_URL}/api/admin/hero-about/${id}`,
-  // heroAboutPublic: `${API_URL}/api/about-hero`,
-
-  // teamHeader: `${API_URL}/api/team/header`,
-  // teamMembers: `${API_URL}/api/team/members`,
-  // teamMemberDetail: (id) => `${API_URL}/api/team/members/${id}`,
-  // teamMemberPublic: `${API_URL}/api/our-team`,
-
-  // visiMisi: `${API_URL}/api/visi-misi`,
-
-  // aboutPreview: `${API_URL}/api/about-preview`,
-
-  // heroHome: `${API_URL}/api/hero-home`,
-
-  // whyChooseUs: `${API_URL}/api/why-choose-us`,
-  // whyChooseUsHeader: `${API_URL}/api/why-choose-us/header`,
-  // whyChooseUsBenefit: `${API_URL}/api/why-choose-us/benefit`,
-
-  // portfolioPreview: `${API_URL}/api/portfolio-preview`,
-
-  // portfolioHeader: `${API_URL}/api/portfolio/header`,
-  // portfolioItems: `${API_URL}/api/portfolio/items`,
-
-  // processSection: `${API_URL}/api/process-section`,
-  // processSectionUpdate: `${API_URL}/api/process-section/admin/process-section`,
-
-  // heroServices: `${API_URL}/api/hero-services`,
-
-  // serviceSectionAdmin: `${API_URL}/api/admin/service-section`,
-  // serviceSectionPublic: `${API_URL}/api/service-section`,
-
-  // heroContact: `${API_URL}/api/contact-hero`,
-
-  // contactInfo: `${API_URL}/api/contact-info`,
-  // contactInfoAdmin: `${API_URL}/api/admin/contact-info`,
-
-  // serviceList: `${API_URL}/api/service-list`,
-  // adminServiceList: `${API_URL}/api/service-list`,
-
-  // faqsSection: `${API_URL}/api/admin/faqs-section`,
-
-  // mapsSection: `${API_URL}/api/maps-section`,
-
-  // footerSettings: `${API_URL}/api/admin/footer`,
-  // footerPublic: `${API_URL}/api/footer`,
-
-  // contact form (message),
-  // contactSettings: `${API_URL}/api/admin/contact-settings`,
-  // contactMessages: `${API_URL}/api/admin/contact-messages`,
-  // contactMessageDetail: (id) => `${API_URL}/api/admin/contact-messages/${id}`,
-  // contactSubmit: `${API_URL}/api/contact-submit`,
 
   mediaList: `${API_URL}/api/media`,
   mediaUpload: `${API_URL}/api/media`,
@@ -71,7 +15,7 @@ export const API_ENDPOINTS = {
   newsletterSettings: `${API_URL}/api/admin/newsletter-settings`,
   newsletterSubscribers: `${API_URL}/api/admin/newsletter-subscribers`,
 
-  menuList: `${API_URL}/apis/admin/menus`,
+  menuList: `${API_URL}/api/admin/menus`,
     menuCreate: `${API_URL}/api/admin/menus`,
     menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
     menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,          
@@ -100,7 +44,7 @@ export const API_ENDPOINTS = {
 
   posts: `${API_URL}/apis/admin/posts`,               
   postBySlug: (slug) => `${API_URL}/apis/posts/slug/${slug}`,  
-
+UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
   categories: `${API_URL}/apis/categories`,          
 
   pages: `${API_URL}/apis/admin/posts`,              
@@ -126,15 +70,19 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     // addMenuToGroup: `${API_URL}/api/menu-groups/assign`,
     // removeMenuFromGroup: `${API_URL}/api/menu-groups/unassign`,
     // groupedItems: `${API_URL}/api/menu-groups/items`,
-      MENU_GROUPS: `${API_URL}/apis/menu-groups`,
-      ASSIGN_MENU: (id) => `${API_URL}/apis/menu-groups/${id}/assign`,
-      UNASSIGN_MENU: (id) => `${API_URL}/apis/menu-groups/${id}/unassign`,
-      MENU_GROUP_DETAIL: (id) => `${API_URL}/apis/admin/menu-groups/${id}`,
-      MENU_ITEMS: (groupId) => `${API_URL}/apis/admin/menu-items?groupId=${groupId}`,
-      CREATE_MENU_ITEM: `${API_URL}/apis/admin/menu-items`,
-      UPDATE_MENU_ITEM: (id) => `${API_URL}/apis/admin/menu-items/${id}`,
-      DELETE_MENU_ITEM: (id) => `${API_URL}/apis/admin/menu-items/${id}`,
+      MENU_GROUPS: `${API_URL}/api/menu-groups`,
+      ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
+      UNASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/unassign`,
+      MENU_GROUP_DETAIL: (id) => `${API_URL}/api/admin/menu-groups/${id}`,
+      MENU_ITEMS: (groupId) => `${API_URL}/api/admin/menu-items?groupId=${groupId}`,
+      CREATE_MENU_ITEM: `${API_URL}/api/admin/menu-items`,
+      UPDATE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
+      DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
+      CREATE_MENU_GROUP: `${API_URL}/api/menu-groups`,
+      UPDATE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
+      DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
 
+      
 
     siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
     favicon: `${API_URL}/apis/icons/favicon`,        
