@@ -4,20 +4,20 @@
       <h2 class="text-2xl text-center font-bold mb-6">Melody</h2>
 
       <!-- Tab Selector -->
-      <!-- <div class="flex justify-around mb-6">
+      <div class="flex justify-around mb-6">
         <button
           class="font-semibold py-2 px-4 rounded"
           :class="activeTab === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'"
           @click="activeTab = 'login'">
           Login
         </button>
-        <button
+        <!-- <button
           class="font-semibold py-2 px-4 rounded"
           :class="activeTab === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'"
           @click="activeTab = 'register'">
           Register
-        </button>
-      </div> -->
+        </button> -->
+      </div>
 
       <!-- Login Form -->
       <form v-if="activeTab === 'login'" @submit.prevent="submitLogin">

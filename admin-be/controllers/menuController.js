@@ -283,5 +283,3 @@ exports.deleteMenuGroupHandler = async (req, res) => {
     res.status(500).json({ message: 'Gagal hapus menu group' });
   }
 };
-
-

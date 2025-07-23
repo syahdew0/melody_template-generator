@@ -299,20 +299,6 @@ exports.getBySlug = async (req, res) => {
   }
 }
 
-// exports.getPageBySlug = async (req, res) => {
-//   const page = await Post.findOne({
-//     where: {
-//       slug: req.params.slug,
-//       type: 'page',
-//       status: 'published, draft',
-//     },
-//     include: [
-//       { model: PostMeta, as: 'meta' },
-//     ]
-//   });
-//   if (!page) return res.status(404).json({ message: 'Page not found' });
-//   res.json(page);
-// }
 
 exports.deleteBySlug = async (req, res) => {
   try {
