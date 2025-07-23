@@ -83,7 +83,8 @@ export default {
         website_id: 1,
         user_id: 1
       },
-      isEdit: false
+      isEdit: false,
+      originalSlug: null
     }
   },
   methods: {
@@ -93,32 +94,34 @@ export default {
         .replace(/ /g, '-')
         .replace(/[^\w-]+/g, '')
     },
-   async fetchPageBySlug(slug) {
+async fetchPageBySlug(slug) {
   try {
     const res = await axios.get(API_ENDPOINTS.pageBySlug(slug));
     this.form = {
       ...res.data,
-      type: 'page' // pastikan 'page', kalau tidak, saat submit bisa masuk ke type 'post'
+      type: 'page'
     };
+    this.originalSlug = res.data.slug; // 👈 simpan slug awal
     this.isEdit = true;
   } catch (err) {
     console.error('Failed to fetch page by slug:', err);
   }
-},
-   async savePage() {
+}
+,
+ async savePage() {
   try {
     if (this.isEdit) {
-      // Gunakan endpoint update berdasarkan slug (atau ID kalau lebih aman)
-      await axios.put(`${API_ENDPOINTS.pages}/slug/${this.form.slug}`, this.form)
+      const slugToUse = this.originalSlug || this.form.slug;
+      await axios.put(`${API_ENDPOINTS.pages}/slug/${slugToUse}`, this.form);
     } else {
-      await axios.post(API_ENDPOINTS.pages, this.form)
+      await axios.post(API_ENDPOINTS.pages, this.form);
     }
-    this.$router.push('/admin/pages')
+    this.$router.push('/admin/pages');
   } catch (err) {
-    console.error('Failed to save page:', err)
+    console.error('Failed to save page:', err);
   }
 }
-  },
+},
 mounted() {
   const slug = this.$route.params.slug;
   if (slug) {

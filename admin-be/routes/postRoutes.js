@@ -8,23 +8,18 @@ const postController = require('../controllers/postController');
 
 // Ambil detail post by slug (misal: /post/slug-berita)
 router.get('/slug/:slug', postController.getBySlug);
+router.get('/category/:slug', postController.getBySlug);
+router.get('/post/:slug/:slug', postController.getBySlug);
 router.get('/post/:slug', postController.getBySlug);
 router.get('/page/:slug', postController.getBySlug);
 router.get('/pages/slug/:slug', postController.getBySlug);
-
 router.get('/', postController.getAll);
 router.delete('/slug/:slug', postController.deleteBySlug)
-
 router.get('/posts', postController.getAll);
-
 router.post('/', postController.create);
-
-// Update post by ID
 router.put('/:id', postController.update);
-
-// Hapus post by ID
 router.delete('/:id', postController.remove)
-
 router.get('/:id', postController.getById);
+router.put('/slug/:slug', postController.updateBySlug);
 
 module.exports = router;

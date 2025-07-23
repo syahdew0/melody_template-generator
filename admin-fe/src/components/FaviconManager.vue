@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white p-6 rounded-xl shadow max-w-3xl mx-auto">
+  <div class="bg-white p-6 rounded-xl shadow max-w-full mx-auto">
     <h1 class="text-xl font-bold text-gray-800 mb-4">Manajemen Favicon</h1>
 
     <div class="mb-4">
@@ -77,8 +77,8 @@ export default {
 
     // Paksa favicon URL jadi HTTPS
     const url = res.data.value || res.data.url || ''
-    const originProtocol = window.location.protocol; // "http:" atau "https:"
-this.form.favicon = url.replace(/^https?:\/\//, `${originProtocol}//`);
+    // this.form.favicon = url.replace(/^http:\/\//, 'https://')
+    this.form.favicon = url
 
     this.selectedFile = null
   } catch (err) {

@@ -67,4 +67,3 @@ exports.uploadFavicon = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengupload favicon' });
   }
 };
-

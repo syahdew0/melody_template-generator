@@ -27,22 +27,6 @@
         <option value="draft">Draft</option>
         <option value="published">Published</option>
       </select>
-
-      <!-- Filter Kategori (Multiple Select Dropdown) -->
-      <!-- <select
-        v-model="selectedCategories"
-        class="border p-2 rounded"
-        multiple
-      >
-        <option
-          v-for="cat in categories"
-          :key="cat.id"
-          :value="cat.id"
-        >
-          {{ cat.name }}
-        </option>
-      </select> -->
-
   </div>
 
 
@@ -52,6 +36,7 @@
         <tr>
           <th class="p-2 border text-left">Title</th>
           <th class="p-2 border text-left">Status</th>
+           <th class="p-2 border text-left">Category</th>
           <th class="p-2 border text-left">Published At</th>
           <th class="p-2 border text-right">Actions</th>
         </tr>
@@ -60,9 +45,18 @@
         <tr v-for="post in posts" :key="post.id">
           <td class="p-2 border">{{ post.title }}</td>
           <td class="p-2 border capitalize">{{ post.status }}</td>
+
+            <td class="p-2 border">
+              <span v-if="post.post_categories && post.post_categories.length">
+                {{ post.post_categories.map(pc => pc.category.name).join(', ') }}
+              </span>
+              <span v-else>-</span>
+            </td>
+
           <td class="p-2 border">
             {{ post.published_at ? formatDate(post.published_at) : '-' }}
           </td>
+          
           <td class="p-2 border text-right space-x-2">
             <router-link
               :to="`/admin/posts/${post.slug}`"

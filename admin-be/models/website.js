@@ -3,8 +3,8 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     user_id: DataTypes.INTEGER,
     subdomain: DataTypes.STRING,
-
     site_title: DataTypes.STRING,
+     title: DataTypes.STRING,
     site_description: DataTypes.TEXT,
     admin_email: DataTypes.STRING,
     logo: DataTypes.STRING,
