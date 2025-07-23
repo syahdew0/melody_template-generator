@@ -229,6 +229,7 @@ exports.getFooterMenus = async (req, res) => {
 // Create new menu group
 exports.createMenuGroup = async (req, res) => {
   try {
+    // console.log('DATA DITERIMA:', req.body);
     const { name, slug } = req.body;
 
     if (!name || !slug) {
@@ -243,11 +244,13 @@ exports.createMenuGroup = async (req, res) => {
       is_after_login: false
     });
 
-    res.status(201).json(newGroup); // Ini akan berisi id dari menu_group baru
+    res.status(201).json(newGroup);
   } catch (error) {
+    // console.error('CREATE MENU GROUP ERROR:', error);
     res.status(500).json({ message: 'Gagal membuat menu group', error: error.message });
   }
 };
+
 
 exports.updateMenuGroupHandler = async (req, res) => {
   try {
@@ -281,5 +284,38 @@ exports.deleteMenuGroupHandler = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal hapus menu group' });
+  }
+};
+
+exports.getMenuByGroup = async (req, res) => {
+  try {
+    const { group } = req.query;
+
+    const menuGroup = await MenuGroup.findOne({
+      where: { slug: group },
+      include: [{
+        model: MenuItem,
+        where: { parent_id: null },
+        required: false,
+        include: [{
+          model: MenuItem,
+          as: 'children',
+          required: false
+        }]
+      }],
+      order: [
+        ['menu_items', 'order', 'ASC'],
+        [{ model: MenuItem, as: 'menu_items' }, { model: MenuItem, as: 'children' }, 'order', 'ASC']
+      ]
+    });
+
+    if (!menuGroup) {
+      return res.status(404).json({ success: false, message: 'Menu group not found' });
+    }
+
+    return res.json({ success: true, data: menuGroup.menu_items });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

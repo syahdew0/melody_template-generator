@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
     slug: DataTypes.STRING,
     type: {
       type: DataTypes.STRING, 
-      allowNull: false
+      allowNull: false,
+      defaultValue: 'static'
     },
     is_main: {
       type: DataTypes.BOOLEAN,

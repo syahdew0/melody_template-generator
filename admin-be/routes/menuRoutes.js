@@ -12,7 +12,8 @@ router.get('/menu-items/:groupId', menuController.getMenuItemsByGroup);
 router.post('/menu-groups/:id/assign', menuController.assignType);
 router.post('/menu-groups/:id/unassign', menuController.unassignType);
 router.post('/menu-groups', requireAuth, menuController.createMenuGroup);
-
+router.get('/menu', menuController.getMenuByGroup);
+router.get('/menu/:slug', menuController.getMenuByGroup);
 
 router.get('/footer', menuController.getFooterMenus);
 

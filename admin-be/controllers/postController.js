@@ -82,18 +82,6 @@ exports.getAll = async (req, res) => {
     const slug = req.query.slug || null;
     const type = req.query.type || null;
 
-    const status = req.query.status || null;
-    const id = req.query.id || null;
-    const slug = req.query.slug || null; //  Tambahan untuk filter by slug
-    const categoryFilter = req.query.category;
-
-    const where = {};
-    if (type) where.type = type;
-    if (status) where.status = status;
-    if (id) where.id = id;
-    if (slug) where.slug = slug; // Tambahkan ke kondisi where
-    if (search) where.title = { [Op.like]: `%${search}%` };
-
     const where = {};
     if (type) where.type = type;
     if (slug) where.slug = slug;
@@ -385,4 +373,3 @@ exports.updateBySlug = async (req, res) => {
     res.status(500).json({ message: 'Error updating post', error: err.message });
   }
 };
-

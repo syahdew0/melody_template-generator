@@ -187,7 +187,6 @@ const editItem = async (item) => {
   showForm.value = true;
 };
 
-
 const loadPagesIfNeeded = async (item) => {
   try {
     const res = await axios.get(`${API_ENDPOINTS.posts}`, {
@@ -195,8 +194,7 @@ const loadPagesIfNeeded = async (item) => {
     });
     pages.value = res.data.data || res.data;
 
-    // Inject page yang tidak ditemukan agar tetap muncul
-    if (item.type === 'page' && item.slug) {
+    if (item?.type === 'page' && item.slug) {
       const exists = pages.value.some(p => p.slug === item.slug);
       if (!exists) {
         pages.value.unshift({
@@ -209,7 +207,6 @@ const loadPagesIfNeeded = async (item) => {
     console.error('Gagal ambil daftar halaman:', err);
   }
 };
-
 
 const deleteItem = async (item) => {
   if (confirm('Yakin ingin hapus menu ini?')) {

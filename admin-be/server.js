@@ -13,6 +13,8 @@ const path = require('path');
 const app = express();
 const db = require('./models');
 const { requireAuth } = require('./middlewares/authMiddleware');
+const customerAuthRoutes = require('./routes/customerAuthRoutes');
+
 
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -57,6 +59,12 @@ app.use(cors(corsOptions));
 
 // === Static Uploads ===
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
+// customer
+app.use('/customer/auth', customerAuthRoutes);
+
+// app.use('/menu', require('./routes/customermenuRoutes')); // untuk frontend
+
 
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
