@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = (sequelize, DataTypes) => {
   const Customer = sequelize.define('Customer', {
     username: {
@@ -32,7 +34,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+  }, {
+    underscored: true,
+    tableName: 'customers'
   });
+
+  Customer.associate = function(models) {
+  Customer.hasMany(models.Topup, { foreignKey: 'username', as: 'topups' });
+  Customer.hasMany(models.Withdraw, { foreignKey: 'username', as: 'withdraws' });
+  Customer.hasMany(models.Adjust, { foreignKey: 'username', as: 'adjusts' });
+};
+
 
   return Customer;
 };

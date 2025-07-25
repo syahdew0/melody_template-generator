@@ -87,7 +87,32 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
     favicon: `${API_URL}/apis/icons/favicon`,        
     icons: `${API_URL}/apis/icons/upload`,           
-    saveFavicon: `${API_URL}/apis/icons/save`,       
+    saveFavicon: `${API_URL}/apis/icons/save`,      
+    
+    // Transaksi
+    topup: `${API_URL}/api/transaksi/topup`,
+   topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
+
+    // withdraws: `${API_URL}/apis/withdraws`,
+    // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,
+   withdraw: {
+    list: (status = '') => `${API_URL}/api/transaksi/withdraw${status ? `?status=${status}` : ''}`,
+    updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
+  },
+  adjust: {
+      create: `${API_URL}/api/transaksi/adjust`,
+      list: `${API_URL}/api/transaksi/adjust`,
+
+
+    walletMe: `${API_URL}/api/transaksi/me`, 
+  },
+
+
+      // topup: `${API_URL}/api/transaksi/topup`,
+      // withdraw: `${API_URL}/api/transaksi/withdraw`,
+      // adjust: `${API_URL}/api/transaksi/adjust`,
+
+
 }
 
 export default API_ENDPOINTS

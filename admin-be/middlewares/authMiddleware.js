@@ -14,6 +14,7 @@ exports.requireAuth = (req, res, next) => {
       UserId: decoded.UserId,
       RoleId: decoded.RoleId,
       OwnerId: decoded.OwnerId,
+      role: decoded.role,
     }, process.env.JWT_SECRET || 'SECRET_KEY', { expiresIn: '2h' });
 
     res.set('x-refreshed-token', newToken);

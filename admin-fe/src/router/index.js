@@ -218,6 +218,28 @@ const routes = [
   component: () => import('@/views/pages/PageList.vue')
 },
 
+// Transaksi
+{
+  path: '/admin/transaksi/topup',
+  name: 'Topup',
+  component: () => import('@/views/transaksi/TopUp.vue'),
+},
+{
+  path: '/admin/transaksi/withdraw',
+  name: 'Withdraw',
+  component: () => import('@/views/transaksi/WithdrawPage.vue'),
+},
+{
+  path: '/admin/transaksi/adjust',
+  name: 'Adjust',
+  component: () => import('@/views/transaksi/AdjustPage.vue'),
+},
+{
+  path: '/admin/transaksi/TransaksiHistory',
+  name: 'TransaksiHistory',
+  component: () => import('@/views/transaksi/TransaksiHistory.vue'),
+},
+
 ]
 
 const base = process.env.VUE_APP_BASE_PATH || '/'

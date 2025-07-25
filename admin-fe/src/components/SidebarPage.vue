@@ -342,21 +342,56 @@
         </transition>
       </li> -->
 
-  <!-- Category -->
-        <!-- <li class="relative">
-          <div @click.stop="toggleSubDropdown('categories')" class="dropdown-btn" :class="subDropdownOpen === 'categories' ? 'text-amber-400 bg-slate-700/50' : ''">
-            <span>Category</span>
-            <svg class="w-3 h-3" :class="subDropdownOpen === 'categories' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-          </div>
-          <transition>
-            <ul v-show="subDropdownOpen === 'categories'" class="dropdown-submenu">
-              <router-link :to="{ name: 'CategoryList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryList') }">All Categories</router-link>
-              <router-link :to="{ name: 'CategoryCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryCreate') }"> Add New </router-link>
-            </ul>
-          </transition>
-        </li> -->
+      <!-- Transaksi -->
+        <li class="relative">
+            <!-- Toggle Button -->
+            <div @click.stop="toggleSubDropdown('transaksi')" 
+                class="dropdown-btn" 
+                :class="subDropdownOpen === 'transaksi' ? 'text-amber-400 bg-slate-700/50' : ''">
+              <span>Transaksi</span>
+              <svg class="w-3 h-3" 
+                  :class="subDropdownOpen === 'transaksi' ? 'rotate-180' : ''" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20">
+                <path fill-rule="evenodd" 
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" 
+                      clip-rule="evenodd" />
+              </svg>
+            </div>
+
+            <!-- Submenu -->
+            <transition>
+              <ul v-show="subDropdownOpen === 'transaksi'" class="dropdown-submenu">
+                <router-link 
+                  :to="{ name: 'Topup' }" 
+                  class="submenu-link" 
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('Topup') }">
+                  Topup
+                </router-link>
+                
+                <router-link 
+                  :to="{ name: 'Withdraw' }" 
+                  class="submenu-link" 
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('Withdraw') }">
+                  Withdraw
+                </router-link>
+                
+                <router-link 
+                  :to="{ name: 'Adjust' }" 
+                  class="submenu-link" 
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('Adjust') }">
+                  Adjust
+                </router-link>
+
+                 <!-- <router-link 
+                  :to="{ name: 'TransaksiHistory' }" 
+                  class="submenu-link" 
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TransaksiHistory') }">
+                  Transaksi History
+                </router-link> -->
+              </ul>
+            </transition>
+          </li>
 
       </ul>
     </nav>

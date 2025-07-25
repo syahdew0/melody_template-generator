@@ -1,4 +1,4 @@
-const { Customer } = require('../models');
+const { Customer, Wallet } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -44,9 +44,14 @@ exports.login = async (req, res) => {
     }
 
     // Generate token
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'mysecret', {
-      expiresIn: '7d'
-    });
+    // const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'mysecret', {
+    //   expiresIn: '7d'
+    // });
+    const token = jwt.sign(
+    { CustomerId: user.id, email: user.email },
+    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_123',
+    { expiresIn: '7d' }
+  )
 
     res.json({
   message: 'Login berhasil',
@@ -66,4 +71,29 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.me = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id, {
+      attributes: ['id', 'username', 'email']
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer tidak ditemukan' });
+    }
+
+    const wallet = await Wallet.findOne({
+      where: { customer_id: req.customer.id }
+    });
+
+    res.json({
+      id: customer.id,
+      name: customer.username, //  kolomnya username
+      email: customer.email,
+      balance: wallet?.balance || 0
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gagal mengambil data customer' });
+  }
+};
 
