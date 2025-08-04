@@ -77,6 +77,7 @@ app.use('/apis/categories', require('./routes/categoryRoutes'));
 app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
 app.use('/apis/posts', require('./routes/postRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
+app.use('/banks', require('./routes/masterbankRoutes'));
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);
@@ -117,6 +118,9 @@ app.use('/api/admin/themes', require('./routes/themeRoutes'));
 // Transaksi routes (Topup, Withdraw, Adjust)
 app.use('/api/transaksi', require('./routes/transaksiRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksiRoutes'));
+// app.use('/api/public/banks', require('./routes/masterbankRoutes'));
+
+
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));
 
 // app.use('/api/menu-groups', require('./routes/menuGroupRoutes'));

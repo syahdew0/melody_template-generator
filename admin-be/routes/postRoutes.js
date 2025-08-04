@@ -7,6 +7,7 @@ const postController = require('../controllers/postController');
 // router.get('/posts', postController.getAll);
 
 // Ambil detail post by slug (misal: /post/slug-berita)
+router.get('/posts/category/:slug', postController.getPostsByCategory)
 router.get('/slug/:slug', postController.getBySlug);
 router.get('/category/:slug', postController.getBySlug);
 router.get('/post/:slug/:slug', postController.getBySlug);

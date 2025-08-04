@@ -20,6 +20,16 @@ exports.register = async (req, res) => {
       password: hashedPassword
     });
 
+     // Tambahkan wallet default setelah customer berhasil dibuat
+    await Wallet.create({
+    customer_id: newUser.id,
+    username: newUser.username,
+    wallet_type: 'saldo',
+    balance: 0,
+    createdon: new Date(),
+    updatedon: new Date()
+  });
+
     res.json({ success: true, message: 'Registrasi berhasil', data: newUser });
   } catch (err) {
     console.error(err);

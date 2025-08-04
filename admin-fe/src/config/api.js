@@ -102,10 +102,8 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
   adjust: {
       create: `${API_URL}/api/transaksi/adjust`,
       list: `${API_URL}/api/transaksi/adjust`,
-
-
-    walletMe: `${API_URL}/api/transaksi/me`, 
   },
+    walletMe: `${API_URL}/api/transaksi/me`, 
 
 
       // topup: `${API_URL}/api/transaksi/topup`,

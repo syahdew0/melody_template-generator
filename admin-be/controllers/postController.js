@@ -373,3 +373,26 @@ exports.updateBySlug = async (req, res) => {
     res.status(500).json({ message: 'Error updating post', error: err.message });
   }
 };
+
+exports.getPostsByCategory = async (req, res) => {
+  try {
+    const { slug } = req.params
+
+    // Cari kategori berdasarkan slug
+    const category = await Category.findOne({ where: { slug } })
+    if (!category) {
+      return res.status(404).json({ message: 'Kategori tidak ditemukan' })
+    }
+
+    // Ambil semua postingan berdasarkan category_id
+    const posts = await Post.findAll({
+      where: { category_id: category.id },
+      order: [['created_at', 'DESC']],
+    })
+
+    return res.json({ category, posts })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Gagal mengambil postingan' })
+  }
+}

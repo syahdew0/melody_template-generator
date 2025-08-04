@@ -11,12 +11,7 @@ module.exports = {
       walletId: {
         type: Sequelize.BIGINT.UNSIGNED,
         allowNull: false,
-        references: {
-          model: 'wallets',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        // Tidak pakai FK agar tidak error
       },
       username: {
         type: Sequelize.STRING(50),

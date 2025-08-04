@@ -5,7 +5,7 @@ module.exports = {
     await queryInterface.bulkInsert('topups', [
       {
         walletid: 1,
-        username: 'anis',
+        username: 'test123',
         amount: 100000,
         status: 'success',
         remarks: 'Topup awal',
@@ -16,13 +16,13 @@ module.exports = {
       },
       {
         walletid: 1,
-        username: 'anis',
+        username: 'test123',
         amount: 250000,
         status: 'pending',
         remarks: 'Topup kedua',
         createdon: new Date(),
         updatedon: new Date(),
-        createdby: 'admin',
+        createdby: 'customer',
         updatedby: 'admin',
       },
     ], {});

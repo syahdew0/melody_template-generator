@@ -1,9 +1,10 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Topup = sequelize.define('Topup', {
-    date: {
+   date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
     },
     status: {
       type: DataTypes.ENUM('pending', 'success', 'failed'),

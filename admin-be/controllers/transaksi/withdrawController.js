@@ -71,11 +71,11 @@ module.exports = {
             as: 'customer',
             attributes: ['id', 'username', 'email']
           },
-          {
-            model: Wallet,
-            as: 'wallet',
-            attributes: ['id', 'balance']
-          }
+         {
+          model: WalletHistory,
+          as: 'wallethistory',
+          attributes: ['balance_before', 'balance_after', 'amount']
+        }
         ],
         order: [['createdon', 'DESC']]
       });

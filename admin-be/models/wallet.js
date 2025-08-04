@@ -27,10 +27,18 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
+  // Wallet.associate = function(models) {
+  //   Wallet.belongsTo(models.Customer, { foreignKey: 'customer_id' });
+  //   Wallet.hasMany(models.WalletHistory, { foreignKey: 'walletId' });
+  // };
   Wallet.associate = function(models) {
-    Wallet.belongsTo(models.Customer, { foreignKey: 'customer_id' });
-    Wallet.hasMany(models.WalletHistory, { foreignKey: 'walletId' });
-  };
+  Wallet.hasMany(models.WalletHistory, {
+    foreignKey: 'walletId',
+    sourceKey: 'id',
+    constraints: false // Hindari FK constraint
+  });
+};
+
 
   return Wallet;
 };

@@ -6,7 +6,7 @@ module.exports = {
       const { username, amount, type, remarks } = req.body;
       const adminUsername = req.user?.username || 'system';
 
-      // Validasi input
+      // Validasi
       if (!username || !amount || !type) {
         return res.status(400).json({ message: 'Data tidak lengkap' });
       }
@@ -19,7 +19,7 @@ module.exports = {
         return res.status(400).json({ message: 'Tipe hanya boleh "in" atau "out"' });
       }
 
-      // Cari customer dan wallet
+      // Ambil customer & wallet
       const customer = await Customer.findOne({ where: { username } });
       if (!customer) {
         return res.status(404).json({ message: 'Customer tidak ditemukan' });
@@ -31,23 +31,25 @@ module.exports = {
       }
 
       // Hitung saldo terakhir dari wallet history
-      const lastBalance = await WalletHistory.sum('amount', {
-        where: { wallet_id: wallet.id },
-      }) || 0;
+      const lastHistory = await WalletHistory.findOne({
+        where: { walletId: wallet.id },
+        order: [['created_at', 'DESC']],
+      });
 
+      const balanceBefore = lastHistory?.balance_after || 0;
       const adjAmount = parseFloat(amount);
-      let finalBalance = lastBalance;
 
+      let finalBalance = balanceBefore;
       if (type === 'in') {
         finalBalance += adjAmount;
-      } else if (type === 'out') {
+      } else {
         if (finalBalance < adjAmount) {
           return res.status(400).json({ message: 'Saldo tidak mencukupi' });
         }
         finalBalance -= adjAmount;
       }
 
-      // Simpan ke tabel Adjust
+      // Simpan ke Adjust
       const adjust = await Adjust.create({
         username,
         amount: adjAmount,
@@ -55,20 +57,33 @@ module.exports = {
         walletid: wallet.id,
         remarks,
         createdby: adminUsername,
+        createdon: new Date(),
       });
 
       // Simpan ke WalletHistory
       await WalletHistory.create({
-        wallet_id: wallet.id,
+        walletId: wallet.id,
+        username,
+        transaction_type: type === 'in' ? 'adjust_plus' : 'adjust_minus',
         source_type: 'adjust',
         source_id: adjust.id,
         amount: type === 'in' ? adjAmount : -adjAmount,
+        balance_before: balanceBefore,
+        balance_after: finalBalance,
         balance: finalBalance,
         remarks,
         createdby: adminUsername,
+        created_at: new Date(),
       });
 
+      // Update saldo terakhir wallet
+      // await Wallet.update(
+      //   { balance: finalBalance },
+      //   { where: { id: wallet.id } }
+      // );
+
       return res.json({ message: 'Penyesuaian berhasil', data: adjust });
+
     } catch (error) {
       console.error('Gagal membuat adjust:', error);
       return res.status(500).json({ message: 'Gagal membuat adjust', error });
@@ -84,11 +99,11 @@ module.exports = {
             as: 'customer',
             attributes: ['id', 'username', 'email'],
           },
-          {
-            model: Wallet,
-            as: 'wallet',
-            attributes: ['id'],
-          },
+          // {
+          //   model: WalletHistory,
+          //   as: 'walletHistory',
+          //   attributes: ['id'],
+          // },
         ],
         order: [['createdon', 'DESC']],
       });

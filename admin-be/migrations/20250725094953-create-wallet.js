@@ -27,6 +27,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 'saldo',
       },
+      balance: {
+        type: Sequelize.DECIMAL(15, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
       createdon: {
         type: Sequelize.DATE,
         allowNull: false,

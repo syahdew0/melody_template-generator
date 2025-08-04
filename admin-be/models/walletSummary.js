@@ -15,10 +15,10 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
-   WalletSummary.associate = (models) => {
-    WalletSummary.belongsTo(models.Wallet, { foreignKey: 'wallet_id', as: 'wallet' });
-    WalletSummary.belongsTo(models.TransactionType, { foreignKey: 'TransactionTypeID', as: 'transaction_type' });
-  };
+  //  WalletSummary.associate = (models) => {
+  //   WalletSummary.belongsTo(models.Wallet, { foreignKey: 'wallet_id', as: 'wallet' });
+  //   WalletSummary.belongsTo(models.TransactionType, { foreignKey: 'TransactionTypeID', as: 'transaction_type' });
+  // };
   
   return WalletSummary;
 };
