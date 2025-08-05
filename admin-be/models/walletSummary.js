@@ -1,24 +1,39 @@
+'use strict';
 module.exports = (sequelize, DataTypes) => {
   const WalletSummary = sequelize.define('WalletSummary', {
-    WalletSummaryID: {
-      type: DataTypes.BIGINT,
-      primaryKey: true,
-      autoIncrement: true
+    summary_date: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
-    SummaryDate: DataTypes.DATE,
-    WalletID: DataTypes.INTEGER,
-    UserName: DataTypes.STRING,
-    TransactionTypeID: DataTypes.INTEGER,
-    Amount: DataTypes.DOUBLE
+    wallet_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+    },
+    username: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    transaction_type_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    amount: {
+      type: DataTypes.DOUBLE,
+      allowNull: false,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    }
   }, {
-    tableName: 'walletsummary',
-    timestamps: false
+    tableName: 'wallet_summaries',
+    timestamps: false,
   });
 
-  //  WalletSummary.associate = (models) => {
-  //   WalletSummary.belongsTo(models.Wallet, { foreignKey: 'wallet_id', as: 'wallet' });
-  //   WalletSummary.belongsTo(models.TransactionType, { foreignKey: 'TransactionTypeID', as: 'transaction_type' });
-  // };
-  
   return WalletSummary;
 };

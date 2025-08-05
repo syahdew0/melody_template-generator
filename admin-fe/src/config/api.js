@@ -92,6 +92,7 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     // Transaksi
     topup: `${API_URL}/api/transaksi/topup`,
    topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
+   summaryTopup: `${API_URL}/api/transaksi/topup-summary`,
 
     // withdraws: `${API_URL}/apis/withdraws`,
     // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,

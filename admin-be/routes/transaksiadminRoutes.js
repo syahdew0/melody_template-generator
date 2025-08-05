@@ -4,33 +4,20 @@ const router = express.Router();
 const topupController = require('../controllers/transaksi/topupController');
 const adjustController = require('../controllers/transaksi/adjustController');
 const withdrawController = require('../controllers/transaksi/withdrawController');
-const walletController = require('../controllers/transaksi/walletController');
 
-const authenticateCustomer = require('../middlewares/authCustomer'); // untuk customer
-const { requireAuth } = require('../middlewares/authMiddleware');   // untuk admin
+const { requireAuth } = require('../middlewares/authMiddleware'); // middleware admin
 
-// Customer
-
-// Ambil saldo wallet customer yang sedang login
-router.get('/me', authenticateCustomer, walletController.getMyWallet);
-
-// Customer membuat request topup
-router.post('/topup', authenticateCustomer, topupController.create);
-
-// Customer mengajukan withdraw
-router.post('/withdraw', authenticateCustomer, withdrawController.create);
-
-
-// admin
-// Admin melihat dan update topup
+// Admin - Topup
 router.get('/topup', requireAuth, topupController.list);
 router.put('/topup/:id/status', requireAuth, topupController.updateStatus);
+router.get('/topup', requireAuth, topupController.getTopupList);
+router.get('/topup-summary', requireAuth, topupController.getTopupSummary);
 
-// Adjust Routes (admin only)
+// Admin - Adjust
 router.post('/adjust', requireAuth, adjustController.create);
 router.get('/adjust', requireAuth, adjustController.list);
 
-// Admin melihat & memproses withdraw
+// Admin - Withdraw
 router.get('/withdraw', requireAuth, withdrawController.list);
 router.put('/withdraw/:id/status', requireAuth, withdrawController.updateStatus);
 

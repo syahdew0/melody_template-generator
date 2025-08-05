@@ -55,6 +55,30 @@
         </tr>
       </tbody>
     </table>
+
+    <div v-if="summary.length" class="mt-6">
+  <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
+  <table class="w-full table-auto border border-gray-300 text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="border px-3 py-2">Status</th>
+        <th class="border px-3 py-2">Total Nominal</th>
+        <th class="border px-3 py-2">Jumlah Transaksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="item in summary" :key="item.status">
+        <td class="border px-3 py-2 capitalize">{{ item.status }}</td>
+        <td class="border px-3 py-2">
+          Rp{{ Number(item.total_amount).toLocaleString('id-ID') }}
+        </td>
+        <td class="border px-3 py-2">{{ item.count }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
   </div>
 </template>
 
@@ -66,6 +90,8 @@ import { API_ENDPOINTS } from '@/config/api.js'
 const topups = ref([])
 const loading = ref(false)
 const statusFilter = ref('')
+const summary = ref([])
+
 
 const fetchTopups = async () => {
   loading.value = true
@@ -79,6 +105,11 @@ const fetchTopups = async () => {
     // BE kamu jelas mengembalikan array langsung, bukan { data: [...] }
     const payload = Array.isArray(res.data) ? res.data : res.data.data
     topups.value = payload ?? []
+
+     // Ambil summary topup
+    const summaryRes = await axios.get(API_ENDPOINTS.summaryTopup)
+    summary.value = Array.isArray(summaryRes.data) ? summaryRes.data : []
+    
     // console.log('payload topups', topups.value)
   } catch (err) {
     console.error('Gagal mengambil data topup:', err)
@@ -104,5 +135,6 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('id-ID')
 }
 
-onMounted(fetchTopups)
+onMounted(
+  fetchTopups)
 </script>

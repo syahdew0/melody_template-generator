@@ -52,5 +52,16 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
+  Topup.associate = function (models) {
+  Topup.belongsTo(models.Customer, {
+    foreignKey: 'username', 
+    targetKey: 'username',  
+    as: 'Customer',
+    constraints: false      
+  });
+
+
+};
+
   return Topup;
 };

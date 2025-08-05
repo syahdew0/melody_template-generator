@@ -10,9 +10,9 @@ exports.getMyWallet = async (req, res) => {
       raw: true,
     });
 
-    if (!wallets || wallets.length === 0) {
-      return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-    }
+    // if (!wallets || wallets.length === 0) {
+    //   return res.status(404).json({ message: 'Wallet tidak ditemukan' });
+    // }
 
     const walletIds = wallets.map((w) => w.id);
 
@@ -51,6 +51,47 @@ exports.getMyWallet = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data wallet' });
   }
 };
+
+exports.getMyTotalBalance = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+
+    const wallets = await Wallet.findAll({
+      where: { customer_id: customerId },
+      attributes: ['id'],
+      raw: true,
+    });
+
+    const walletIds = wallets.map(w => w.id);
+
+    if (walletIds.length === 0) {
+      return res.json({ total_balance: 0 });
+    }
+
+    // Ambil history terakhir per wallet
+    const latestHistories = await Promise.all(
+      walletIds.map(async (walletId) => {
+        return await WalletHistory.findOne({
+          where: {
+            walletId,
+            status: 'success',
+          },
+          order: [['created_at', 'DESC']],
+          attributes: ['balance_after'],
+          raw: true,
+        });
+      })
+    );
+
+    const totalBalance = latestHistories.reduce((acc, h) => acc + (h?.balance_after || 0), 0);
+
+    return res.json({ total_balance: totalBalance });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Gagal mengambil total balance' });
+  }
+};
+
 
 exports.getWalletDetailsByType = async (req, res) => {
   try {

@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
   WalletHistory.belongsTo(models.Wallet, {
     foreignKey: 'walletId',
     targetKey: 'id',
-    constraints: false // Hindari FK constraint saat associate
+    constraints: false 
   });
 };
 

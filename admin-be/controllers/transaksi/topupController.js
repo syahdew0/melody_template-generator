@@ -37,7 +37,8 @@ async create(req, res) {
       walletid: wallet.id,
       createdby: userId,
       createdon: new Date(),
-      date: new Date()
+      date: new Date(),
+      customer_id: customer.id,
     });
 
     res.json({ message: 'Topup diajukan', data });
@@ -60,12 +61,14 @@ async create(req, res) {
         whereClause.status = status;
       }
 
-      const data = await Topup.findAll({
-        where: whereClause,
-        order: [['createdon', 'DESC']]
-        // order: [['created_at', 'DESC']]
-
-      });
+     const data = await Topup.findAll({
+      include: [{
+        model: Customer,
+        as: 'Customer',
+        attributes: ['id', 'username', 'nama_rekening']
+      }],
+      order: [['createdon', 'DESC']]
+    });
 
       res.json(data);
     } catch (error) {
@@ -113,10 +116,10 @@ async create(req, res) {
       await WalletHistory.create({
         walletId: wallet.id,
         username: data.username,
-        // type: 'in',
+        type: 'in',
         transaction_type: 'topup',
         amount: data.amount,
-        // referenceid: `topup-${data.id}`,
+        // referenceid: topup-${data.id},
         source_type: 'topup',
         source_id: data.id,
         balance_before: previousBalance,
@@ -134,6 +137,15 @@ async create(req, res) {
         { where: { id: wallet.id }, transaction: t }
       );
 
+       // Insert ke WalletSummary
+      await WalletSummary.create({
+      summary_date: new Date(),
+      wallet_id: data.walletid,
+      username: data.username,
+      transaction_type_id: 1, 
+      amount: data.amount
+    }, { transaction: t });
+
     }
 
     data.status = status;
@@ -148,5 +160,41 @@ async create(req, res) {
     console.error('Topup update error:', error);
     res.status(500).json({ message: 'Gagal update status topup', error });
   }
+},
+async getTopupList(req, res) {
+  const customerId = req.customer.id;
+  const topups = await Topup.findAll({
+    where: { username: req.customer.username },
+    order: [['date', 'DESC']],
+    // include: [
+    // {
+    //   model: CompanyBank,
+    //   as: 'company_bank' 
+    // }
+  // ]
+  });
+  // res.json(topups);
+   res.json({ data: topups });
+},
+
+
+async getTopupSummary(req, res) {
+  try {
+    const summary = await Topup.findAll({
+      attributes: [
+        'status',
+        [sequelize.fn('SUM', sequelize.col('amount')), 'total_amount'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      group: ['status'],
+      raw: true
+    });
+
+    res.json(summary);
+  } catch (error) {
+    console.error('Gagal ambil summary topup:', error);
+    res.status(500).json({ message: 'Gagal ambil summary topup' });
+  }
 }
+
 };
