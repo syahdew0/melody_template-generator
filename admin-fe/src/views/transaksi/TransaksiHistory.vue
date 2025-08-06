@@ -1,37 +1,75 @@
 <template>
-  <div class="p-6 max-w-3xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Wallet Saya</h1>
+  <div class="p-6 space-y-6">
+    <h1 class="text-2xl font-bold mb-4">Data History Wallet</h1>
 
-    <div class="mb-6">
-      <h2 class="text-xl font-semibold">Saldo: Rp{{ formatRupiah(wallet.balance) }}</h2>
+    <!-- Filter Form -->
+    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-medium">From Date</label>
+        <input type="date" v-model="filters.fromDate" class="border px-2 py-1 rounded w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">To Date</label>
+        <input type="date" v-model="filters.toDate" class="border px-2 py-1 rounded w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Username</label>
+        <input type="text" v-model="filters.username" class="border px-2 py-1 rounded w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Transaction Type</label>
+        <select v-model="filters.transaction_type" class="border px-2 py-1 rounded w-full">
+          <option value="">Semua</option>
+          <option value="topup">Topup</option>
+          <option value="withdraw">Withdraw</option>
+          <option value="adjust_plus">Adjust Masuk</option>
+          <option value="adjust_minus">Adjust Keluar</option>
+        </select>
+      </div>
     </div>
 
-    <section class="mb-8">
-      <h3 class="font-semibold mb-2">Riwayat Topup</h3>
-      <ul>
-        <li v-for="t in topups" :key="t.id" class="border-b py-1">
-          Rp{{ formatRupiah(t.amount) }} - {{ t.status }} - {{ formatDate(t.createdon) }}
-        </li>
-      </ul>
-    </section>
+    <button
+      @click="fetchHistories"
+      class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
+    >
+      Cari
+    </button>
 
-    <section class="mb-8">
-      <h3 class="font-semibold mb-2">Riwayat Withdraw</h3>
-      <ul>
-        <li v-for="w in withdraws" :key="w.id" class="border-b py-1">
-          Rp{{ formatRupiah(w.amount) }} - {{ w.status }} - {{ formatDate(w.createdon) }}
-        </li>
-      </ul>
-    </section>
-
-    <section>
-      <h3 class="font-semibold mb-2">Riwayat Adjust</h3>
-      <ul>
-        <li v-for="a in adjusts" :key="a.id" class="border-b py-1">
-          {{ a.type === 'in' ? '+' : '-' }} Rp{{ formatRupiah(a.amount) }} - {{ formatDate(a.createdon) }} - {{ a.remarks || '-' }}
-        </li>
-      </ul>
-    </section>
+    <!-- Data Table -->
+    <table class="w-full mt-6 text-sm border">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border px-2 py-1">Tanggal</th>
+          <th class="border px-2 py-1">Username</th>
+          <th class="border px-2 py-1">Wallet ID</th>
+          <th class="border px-2 py-1">Tipe</th>
+          <th class="border px-2 py-1">Jumlah</th>
+          <th class="border px-2 py-1">Deskripsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="h in histories" :key="h.id">
+          <td class="border px-2 py-1">{{ formatDate(h.created_at) }}</td>
+          <td class="border px-2 py-1">{{ h.username }}</td>
+          <td class="border px-2 py-1">{{ h.walletId }}</td>
+          <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td>
+          <td
+            class="border px-2 py-1"
+            :class="{
+              'text-green-600': h.transaction_type.includes('topup') || h.transaction_type.includes('adjust_plus'),
+              'text-red-600': h.transaction_type.includes('withdraw') || h.transaction_type.includes('adjust_minus')
+            }"
+          >
+            {{ h.transaction_type === 'withdraw' || h.transaction_type === 'adjust_minus' ? '-' : '+' }}
+            Rp{{ formatRupiah(h.amount) }}
+          </td>
+          <td class="border px-2 py-1">{{ h.description || '-' }}</td>
+        </tr>
+        <tr v-if="histories.length === 0">
+          <td colspan="6" class="text-center py-4">Tidak ada data</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -40,54 +78,49 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 
-const wallet = ref({ balance: 0 })
-const topups = ref([])
-const withdraws = ref([])
-const adjusts = ref([])
+const histories = ref([])
 
-const fetchWallet = async () => {
-  try {
-    const res = await axios.get(API_ENDPOINTS.adjust.walletMe)
-    wallet.value = res.data.wallet || { balance: 0 }
-  } catch (error) {
-    console.error('Gagal ambil wallet:', error)
-  }
-}
-
-const fetchTopups = async () => {
-  try {
-    const res = await axios.get(`${API_ENDPOINTS.topup}?status=success`) 
-    topups.value = res.data || []
-  } catch (error) {
-    console.error('Gagal ambil topup:', error)
-  }
-}
-
-const fetchWithdraws = async () => {
-  try {
-    const res = await axios.get(API_ENDPOINTS.withdraw.list('success'))
-    withdraws.value = res.data || []
-  } catch (error) {
-    console.error('Gagal ambil withdraw:', error)
-  }
-}
-
-const fetchAdjusts = async () => {
-  try {
-    const res = await axios.get(API_ENDPOINTS.adjust.list)
-    adjusts.value = res.data || []
-  } catch (error) {
-    console.error('Gagal ambil adjust:', error)
-  }
-}
-
-const formatRupiah = (val) => Number(val).toLocaleString('id-ID')
-const formatDate = (val) => new Date(val).toLocaleString('id-ID')
-
-onMounted(() => {
-  fetchWallet()
-  fetchTopups()
-  fetchWithdraws()
-  fetchAdjusts()
+const filters = ref({
+  fromDate: '',
+  toDate: '',
+  username: '',
+  wallet_id: '',
+  transaction_type: '',
 })
+
+const fetchHistories = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.get(API_ENDPOINTS.adminWalletHistory, {
+      params: filters.value,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    histories.value = res.data.histories || []
+  } catch (error) {
+    console.error('Gagal mengambil data:', error)
+  }
+}
+
+onMounted(fetchHistories)
+
+const formatDate = (val) => {
+  if (!val) return '-'
+  return new Date(val).toLocaleString('id-ID')
+}
+
+const formatRupiah = (val) => {
+  return Number(val || 0).toLocaleString('id-ID')
+}
+
+const formatType = (val) => {
+  switch (val) {
+    case 'topup': return 'Topup'
+    case 'withdraw': return 'Withdraw'
+    case 'adjust_plus': return 'Adjust Masuk'
+    case 'adjust_minus': return 'Adjust Keluar'
+    default: return val
+  }
+}
 </script>

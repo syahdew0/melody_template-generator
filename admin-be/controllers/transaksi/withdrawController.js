@@ -6,7 +6,7 @@ module.exports = {
   async create(req, res) {
   const t = await sequelize.transaction();
   try {
-    const { amount } = req.body;
+    const { amount, remarks } = req.body;
     const customer = req.customer;
 
     if (!customer || !customer.username) {
@@ -64,6 +64,7 @@ module.exports = {
       date: new Date(),
       createdon: new Date(),
       createdby: customer.username,
+     remarks: remarks || '',
     }, { transaction: t });
 
     // Catat history
@@ -93,44 +94,55 @@ module.exports = {
 },
 
   // Admin melihat semua withdraw
-async list(req, res) {
-  try {
-    const { status } = req.query;
-    const where = {};
-    if (status) where.status = status;
+  async list(req, res) {
+    try {
+      const { status, username } = req.query;
+      const where = {};
 
-    const data = await Withdraw.findAll({
-      where,
-      include: [
-        {
-          model: Customer,
-          as: 'customer',
-          attributes: ['id', 'username', 'email', 'nama_rekening', 'no_rekening', 'bank']
-        },
-        {
-          model: WalletHistory,
-          as: 'wallethistory',
-          attributes: ['balance_before', 'balance_after', 'amount']
-        }
-      ],
-      order: [['createdon', 'DESC']]
-    });
+      if (status && ['pending', 'success', 'failed'].includes(status)) {
+        where.status = status;
+      }
 
-    const summary = await Withdraw.findAll({
-      attributes: [
-        'status',
-        [sequelize.fn('SUM', sequelize.col('amount')), 'total_amount']
-      ],
-      group: ['status'],
-      where
-    });
+      if (username) {
+        where.username = username; 
+      }
 
-    res.json({ data, summary });
-  } catch (error) {
-    console.error('Withdraw list error:', error);
-    res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
+      const data = await Withdraw.findAll({
+        where,
+        include: [
+          {
+            model: Customer,
+            as: 'customer',
+            attributes: ['id', 'username', 'email', 'nama_rekening', 'no_rekening', 'bank']
+          },
+          {
+            model: WalletHistory,
+            as: 'wallethistory',
+            attributes: ['balance_before', 'balance_after', 'amount']
+          }
+        ],
+        order: [['createdon', 'DESC']]
+      });
+
+      // Summary kalkulasi
+      const summary = data.reduce((acc, wd) => {
+        const status = wd.status;
+        if (!acc[status]) acc[status] = 0;
+        acc[status] += parseFloat(wd.amount || 0);
+        return acc;
+      }, {});
+      const summaryArray = Object.entries(summary).map(([status, total_amount]) => ({
+        status,
+        total_amount
+      }));
+
+      res.json({ data, summary: summaryArray });
+    } catch (error) {
+      console.error('Withdraw list error:', error);
+      res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
+    }
   }
-},
+  ,
   // Admin update status withdraw
     async updateStatus(req, res) {
     const t = await sequelize.transaction();
@@ -188,45 +200,6 @@ async list(req, res) {
           remarks: 'Withdraw berhasil',
           created_at: new Date()
         }, { transaction: t });
-
-        // Tambahkan ke Adjust jika belum ada
-        const alreadyAdjusted = await Adjust.findOne({
-          where: { referenceid },
-          transaction: t
-        });
-
-        if (!alreadyAdjusted) {
-          await Adjust.create({
-            username: data.username,
-            amount: data.amount,
-            type: 'out',
-            walletid: wallet.id,
-            remarks: 'Withdraw success',
-            referenceid,
-            createdby: req.user?.username || 'admin',
-            createdon: new Date()
-          }, { transaction: t });
-        }
-
-        // Tambahkan ke WalletSummary
-        // const today = new Date().toISOString().split('T')[0];
-        // const [summary, created] = await WalletSummary.findOrCreate({
-        //   where: {
-        //     walletid: wallet.id,
-        //     username: data.username,
-        //     transaction_type_id: 2, // 2 = Withdraw
-        //     summarydate: today
-        //   },
-        //   defaults: {
-        //     amount: data.amount
-        //   },
-        //   transaction: t
-        // });
-
-        // if (!created) {
-        //   summary.amount += parseFloat(data.amount);
-        //   await summary.save({ transaction: t });
-        // }
       }
 
       // Update status withdraw
@@ -245,26 +218,27 @@ async list(req, res) {
     }
   },
   // Di withdrawController.js
-async listCustomer(req, res) {
-  try {
-    const username = req.customer.username;
-    const data = await Withdraw.findAll({
-      where: { username },
-      include: [
-        {
-          model: Customer,
-          as: 'customer',
-          attributes: ['nama_rekening', 'no_rekening', 'bank']
-        }
-      ],
-      order: [['createdon', 'DESC']],
-    });
-    res.json(data);
-  } catch (error) {
-    console.error('Withdraw customer list error:', error);
-    res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
-  }
-}
-};
+    async listCustomer(req, res) {
+      try {
+        const username = req.customer.username;
+       const data = await Withdraw.findAll({
+          where: { username },
+          attributes: ['id', 'amount', 'status', 'createdon', 'remarks', 'date'],
+          include: [
+            {
+              model: Customer,
+              as: 'customer',
+              attributes: ['nama_rekening', 'no_rekening', 'bank']
+            }
+          ],
+          order: [['createdon', 'DESC']],
+        });
+                res.json(data);
+      } catch (error) {
+        console.error('Withdraw customer list error:', error);
+        res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
+      }
+    }
+    };
 
 // module.exports = withdrawController;

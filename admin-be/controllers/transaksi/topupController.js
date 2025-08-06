@@ -1,9 +1,10 @@
 const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory, sequelize } = require('../../models');
+// const { Op } = require('sequelize');
 
 module.exports = {
 async create(req, res) {
   try {
-    const { nominal } = req.body;
+    const { nominal, remarks } = req.body;
     const customer = req.customer;
     const userId = customer.username;
 
@@ -11,6 +12,9 @@ async create(req, res) {
       return res.status(400).json({ message: 'Nominal harus lebih dari 0' });
     }
 
+      if (remarks && remarks.length > 255) {
+      return res.status(400).json({ message: 'Keterangan terlalu panjang (maks 255 karakter)' });
+    }
     const pending = await Topup.findOne({
       where: { username: userId, status: 'pending' }
     });
@@ -39,6 +43,10 @@ async create(req, res) {
       createdon: new Date(),
       date: new Date(),
       customer_id: customer.id,
+      remarks: remarks || '',
+      // bank_name: bank.bank_name, 
+      // account_number: bank.account_number,
+      // account_name: bank.account_name 
     });
 
     res.json({ message: 'Topup diajukan', data });
@@ -47,21 +55,26 @@ async create(req, res) {
     if (error.name === 'SequelizeValidationError') {
       console.error('Validation Errors:', error.errors);
     }
+
     res.status(500).json({ message: 'Gagal membuat topup', error });
   }
-}
-,
+},
 
   async list(req, res) {
-    try {
-      const { status } = req.query;
-      const whereClause = {};
+  try {
+    const { status, username } = req.query;
+    const whereClause = {};
 
-      if (status && ['pending', 'success', 'failed'].includes(status)) {
-        whereClause.status = status;
-      }
+    if (status && ['pending', 'success', 'failed'].includes(status)) {
+      whereClause.status = status;
+    }
 
-     const data = await Topup.findAll({
+    if (username) {
+      whereClause.username = username;
+    }
+
+    const data = await Topup.findAll({
+      where: whereClause, 
       include: [{
         model: Customer,
         as: 'Customer',
@@ -70,12 +83,12 @@ async create(req, res) {
       order: [['createdon', 'DESC']]
     });
 
-      res.json(data);
-    } catch (error) {
-      console.error('Topup list error:', error);
-      res.status(500).json({ message: 'Gagal mengambil data topup', error });
-    }
-  },
+    res.json(data);
+  } catch (error) {
+    console.error('Topup list error:', error);
+    res.status(500).json({ message: 'Gagal mengambil data topup', error });
+  }
+},
 
   async updateStatus(req, res) {
   const t = await sequelize.transaction();
@@ -119,7 +132,7 @@ async create(req, res) {
         type: 'in',
         transaction_type: 'topup',
         amount: data.amount,
-        // referenceid: topup-${data.id},
+       reference_id: data.id,
         source_type: 'topup',
         source_id: data.id,
         balance_before: previousBalance,
@@ -177,15 +190,22 @@ async getTopupList(req, res) {
    res.json({ data: topups });
 },
 
-
 async getTopupSummary(req, res) {
   try {
+    const { username } = req.query;
+
+    const where = {};
+    if (username) {
+      where.username = username;
+    }
+
     const summary = await Topup.findAll({
       attributes: [
         'status',
         [sequelize.fn('SUM', sequelize.col('amount')), 'total_amount'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
+      where,
       group: ['status'],
       raw: true
     });
@@ -196,5 +216,6 @@ async getTopupSummary(req, res) {
     res.status(500).json({ message: 'Gagal ambil summary topup' });
   }
 }
+
 
 };

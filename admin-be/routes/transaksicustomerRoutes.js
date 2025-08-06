@@ -22,4 +22,8 @@ router.get('/topups', authenticateCustomer, topupController.getTopupList);
 router.post('/withdraw', authenticateCustomer, withdrawController.create);
 router.get('/withdraw', authenticateCustomer, withdrawController.listCustomer);
 
+// transaction history
+router.get('/wallet-histories', authenticateCustomer, walletController.getMyWalletHistory)
+
+
 module.exports = router;

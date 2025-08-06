@@ -2,13 +2,30 @@
   <div class="p-6 space-y-6">
     <h1 class="text-2xl font-bold mb-4">Manajemen Topup</h1>
 
-    <div class="flex justify-between items-center mb-4">
+    <!-- <div class="flex justify-between items-center mb-4">
       <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
         <option value="">Semua</option>
         <option value="success">Sukses</option>
         <option value="pending">Pending</option>
         <option value="failed">Ditolak</option>
       </select>
+    </div> -->
+    <!-- Filter Area -->
+    <div class="flex items-center gap-4 mb-4">
+      <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
+        <option value="">Semua</option>
+        <option value="success">Sukses</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Ditolak</option>
+      </select>
+
+      <input
+        v-model="usernameFilter"
+        @input="fetchTopups"
+        type="text"
+        placeholder="Filter Username"
+        class="border px-4 py-2 rounded"
+      />
     </div>
 
     <div v-if="loading">Memuat data...</div>
@@ -22,6 +39,7 @@
           <th class="border px-3 py-2">Nominal</th>
           <th class="border px-3 py-2">Status</th>
           <th class="border px-3 py-2">Aksi</th>
+          <th class="border px-3 py-2">Keterangan</th>
         </tr>
       </thead>
       <tbody>
@@ -49,12 +67,31 @@
               Tolak
             </button>
           </td>
+          <td class="border px-3 py-2 italic text-gray-700">{{ topup.remarks || '-' }}</td>
         </tr>
         <tr v-if="!loading && topups.length === 0">
-          <td colspan="6" class="text-center py-4 text-gray-500">Tidak ada data</td>
+          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada data</td>
         </tr>
       </tbody>
     </table>
+    
+    <!-- Summary -->
+     <!-- <div class="flex items-center gap-4 mb-4"> -->
+      <!-- <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
+        <option value="">Semua</option>
+        <option value="success">Sukses</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Ditolak</option>
+      </select> -->
+
+      <!-- <input
+        v-model="usernameFilter"
+        @input="fetchTopups"
+        type="text"
+        placeholder="Filter Username"
+        class="border px-4 py-2 rounded"
+      />
+    </div> -->
 
     <div v-if="summary.length" class="mt-6">
   <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
@@ -91,6 +128,7 @@ const topups = ref([])
 const loading = ref(false)
 const statusFilter = ref('')
 const summary = ref([])
+const usernameFilter = ref('')
 
 
 const fetchTopups = async () => {
@@ -98,19 +136,20 @@ const fetchTopups = async () => {
   try {
     const res = await axios.get(API_ENDPOINTS.topup, {
       params: {
-        status: statusFilter.value || undefined
+        status: statusFilter.value || undefined,
+        username: usernameFilter.value || undefined
       }
     })
 
-    // BE kamu jelas mengembalikan array langsung, bukan { data: [...] }
     const payload = Array.isArray(res.data) ? res.data : res.data.data
     topups.value = payload ?? []
 
-     // Ambil summary topup
-    const summaryRes = await axios.get(API_ENDPOINTS.summaryTopup)
+    const summaryRes = await axios.get(API_ENDPOINTS.summaryTopup, {
+      params: {
+        username: usernameFilter.value || undefined
+      }
+    })
     summary.value = Array.isArray(summaryRes.data) ? summaryRes.data : []
-    
-    // console.log('payload topups', topups.value)
   } catch (err) {
     console.error('Gagal mengambil data topup:', err)
     topups.value = []

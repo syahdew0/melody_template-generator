@@ -1,4 +1,6 @@
 const { Adjust, Customer, Wallet, WalletHistory } = require('../../models');
+const { Op } = require('sequelize');
+
 
 module.exports = {
   async create(req, res) {
@@ -93,18 +95,18 @@ module.exports = {
   async list(req, res) {
     try {
       const data = await Adjust.findAll({
-        include: [
-          {
-            model: Customer,
-            as: 'customer',
-            attributes: ['id', 'username', 'email'],
-          },
+        // include: [
+        //   {
+        //     model: Customer,
+        //     as: 'customer',
+        //     attributes: ['id', 'username', 'email'],
+        //   },
           // {
           //   model: WalletHistory,
           //   as: 'walletHistory',
           //   attributes: ['id'],
           // },
-        ],
+        // ],
         order: [['createdon', 'DESC']],
       });
       res.json(data);
@@ -112,4 +114,38 @@ module.exports = {
       res.status(500).json({ message: 'Gagal mengambil data adjust', error });
     }
   },
+
+async getAdjustSummary(req, res) {
+  try {
+    const { username, startDate, endDate } = req.query;
+
+    const whereClause = {};
+
+    if (username) {
+      whereClause.username = username;
+    }
+
+    if (startDate && endDate) {
+      whereClause.createdon = {
+        [Op.between]: [new Date(startDate), new Date(endDate)],
+      };
+    }
+
+    const [inResult, outResult] = await Promise.all([
+      Adjust.sum('amount', { where: { ...whereClause, type: 'in' } }),
+      Adjust.sum('amount', { where: { ...whereClause, type: 'out' } }),
+    ]);
+
+    res.json({
+      total: {
+        in: inResult || 0,
+        out: outResult || 0,
+        net: (inResult || 0) - (outResult || 0)
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching adjust summary:', err);
+    res.status(500).json({ message: 'Gagal mengambil data summary adjust.' });
+  }
+}
 };

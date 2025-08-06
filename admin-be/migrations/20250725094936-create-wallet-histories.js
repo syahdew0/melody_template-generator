@@ -37,7 +37,7 @@ module.exports = {
         type: Sequelize.DOUBLE,
         allowNull: false,
       },
-      description: {
+      remarks: {
         type: Sequelize.STRING(255),
         allowNull: true,
       },

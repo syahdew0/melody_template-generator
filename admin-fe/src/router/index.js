@@ -3,30 +3,30 @@ import LoginPage from '@/views/LoginPage.vue'
 import AdminDashboard from '@/components/AdminDashboard.vue'
 import AdminUserManagement from '@/views/AdminUserManagement.vue'
 import ProfileManagement from '@/views/ProfileManagement.vue'
-import PortfolioPage from '@/components/portfolio/PortfolioPage.vue'
-import OurTeam from '@/components/about/OurTeam.vue'
+// import PortfolioPage from '@/components/portfolio/PortfolioPage.vue'
+// import OurTeam from '@/components/about/OurTeam.vue'
 import MenuManager from '@/components/menu/MenuManager.vue'
-import AboutPreview from '@/components/home/AboutPreview.vue'
-import AboutHero from '@/components/about/AboutHero.vue'
-import AdminTestimonials from '@/components/home/AdminTestimonials.vue'
-import WhyChooseUsAdmin from '@/components/home/WhyChooseUsAdmin.vue'
-import AdminCTA from '@/components/AdminCTA.vue'
-import PortfolioPreview from '@/components/home/PortfolioPreview.vue'
-import HeroServices from '@/components/services/HeroServices.vue'
-import ServicesList from '@/components/services/ServicesList.vue'
-import ValueSection from '@/components/about/ValueSection.vue'
-import AdminProcessSection from '@/components/services/AdminProcessSection.vue'
-import AdminHeroHome from '@/components/home/AdminHeroHome.vue'
-import AdminFaq from '@/components/contact/AdminFaq.vue'
-import AdminFormSetting from '@/components/contact/AdminFormSetting.vue'
-import AdminMapsSection from '@/components/contact/AdminMapsSection.vue'
-import AdminContactHero from '@/components/contact/AdminContactHero.vue'
-import AdminNewsletter from '@/components/contact/AdminNewsletter.vue'
-import AdminContactInfo from '@/components/contact/AdminContactInfo.vue'
+// import AboutPreview from '@/components/home/AboutPreview.vue'
+// import AboutHero from '@/components/about/AboutHero.vue'
+// import AdminTestimonials from '@/components/home/AdminTestimonials.vue'
+// import WhyChooseUsAdmin from '@/components/home/WhyChooseUsAdmin.vue'
+// import AdminCTA from '@/components/AdminCTA.vue'
+// import PortfolioPreview from '@/components/home/PortfolioPreview.vue'
+// import HeroServices from '@/components/services/HeroServices.vue'
+// import ServicesList from '@/components/services/ServicesList.vue'
+// import ValueSection from '@/components/about/ValueSection.vue'
+// import AdminProcessSection from '@/components/services/AdminProcessSection.vue'
+// import AdminHeroHome from '@/components/home/AdminHeroHome.vue'
+// import AdminFaq from '@/components/contact/AdminFaq.vue'
+// import AdminFormSetting from '@/components/contact/AdminFormSetting.vue'
+// import AdminMapsSection from '@/components/contact/AdminMapsSection.vue'
+// import AdminContactHero from '@/components/contact/AdminContactHero.vue'
+// import AdminNewsletter from '@/components/contact/AdminNewsletter.vue'
+// import AdminContactInfo from '@/components/contact/AdminContactInfo.vue'
 import MediaManager from '@/views/media/MediaManager.vue'
 import MediaList from '@/views/media/MediaList.vue'
 import AdminFooter from '@/components/AdminFooter.vue'
-import VisiMisi from '@/components/about/VisiMisi.vue'
+// import VisiMisi from '@/components/about/VisiMisi.vue'
 import AdminTheme from '@/components/theme/AdminTheme.vue'
 
 // import PostList from '@/views/posts/PostList.vue'
@@ -53,30 +53,30 @@ const routes = [
   { path: '/adminDashboard', name: 'AdminDashboard', component: AdminDashboard, meta: { requiresAuth: true } }, 
   { path: '/admin/userManagement', name: 'AdminUserManagement', component: AdminUserManagement, meta: { requiresAuth: true } },
   { path: '/admin/ProfileManagement', name: 'ProfileManagement', component: ProfileManagement, meta: { requiresAuth: true } },
-  { path: '/admin/portfolio', name: 'PortfolioPage', component: PortfolioPage, meta: { requiresAuth: true } },
-  { path: '/Admin/Adminherohome', name: 'Adminherohome', component: AdminHeroHome,},
-  { path: '/admin/ourteam', name: 'OurTeam', component: OurTeam,},
+  // { path: '/admin/portfolio', name: 'PortfolioPage', component: PortfolioPage, meta: { requiresAuth: true } },
+  // { path: '/Admin/Adminherohome', name: 'Adminherohome', component: AdminHeroHome,},
+  // { path: '/admin/ourteam', name: 'OurTeam', component: OurTeam,},
   { path: '/admin/menus',name: 'MenuManager',component: MenuManager,},
-  { path: '/Admin/aboutpreview', name: 'AboutPreview',component: AboutPreview,},
-  { path: '/admin/abouthero', name: 'AboutHero', component: AboutHero,},
-  { path: '/admin/admintestimonials', name: 'AdminTestimonials',component: AdminTestimonials,},
-  { path: '/admin/whychooseusadmin', name: 'WhyChooseUsAdmin',component: WhyChooseUsAdmin,},
-  { path: '/admin/admincta',name: 'AdminCTA',component: AdminCTA,},
-  { path: '/admin/portfoliopreview', name: 'PortfolioPreview',component: PortfolioPreview,},
-  { path: '/admin/heroservices', name: 'HeroServices', component: HeroServices,},
-  { path: '/admin/serviceslist', name: 'ServicesList', component: ServicesList,},
-  { path: '/admin/valueSection',name: 'ValueSection', component: ValueSection,},
-  { path: '/admin/adminprocesssection', name: 'AdminProcessSection',component: AdminProcessSection, },
-  { path: '/admin/adminfaq', name: 'AdminFaq', component: AdminFaq,},
-  { path: '/admin/AdminFormSetting', name: 'AdminFormSetting', component: AdminFormSetting,},
-  { path: '/admin/adminmapssection', name: 'AdminMapsSection',component: AdminMapsSection,},
-  { path: '/admin/admincontacthero',name: 'AdminContactHero', component: AdminContactHero,},
-  { path: '/admin/adminnewsletter', name: 'AdminNewsletter',component: AdminNewsletter,},
-  { path: '/admin/admincontactinfo', name: 'AdminContactInfo',component: AdminContactInfo,},
+  // { path: '/Admin/aboutpreview', name: 'AboutPreview',component: AboutPreview,},
+  // { path: '/admin/abouthero', name: 'AboutHero', component: AboutHero,},
+  // { path: '/admin/admintestimonials', name: 'AdminTestimonials',component: AdminTestimonials,},
+  // { path: '/admin/whychooseusadmin', name: 'WhyChooseUsAdmin',component: WhyChooseUsAdmin,},
+  // { path: '/admin/admincta',name: 'AdminCTA',component: AdminCTA,},
+  // { path: '/admin/portfoliopreview', name: 'PortfolioPreview',component: PortfolioPreview,},
+  // { path: '/admin/heroservices', name: 'HeroServices', component: HeroServices,},
+  // { path: '/admin/serviceslist', name: 'ServicesList', component: ServicesList,},
+  // { path: '/admin/valueSection',name: 'ValueSection', component: ValueSection,},
+  // { path: '/admin/adminprocesssection', name: 'AdminProcessSection',component: AdminProcessSection, },
+  // { path: '/admin/adminfaq', name: 'AdminFaq', component: AdminFaq,},
+  // { path: '/admin/AdminFormSetting', name: 'AdminFormSetting', component: AdminFormSetting,},
+  // { path: '/admin/adminmapssection', name: 'AdminMapsSection',component: AdminMapsSection,},
+  // { path: '/admin/admincontacthero',name: 'AdminContactHero', component: AdminContactHero,},
+  // { path: '/admin/adminnewsletter', name: 'AdminNewsletter',component: AdminNewsletter,},
+  // { path: '/admin/admincontactinfo', name: 'AdminContactInfo',component: AdminContactInfo,},
   { path: '/mediamanager',name: 'MediaManager',component: MediaManager,},
   { path: '/MediaList',name: 'MediaList',component: MediaList,},
   { path: '/admin/adminfooter',name: 'AdminFooter',component: AdminFooter,},
-  { path: '/admin/visimisi',name: 'VisiMisi',component: VisiMisi,},
+  // { path: '/admin/visimisi',name: 'VisiMisi',component: VisiMisi,},
   { path: '/admintheme',name: 'AdminTheme',component: AdminTheme,},
   { path: '/admin/logomanager',name: 'LogoManager',component: LogoManager,},
   { path: '/admin/faviconmanager',name: 'FaviconManager',component: FaviconManager,},

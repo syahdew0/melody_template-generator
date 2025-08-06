@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DOUBLE,
       allowNull: false
     },
-    description: {
+    remarks: {
       type: DataTypes.STRING(255),
       allowNull: true
     },
@@ -57,6 +57,7 @@ module.exports = (sequelize, DataTypes) => {
     constraints: false 
   });
 };
+
 
   return WalletHistory;
 };

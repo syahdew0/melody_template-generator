@@ -62,27 +62,18 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
 
   testimonials: `${API_URL}/apis/admin/posts?type=testimonial`,
   testimonialDetail: (id) => `${API_URL}/apis/admin/posts/${id}`,
- 
-    // menuGroups: `${API_URL}/api/menu-groups`,
-    // menuItems: `${API_URL}/api/menu-items`,
-    // menuItemsUpdate: id => `${API_URL}/api/menu-items/${id}`,
-    // menuItemsDelete: `${API_URL}/api/menu-items`,
-    // addMenuToGroup: `${API_URL}/api/menu-groups/assign`,
-    // removeMenuFromGroup: `${API_URL}/api/menu-groups/unassign`,
-    // groupedItems: `${API_URL}/api/menu-groups/items`,
-      MENU_GROUPS: `${API_URL}/api/menu-groups`,
-      ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
-      UNASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/unassign`,
-      MENU_GROUP_DETAIL: (id) => `${API_URL}/api/admin/menu-groups/${id}`,
-      MENU_ITEMS: (groupId) => `${API_URL}/api/admin/menu-items?groupId=${groupId}`,
-      CREATE_MENU_ITEM: `${API_URL}/api/admin/menu-items`,
-      UPDATE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
-      DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
-      CREATE_MENU_GROUP: `${API_URL}/api/menu-groups`,
-      UPDATE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
-      DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
 
-      
+  MENU_GROUPS: `${API_URL}/api/menu-groups`,
+  ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
+  UNASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/unassign`,
+  MENU_GROUP_DETAIL: (id) => `${API_URL}/api/admin/menu-groups/${id}`,
+  MENU_ITEMS: (groupId) => `${API_URL}/api/admin/menu-items?groupId=${groupId}`,
+  CREATE_MENU_ITEM: `${API_URL}/api/admin/menu-items`,
+  UPDATE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
+  DELETE_MENU_ITEM: (id) => `${API_URL}/api/admin/menu-items/${id}`,
+  CREATE_MENU_GROUP: `${API_URL}/api/menu-groups`,
+  UPDATE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
+  DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,   
 
     siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
     favicon: `${API_URL}/apis/icons/favicon`,        
@@ -97,14 +88,26 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     // withdraws: `${API_URL}/apis/withdraws`,
     // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,
    withdraw: {
-    list: (status = '') => `${API_URL}/api/transaksi/withdraw${status ? `?status=${status}` : ''}`,
-    updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
-  },
+  list: (status = '', username = '') => {
+    const params = new URLSearchParams()
+    if (status) params.append('status', status)
+    if (username) params.append('username', username)
+    return `${API_URL}/api/transaksi/withdraw?${params.toString()}`},
+  updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
+},
+
   adjust: {
       create: `${API_URL}/api/transaksi/adjust`,
       list: `${API_URL}/api/transaksi/adjust`,
+        // summary: `${API_URL}/api/transaksi/adjust-summary`,
+        summaryAdjust: `${API_URL}/api/transaksi/adjust-summary`,
+
   },
     walletMe: `${API_URL}/api/transaksi/me`, 
+    // walletHistory: `${API_URL}/api/transaksi/wallet-histories`,
+   adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
+    // walletHistory: `${API_URL}/api/admin/transaksi/wallet-history`,
+
 
 
       // topup: `${API_URL}/api/transaksi/topup`,

@@ -2,14 +2,21 @@
   <div class="p-6 space-y-6">
     <h1 class="text-2xl font-bold mb-4">Manajemen Withdraw</h1>
 
-    <div class="flex justify-between items-center mb-4">
-      <select v-model="statusFilter" @change="fetchWithdraws" class="border px-4 py-2 rounded">
-        <option value="">Semua</option>
-        <option value="pending">Pending</option>
-        <option value="success">Disetujui</option>
-        <option value="failed">Ditolak</option>
-      </select>
-    </div>
+    <div class="flex items-center gap-4 mb-4">
+    <select v-model="statusFilter" @change="fetchWithdraws" class="border px-4 py-2 rounded">
+      <option value="">Semua</option>
+      <option value="pending">Pending</option>
+      <option value="success">Disetujui</option>
+      <option value="failed">Ditolak</option>
+    </select>
+
+    <input
+      v-model="usernameFilter"
+      @keyup.enter="fetchWithdraws"
+      placeholder="Filter username"
+      class="border px-4 py-2 rounded"
+    />
+  </div>
 
     <div v-if="loading">Memuat data...</div>
 
@@ -52,6 +59,11 @@
 
       </tbody>
     </table>
+    <div class="mt-6 text-right space-y-1 text-sm">
+    <div v-for="s in summary" :key="s.status">
+      Total {{ s.status }}: <strong>{{ formatRupiah(s.total_amount) }}</strong>
+    </div>
+  </div>
     <!-- <div class="text-right font-semibold mt-4">
   Total Nominal: Rp{{ formatRupiah(totalAmount) }}
 </div> -->
@@ -67,20 +79,22 @@ import { API_ENDPOINTS } from '@/config/api'
 const withdraws = ref([])
 const statusFilter = ref('')
 const loading = ref(false)
-// const summary = ref([])
+const usernameFilter = ref('')
+const summary = ref([])
 
 const fetchWithdraws = async () => {
   loading.value = true;
   try {
-    const response = await axios.get(API_ENDPOINTS.withdraw.list(statusFilter.value));
-    withdraws.value = response.data.data || response.data
-    // summary.value = response.data.summary || []
+    const response = await axios.get(API_ENDPOINTS.withdraw.list(statusFilter.value, usernameFilter.value));
+    withdraws.value = response.data.data || []
+    summary.value = response.data.summary || []
   } catch (error) {
     console.error('Gagal mengambil data withdraw:', error);
   } finally {
     loading.value = false;
   }
-};
+}
+
 
 const updateStatus = async (id, status) => {
   try {

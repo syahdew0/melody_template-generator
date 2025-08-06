@@ -118,9 +118,14 @@ exports.getWalletDetailsByType = async (req, res) => {
 
     // Ambil riwayat transaksi
     const [history, adjusts, topups, withdraws] = await Promise.all([
+      // WalletHistory.findAll({
+      //   where: { walletId: wallet.id },
+      //   order: [['created_at', 'DESC']],
+      // }),
       WalletHistory.findAll({
         where: { walletId: wallet.id },
         order: [['created_at', 'DESC']],
+       attributes: ['id', 'walletId', 'username', 'transaction_type', 'reference_id', 'balance_before', 'amount', 'balance_after', 'remarks', 'status', 'created_at'],
       }),
       Adjust.findAll({
         where: { walletid: wallet.id },
@@ -147,5 +152,88 @@ exports.getWalletDetailsByType = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Gagal mengambil detail wallet' });
+  }
+};
+
+exports.getMyWalletHistory = async (req, res) => {
+  try {
+    const { fromDate, toDate, transactionType } = req.query;
+    const customerId = req.customer.id;
+
+    // Ambil wallet milik customer
+    const wallets = await Wallet.findAll({
+      where: { customer_id: customerId },
+      attributes: ['id'],
+      raw: true,
+    });
+
+    const walletIds = wallets.map(w => w.id);
+    if (walletIds.length === 0) return res.json([]);
+
+    const where = {
+      walletId: { [Op.in]: walletIds },
+    };
+
+    if (fromDate && toDate) {
+      where.created_at = {
+        [Op.between]: [new Date(fromDate), new Date(toDate)],
+      };
+    }
+
+    if (transactionType) {
+      where.transaction_type = transactionType;
+    }
+
+    const histories = await WalletHistory.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+    });
+
+    res.json(histories);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
+  }
+};
+
+
+exports.getAdminWalletHistory = async (req, res) => {
+  try {
+    const { fromDate, toDate, transactionType, username, wallet_id } = req.query;
+
+    const where = {};
+
+    if (wallet_id) {
+      where.walletId = wallet_id;
+    }
+
+    if (username) {
+      where.username = username;
+    }
+
+    if (transactionType) {
+      where.transaction_type = transactionType;
+    }
+
+    if (fromDate && toDate) {
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999); 
+
+      where.created_at = {
+        [Op.between]: [start, end],
+      };
+    }
+
+    const histories = await WalletHistory.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+      raw: true,
+    });
+
+    res.json({ histories });
+  } catch (err) {
+    console.error('Admin Wallet History Error:', err);
+    res.status(500).json({ message: 'Gagal mengambil riwayat wallet (admin)' });
   }
 };
