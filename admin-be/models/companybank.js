@@ -8,5 +8,13 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'company_banks'
   });
 
+ CompanyBank.associate = function (models) {
+  CompanyBank.hasMany(models.Topup, {
+    foreignKey: 'bank_id',
+    as: 'topups',
+    constraints: false
+  });
+};
+
   return CompanyBank;
 };

@@ -94,23 +94,28 @@ module.exports = {
 
   async list(req, res) {
     try {
+      const { username, startDate, endDate } = req.query;
+
+      const whereClause = {};
+
+      if (username) {
+        whereClause.username = username;
+      }
+
+      if (startDate && endDate) {
+        whereClause.createdon = {
+          [Op.between]: [new Date(startDate), new Date(endDate)],
+        };
+      }
+
       const data = await Adjust.findAll({
-        // include: [
-        //   {
-        //     model: Customer,
-        //     as: 'customer',
-        //     attributes: ['id', 'username', 'email'],
-        //   },
-          // {
-          //   model: WalletHistory,
-          //   as: 'walletHistory',
-          //   attributes: ['id'],
-          // },
-        // ],
+        where: whereClause,
         order: [['createdon', 'DESC']],
       });
+
       res.json(data);
     } catch (error) {
+      console.error('Gagal mengambil data adjust:', error);
       res.status(500).json({ message: 'Gagal mengambil data adjust', error });
     }
   },

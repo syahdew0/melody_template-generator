@@ -134,26 +134,33 @@ const formatDate = (date) => new Date(date).toLocaleString()
 // Fungsi ambil summary adjust
 const fetchAdjustSummary = async () => {
   try {
+    const username = filterUsername.value || undefined;
+
     const res = await axios.get(API_ENDPOINTS.adjust.summaryAdjust, {
-      params: {
-        username: filterUsername.value || undefined
-      }
-    })
-    summary.value = res.data.total
+      params: { username }
+    });
+    summary.value = res.data.total;
+    
+    await fetchAdjustList({ username });
+
   } catch (err) {
-    console.error('Gagal fetch summary:', err)
+    console.error('Gagal fetch summary:', err);
   }
-}
+};
 
 // Fungsi ambil data adjust list
-const fetchAdjustList = async () => {
+const fetchAdjustList = async (filter = {}) => {
   try {
-    const res = await axios.get(API_ENDPOINTS.adjust.list)
-    adjusts.value = res.data
+    const res = await axios.get(API_ENDPOINTS.adjust.list, {
+      params: {
+        username: filter.username || undefined,
+      },
+    });
+    adjusts.value = res.data;
   } catch (err) {
-    console.error('Gagal fetch adjust list:', err)
+    console.error('Gagal fetch adjust list:', err);
   }
-}
+};
 
 // Submit form
 const submitAdjust = async () => {

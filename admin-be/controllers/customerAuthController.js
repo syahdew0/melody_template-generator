@@ -97,7 +97,7 @@ exports.me = async (req, res) => {
 
     res.json({
       id: customer.id,
-      name: customer.username, //  kolomnya username
+      name: customer.username, 
       email: customer.email,
       balance: wallet?.balance || 0
     });
@@ -106,4 +106,3 @@ exports.me = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data customer' });
   }
 };
-

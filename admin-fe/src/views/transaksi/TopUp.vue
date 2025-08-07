@@ -37,11 +37,13 @@
           <th class="border px-3 py-2">Tanggal</th>
           <th class="border px-3 py-2">Username</th>
           <th class="border px-3 py-2">Nominal</th>
+          <th class="border px-3 py-2">Keterangan</th>
+             <!-- <th class="border px-3 py-2">Bank</th> -->
           <th class="border px-3 py-2">Status</th>
           <th class="border px-3 py-2">Aksi</th>
-          <th class="border px-3 py-2">Keterangan</th>
         </tr>
       </thead>
+
       <tbody>
         <tr v-for="topup in topups" :key="topup.id">
           <td class="border px-3 py-2">{{ topup.id }}</td>
@@ -50,6 +52,14 @@
           <td class="border px-3 py-2">
             Rp{{ Number(topup.amount).toLocaleString('id-ID') }}
           </td>
+          <td class="border px-3 py-2 italic text-gray-700">{{ topup.remarks || '-' }}</td>
+           <!-- <td class="border px-3 py-2">
+            <div v-if="topup.bank">
+              <div class="font-semibold">{{ topup.bank.bank_name }}</div>
+              <div class="text-xs">{{ topup.bank.account_name }} ({{ topup.bank.account_number }})</div>
+            </div>
+            <div v-else class="text-gray-400 italic">-</div>
+          </td> -->
           <td class="border px-3 py-2 capitalize">{{ topup.status }}</td>
           <td class="border px-3 py-2 space-x-2">
             <button
@@ -67,10 +77,10 @@
               Tolak
             </button>
           </td>
-          <td class="border px-3 py-2 italic text-gray-700">{{ topup.remarks || '-' }}</td>
+
         </tr>
         <tr v-if="!loading && topups.length === 0">
-          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada data</td>
+          <td colspan="8" class="text-center py-4 text-gray-500">Tidak ada data</td>
         </tr>
       </tbody>
     </table>

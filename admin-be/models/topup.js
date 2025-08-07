@@ -60,6 +60,12 @@ module.exports = (sequelize, DataTypes) => {
     constraints: false      
   });
 
+  Topup.belongsTo(models.CompanyBank, {
+  foreignKey: 'bank_id',
+  as: 'bank',
+  constraints: false
+});
+
 
 };
 

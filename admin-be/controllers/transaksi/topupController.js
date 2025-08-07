@@ -1,10 +1,10 @@
-const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory, sequelize } = require('../../models');
+const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory,CompanyBank, sequelize } = require('../../models');
 // const { Op } = require('sequelize');
 
 module.exports = {
 async create(req, res) {
   try {
-    const { nominal, remarks } = req.body;
+    const { nominal, remarks, bank_id } = req.body;
     const customer = req.customer;
     const userId = customer.username;
 
@@ -44,6 +44,7 @@ async create(req, res) {
       date: new Date(),
       customer_id: customer.id,
       remarks: remarks || '',
+      bank_id: bank_id
       // bank_name: bank.bank_name, 
       // account_number: bank.account_number,
       // account_name: bank.account_name 
@@ -179,12 +180,13 @@ async getTopupList(req, res) {
   const topups = await Topup.findAll({
     where: { username: req.customer.username },
     order: [['date', 'DESC']],
-    // include: [
-    // {
-    //   model: CompanyBank,
-    //   as: 'company_bank' 
-    // }
-  // ]
+    include: [
+  {
+    model: CompanyBank,
+    as: 'bank',
+    attributes: ['id', 'bank_name', 'account_name', 'account_number']
+  }
+]
   });
   // res.json(topups);
    res.json({ data: topups });

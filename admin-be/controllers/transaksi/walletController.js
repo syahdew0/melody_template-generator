@@ -82,7 +82,6 @@ exports.getMyTotalBalance = async (req, res) => {
         });
       })
     );
-
     const totalBalance = latestHistories.reduce((acc, h) => acc + (h?.balance_after || 0), 0);
 
     return res.json({ total_balance: totalBalance });
@@ -91,7 +90,6 @@ exports.getMyTotalBalance = async (req, res) => {
     return res.status(500).json({ message: 'Gagal mengambil total balance' });
   }
 };
-
 
 exports.getWalletDetailsByType = async (req, res) => {
   try {
@@ -157,7 +155,7 @@ exports.getWalletDetailsByType = async (req, res) => {
 
 exports.getMyWalletHistory = async (req, res) => {
   try {
-    const { fromDate, toDate, transactionType } = req.query;
+    const { fromDate, toDate, transactionType, page = 1, limit = 10 } = req.query;
     const customerId = req.customer.id;
 
     // Ambil wallet milik customer
@@ -168,15 +166,18 @@ exports.getMyWalletHistory = async (req, res) => {
     });
 
     const walletIds = wallets.map(w => w.id);
-    if (walletIds.length === 0) return res.json([]);
+    if (walletIds.length === 0) return res.json({ count: 0, rows: [] });
 
     const where = {
-      walletId: { [Op.in]: walletIds },
+      walletId: walletIds.length > 0 ? { [Op.in]: walletIds } : undefined
     };
 
     if (fromDate && toDate) {
+      const start = new Date(fromDate + 'T00:00:00');
+      const end = new Date(toDate + 'T23:59:59');
+
       where.created_at = {
-        [Op.between]: [new Date(fromDate), new Date(toDate)],
+        [Op.between]: [start, end],
       };
     }
 
@@ -184,22 +185,28 @@ exports.getMyWalletHistory = async (req, res) => {
       where.transaction_type = transactionType;
     }
 
-    const histories = await WalletHistory.findAll({
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const result = await WalletHistory.findAndCountAll({
       where,
       order: [['created_at', 'DESC']],
+      offset,
+      limit: parseInt(limit),
     });
 
-    res.json(histories);
+    res.json({
+      count: result.count,
+      rows: result.rows,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
   }
 };
 
-
 exports.getAdminWalletHistory = async (req, res) => {
   try {
-    const { fromDate, toDate, transactionType, username, wallet_id } = req.query;
+    const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
 
     const where = {};
 
@@ -211,29 +218,86 @@ exports.getAdminWalletHistory = async (req, res) => {
       where.username = username;
     }
 
-    if (transactionType) {
-      where.transaction_type = transactionType;
+    if (transaction_type) {
+      where.transaction_type = transaction_type;
     }
 
     if (fromDate && toDate) {
-      const start = new Date(fromDate);
-      const end = new Date(toDate);
-      end.setHours(23, 59, 59, 999); 
-
+      const start = new Date(fromDate + 'T00:00:00');
+      const end = new Date(toDate + 'T23:59:59');
       where.created_at = {
         [Op.between]: [start, end],
       };
     }
 
-    const histories = await WalletHistory.findAll({
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const result = await WalletHistory.findAndCountAll({
       where,
       order: [['created_at', 'DESC']],
+      offset,
+      limit: parseInt(limit),
       raw: true,
     });
 
-    res.json({ histories });
+    res.json({
+      count: result.count,
+      rows: result.rows
+    });
+
   } catch (err) {
     console.error('Admin Wallet History Error:', err);
-    res.status(500).json({ message: 'Gagal mengambil riwayat wallet (admin)' });
+    res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
+  }
+};
+
+// belum digunakan ygy
+exports.getMyDailyWallets = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+
+    // Ambil semua wallet user
+    const wallets = await Wallet.findAll({
+      where: { customer_id: customerId },
+      attributes: ['id', 'wallet_type'],
+      raw: true,
+    });
+
+    const walletIds = wallets.map(w => w.id);
+    const walletMap = Object.fromEntries(wallets.map(w => [w.id, w.wallet_type]));
+
+    const { fromDate, toDate, walletId } = req.query;
+
+    const where = {
+      username: req.customer.username,
+    };
+
+    if (walletId) {
+      where.wallet_id = walletId;
+    } else if (walletIds.length > 0) {
+      where.wallet_id = { [Op.in]: walletIds };
+    }
+
+    if (fromDate && toDate) {
+      where.daily_date = {
+        [Op.between]: [fromDate, toDate]
+      };
+    }
+
+    const result = await UserDailyWallet.findAll({
+      where,
+      order: [['daily_date', 'DESC']],
+      raw: true,
+    });
+
+    const data = result.map(row => ({
+      ...row,
+      wallet_type: walletMap[row.wallet_id] || null
+    }));
+
+    res.json({ rows: data });
+  } catch (err) {
+    console.error('Error getMyDailyWallets:', err);
+    res.status(500).json({ message: 'Gagal mengambil data saldo harian' });
   }
 };

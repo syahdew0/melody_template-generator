@@ -29,11 +29,12 @@
     </div>
 
     <button
-      @click="fetchHistories"
-      class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
-    >
-      Cari
-    </button>
+  @click="() => { pagination.page = 1; fetchHistories() }"
+  class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
+>
+  Cari
+</button>
+
 
     <!-- Data Table -->
     <table class="w-full mt-6 text-sm border">
@@ -70,6 +71,26 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Pagination Controls -->
+    <div class="mt-4 flex justify-between items-center">
+      <button
+        class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        :disabled="pagination.page <= 1"
+        @click="changePage(pagination.page - 1)"
+      >
+        Sebelumnya
+      </button>
+      <span>Halaman {{ pagination.page }} dari {{ pagination.totalPages }}</span>
+      <button
+        class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        :disabled="pagination.page >= pagination.totalPages"
+        @click="changePage(pagination.page + 1)"
+      >
+        Berikutnya
+      </button>
+    </div>
+
   </div>
 </template>
 
@@ -87,20 +108,41 @@ const filters = ref({
   wallet_id: '',
   transaction_type: '',
 })
+const pagination = ref({
+  page: 1,
+  limit: 15,
+  totalPages: 1
+})
+
 
 const fetchHistories = async () => {
   try {
     const token = localStorage.getItem('token')
+
+    const params = {
+      ...filters.value,
+      page: pagination.value.page,
+      limit: pagination.value.limit
+    }
+
     const res = await axios.get(API_ENDPOINTS.adminWalletHistory, {
-      params: filters.value,
+      params,
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-    histories.value = res.data.histories || []
+
+    histories.value = res.data.rows || []
+    pagination.value.totalPages = Math.ceil((res.data.count || 0) / pagination.value.limit)
+
   } catch (error) {
     console.error('Gagal mengambil data:', error)
   }
+}
+
+const changePage = (newPage) => {
+  pagination.value.page = newPage
+  fetchHistories()
 }
 
 onMounted(fetchHistories)
