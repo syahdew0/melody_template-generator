@@ -1,9 +1,11 @@
 <template>
   <div class="p-6 space-y-6">
-    <h1 class="text-2xl font-bold mb-4">Data History Wallet</h1>
+   <h1 class="text-2xl font-bold mb-4">
+    Riwayat Transaksi <span v-if="filters.username">- {{ filters.username }}</span>
+  </h1>
 
     <!-- Filter Form -->
-    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm font-medium">From Date</label>
         <input type="date" v-model="filters.fromDate" class="border px-2 py-1 rounded w-full" />
@@ -12,10 +14,10 @@
         <label class="block text-sm font-medium">To Date</label>
         <input type="date" v-model="filters.toDate" class="border px-2 py-1 rounded w-full" />
       </div>
-      <div>
+      <!-- <div>
         <label class="block text-sm font-medium">Username</label>
         <input type="text" v-model="filters.username" class="border px-2 py-1 rounded w-full" />
-      </div>
+      </div> -->
       <div>
         <label class="block text-sm font-medium">Transaction Type</label>
         <select v-model="filters.transaction_type" class="border px-2 py-1 rounded w-full">
@@ -97,10 +99,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useRoute } from 'vue-router'
 import { API_ENDPOINTS } from '@/config/api'
 
 const histories = ref([])
-
+const route = useRoute()
 const filters = ref({
   fromDate: '',
   toDate: '',
@@ -145,7 +148,14 @@ const changePage = (newPage) => {
   fetchHistories()
 }
 
-onMounted(fetchHistories)
+onMounted(() => {
+  const usernameQuery = route.query.username
+  if (usernameQuery) {
+    filters.value.username = usernameQuery
+  }
+  fetchHistories()
+})
+
 
 const formatDate = (val) => {
   if (!val) return '-'

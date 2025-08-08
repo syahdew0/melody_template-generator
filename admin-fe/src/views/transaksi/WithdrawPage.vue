@@ -56,17 +56,45 @@
               </button>
             </td>
           </tr>
-
       </tbody>
     </table>
+    <!-- Pagination -->
+    <div v-if="totalPages >= 1" class="flex justify-center items-center mt-6 space-x-2 text-sm">
+      <button
+        :disabled="currentPage === 1"
+        @click="currentPage--; fetchWithdraws()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Prev
+      </button>
+
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="changePage(page)"
+        :class="[
+          'px-3 py-1 border rounded',
+          page === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
+        ]"
+      >
+        {{ page }}
+      </button>
+
+      <button
+        :disabled="currentPage === totalPages"
+        @click="currentPage++; fetchWithdraws()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
+
     <div class="mt-6 text-right space-y-1 text-sm">
     <div v-for="s in summary" :key="s.status">
       Total {{ s.status }}: <strong>{{ formatRupiah(s.total_amount) }}</strong>
     </div>
   </div>
-    <!-- <div class="text-right font-semibold mt-4">
-  Total Nominal: Rp{{ formatRupiah(totalAmount) }}
-</div> -->
+   
 
   </div>
 </template>
@@ -81,20 +109,27 @@ const statusFilter = ref('')
 const loading = ref(false)
 const usernameFilter = ref('')
 const summary = ref([])
+const currentPage = ref(1)
+const totalPages = ref(1)
 
 const fetchWithdraws = async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    const response = await axios.get(API_ENDPOINTS.withdraw.list(statusFilter.value, usernameFilter.value));
+    const response = await axios.get(API_ENDPOINTS.withdraw.list(
+      statusFilter.value,
+      usernameFilter.value,
+      currentPage.value
+    ));
+    console.log('Withdraw response:', response.data); 
     withdraws.value = response.data.data || []
     summary.value = response.data.summary || []
+    totalPages.value = response.data.totalPages || 1
   } catch (error) {
-    console.error('Gagal mengambil data withdraw:', error);
+    console.error('Gagal mengambil data withdraw:', error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
-
 
 const updateStatus = async (id, status) => {
   try {

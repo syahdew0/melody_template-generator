@@ -28,6 +28,28 @@
       />
     </div>
 
+    <div v-if="summary.length" class="mt-6">
+    <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
+    <table class="w-full table-auto border border-gray-300 text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="border px-3 py-2">Status</th>
+          <th class="border px-3 py-2">Total Nominal</th>
+          <th class="border px-3 py-2">Jumlah Transaksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in summary" :key="item.status">
+          <td class="border px-3 py-2 capitalize">{{ item.status }}</td>
+          <td class="border px-3 py-2">
+            Rp{{ Number(item.total_amount).toLocaleString('id-ID') }}
+          </td>
+          <td class="border px-3 py-2">{{ item.count }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
     <div v-if="loading">Memuat data...</div>
 
     <table v-else class="w-full table-auto border border-gray-300 text-sm">
@@ -84,47 +106,37 @@
         </tr>
       </tbody>
     </table>
-    
-    <!-- Summary -->
-     <!-- <div class="flex items-center gap-4 mb-4"> -->
-      <!-- <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
-        <option value="">Semua</option>
-        <option value="success">Sukses</option>
-        <option value="pending">Pending</option>
-        <option value="failed">Ditolak</option>
-      </select> -->
 
-      <!-- <input
-        v-model="usernameFilter"
-        @input="fetchTopups"
-        type="text"
-        placeholder="Filter Username"
-        class="border px-4 py-2 rounded"
-      />
-    </div> -->
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="flex justify-center items-center mt-6 space-x-2 text-sm">
+      <button
+        :disabled="currentPage === 1"
+        @click="currentPage--; fetchTopups()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Prev
+      </button>
 
-    <div v-if="summary.length" class="mt-6">
-  <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
-  <table class="w-full table-auto border border-gray-300 text-sm">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="border px-3 py-2">Status</th>
-        <th class="border px-3 py-2">Total Nominal</th>
-        <th class="border px-3 py-2">Jumlah Transaksi</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="item in summary" :key="item.status">
-        <td class="border px-3 py-2 capitalize">{{ item.status }}</td>
-        <td class="border px-3 py-2">
-          Rp{{ Number(item.total_amount).toLocaleString('id-ID') }}
-        </td>
-        <td class="border px-3 py-2">{{ item.count }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="changePage(page)"
+        :class="[
+          'px-3 py-1 border rounded',
+          page === currentPage ? 'bg-blue-600 text-white' : 'bg-white'
+        ]"
+      >
+        {{ page }}
+      </button>
 
+      <button
+        :disabled="currentPage === totalPages"
+        @click="currentPage++; fetchTopups()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
 
   </div>
 </template>
@@ -139,7 +151,9 @@ const loading = ref(false)
 const statusFilter = ref('')
 const summary = ref([])
 const usernameFilter = ref('')
-
+const currentPage = ref(1)
+const totalPages = ref(1)
+const perPage = 10
 
 const fetchTopups = async () => {
   loading.value = true
@@ -147,12 +161,15 @@ const fetchTopups = async () => {
     const res = await axios.get(API_ENDPOINTS.topup, {
       params: {
         status: statusFilter.value || undefined,
-        username: usernameFilter.value || undefined
+        username: usernameFilter.value || undefined,
+        page: currentPage.value,
+        limit: perPage
       }
     })
 
-    const payload = Array.isArray(res.data) ? res.data : res.data.data
-    topups.value = payload ?? []
+    const payload = res.data?.data || []
+    topups.value = payload
+    totalPages.value = res.data?.totalPages || 1
 
     const summaryRes = await axios.get(API_ENDPOINTS.summaryTopup, {
       params: {
@@ -182,6 +199,12 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('id-ID')
+}
+const changePage = (page) => {
+  if (page !== currentPage.value) {
+    currentPage.value = page
+    fetchTopups()
+  }
 }
 
 onMounted(

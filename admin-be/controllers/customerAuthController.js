@@ -84,7 +84,7 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.customer.id, {
-      attributes: ['id', 'username', 'email']
+      attributes: ['id', 'username', 'email', 'no_hp', 'bank', 'no_rekening', 'nama_rekening']
     });
 
     if (!customer) {
@@ -97,12 +97,78 @@ exports.me = async (req, res) => {
 
     res.json({
       id: customer.id,
-      name: customer.username, 
+      username: customer.username,
       email: customer.email,
+      no_hp: customer.no_hp,
+      bank: customer.bank,
+      no_rekening: customer.no_rekening,
+      nama_rekening: customer.nama_rekening,
       balance: wallet?.balance || 0
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal mengambil data customer' });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id)
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer tidak ditemukan' })
+    }
+
+    const { no_hp, bank, no_rekening, nama_rekening } = req.body
+
+    customer.no_hp = no_hp
+    customer.bank = bank
+    customer.no_rekening = no_rekening
+    customer.nama_rekening = nama_rekening
+
+    await customer.save()
+
+    res.json({ message: 'Profil berhasil diperbarui', data: customer })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Gagal memperbarui profil' })
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+    const { old_password, new_password, confirm_password } = req.body;
+
+    if (!old_password || !new_password || !confirm_password) {
+      return res.status(400).json({ message: 'Semua field wajib diisi.' });
+    }
+
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ message: 'Konfirmasi password tidak cocok.' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ message: 'Password baru minimal 6 karakter.' });
+    }
+
+    const customer = await Customer.findByPk(customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer tidak ditemukan.' });
+    }
+
+    const isMatch = await bcrypt.compare(old_password, customer.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Password lama salah.' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(new_password, 10);
+    customer.password = hashedNewPassword;
+    await customer.save();
+
+    res.json({ message: 'Password berhasil diubah.' });
+  } catch (error) {
+    console.error('Gagal mengganti password:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan saat mengganti password.' });
   }
 };

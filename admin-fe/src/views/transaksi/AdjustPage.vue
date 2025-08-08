@@ -105,6 +105,38 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- Pagination -->
+    <div class="flex justify-center items-center gap-2 mt-4" v-if="totalPages >= 1">
+      <button
+        :disabled="currentPage === 1"
+        @click="currentPage--; fetchTopups()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Prev
+      </button>
+
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="changePage(page)"
+        :class="[
+          'px-3 py-1 border rounded',
+          page === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
+        ]"
+      >
+        {{ page }}
+      </button>
+
+      <button
+        :disabled="currentPage === totalPages"
+        @click="currentPage++; fetchTopups()"
+        class="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
+
     </div>
 
   </div>
@@ -127,6 +159,8 @@ const error = ref('')
 const adjusts = ref([])
 const summary = ref({ in: 0, out: 0, net: 0 })
 const filterUsername = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
 
 
 const formatDate = (date) => new Date(date).toLocaleString()
@@ -154,13 +188,18 @@ const fetchAdjustList = async (filter = {}) => {
     const res = await axios.get(API_ENDPOINTS.adjust.list, {
       params: {
         username: filter.username || undefined,
+        page: currentPage.value,
+        limit: 10
       },
     });
-    adjusts.value = res.data;
+
+    adjusts.value = res.data.data
+    totalPages.value = res.data.totalPages
+    currentPage.value = res.data.currentPage
   } catch (err) {
-    console.error('Gagal fetch adjust list:', err);
+    console.error('Gagal fetch adjust list:', err)
   }
-};
+}
 
 // Submit form
 const submitAdjust = async () => {
@@ -191,11 +230,17 @@ const submitAdjust = async () => {
     error.value = err.response?.data?.message || 'Terjadi kesalahan saat submit adjust.'
   }
 }
-
+const changePage = async (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    await fetchAdjustList({ username: filterUsername.value || undefined });
+  }
+}
 
 // Jalankan saat komponen mount
 onMounted(async () => {
-  await fetchAdjustList()
+  currentPage.value = 1
+await fetchAdjustList({ username: filterUsername.value || undefined })
   await fetchAdjustSummary()
 })
 

@@ -11,7 +11,7 @@ const { requireAuth } = require('../middlewares/authMiddleware'); // middleware 
 // Admin - Topup
 router.get('/topup', requireAuth, topupController.list);
 router.put('/topup/:id/status', requireAuth, topupController.updateStatus);
-router.get('/topup', requireAuth, topupController.getTopupList);
+// router.get('/topup', requireAuth, topupController.getTopupList);
 router.get('/topup-summary', requireAuth, topupController.getTopupSummary);
 
 // Admin - Adjust
@@ -24,6 +24,9 @@ router.get('/withdraw', requireAuth, withdrawController.list);
 router.put('/withdraw/:id/status', requireAuth, withdrawController.updateStatus);
 
 router.get('/wallet-histories', requireAuth, walletController.getAdminWalletHistory);
+router.get('/wallet-histories/usernames', requireAuth, walletController.getWalletUsernames);
+
+
 
 
 module.exports = router;

@@ -10,4 +10,9 @@ router.post('/login', customerAuthController.login);
 // Hanya 1 /me route yang dilindungi token
 router.get('/me', authenticateCustomer, customerAuthController.me);
 
+router.put('/update', authenticateCustomer, customerAuthController.updateProfile)
+
+router.put('/change-password', authenticateCustomer, customerAuthController.changePassword)
+
+
 module.exports = router;

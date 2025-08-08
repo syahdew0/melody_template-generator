@@ -93,10 +93,10 @@ module.exports = {
   }
 },
 
-  // Admin melihat semua withdraw
-  async list(req, res) {
+    // Admin melihat semua withdraw
+    async list(req, res) {
     try {
-      const { status, username } = req.query;
+      const { status, username, page = 1, limit = 10 } = req.query;
       const where = {};
 
       if (status && ['pending', 'success', 'failed'].includes(status)) {
@@ -104,10 +104,14 @@ module.exports = {
       }
 
       if (username) {
-        where.username = username; 
+        where.username = username;
       }
 
-      const data = await Withdraw.findAll({
+      const pageNumber = parseInt(page) || 1;
+      const limitNumber = parseInt(limit) || 10;
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const { count, rows } = await Withdraw.findAndCountAll({
         where,
         include: [
           {
@@ -121,28 +125,37 @@ module.exports = {
             attributes: ['balance_before', 'balance_after', 'amount']
           }
         ],
-        order: [['createdon', 'DESC']]
+        order: [['createdon', 'DESC']],
+        limit: limitNumber,
+        offset: offset
       });
 
       // Summary kalkulasi
-      const summary = data.reduce((acc, wd) => {
-        const status = wd.status;
-        if (!acc[status]) acc[status] = 0;
-        acc[status] += parseFloat(wd.amount || 0);
+      const summary = rows.reduce((acc, wd) => {
+        const stat = wd.status;
+        if (!acc[stat]) acc[stat] = 0;
+        acc[stat] += parseFloat(wd.amount || 0);
         return acc;
       }, {});
+
       const summaryArray = Object.entries(summary).map(([status, total_amount]) => ({
         status,
         total_amount
       }));
 
-      res.json({ data, summary: summaryArray });
+      res.json({
+        data: rows,
+        summary: summaryArray,
+        totalPages: Math.ceil(count / limitNumber),
+        currentPage: pageNumber,
+        totalItems: count
+      });
     } catch (error) {
       console.error('Withdraw list error:', error);
       res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
     }
-  }
-  ,
+  },
+
   // Admin update status withdraw
     async updateStatus(req, res) {
     const t = await sequelize.transaction();

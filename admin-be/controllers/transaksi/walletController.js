@@ -139,14 +139,8 @@ exports.getWalletDetailsByType = async (req, res) => {
       }),
     ]);
 
-    res.json({
-      wallet,
-      latest_balance: latestBalance,
-      history,
-      adjusts,
-      topups,
-      withdraws,
-    });
+    res.json({wallet,latest_balance: latestBalance, history, adjusts, topups, withdraws,});
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Gagal mengambil detail wallet' });
@@ -301,3 +295,33 @@ exports.getMyDailyWallets = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data saldo harian' });
   }
 };
+
+exports.getWalletUsernames = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+    const where = {};
+
+    if (fromDate && toDate) {
+      const start = new Date(fromDate + 'T00:00:00');
+      const end = new Date(toDate + 'T23:59:59');
+      where.created_at = {
+        [Op.between]: [start, end]
+      };
+    }
+
+    const usernames = await WalletHistory.findAll({
+      where,
+      attributes: [
+        [sequelize.fn('DISTINCT', sequelize.col('username')), 'username'],
+      ],
+      order: [['username', 'ASC']],
+      raw: true,
+    });
+
+    res.json(usernames.map(u => u.username));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil username' });
+  }
+};
+

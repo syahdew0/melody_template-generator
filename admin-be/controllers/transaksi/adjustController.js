@@ -94,7 +94,7 @@ module.exports = {
 
   async list(req, res) {
     try {
-      const { username, startDate, endDate } = req.query;
+      const { username, startDate, endDate, page = 1, limit = 10 } = req.query;
 
       const whereClause = {};
 
@@ -108,12 +108,21 @@ module.exports = {
         };
       }
 
-      const data = await Adjust.findAll({
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const { rows, count } = await Adjust.findAndCountAll({
         where: whereClause,
         order: [['createdon', 'DESC']],
+        offset,
+        limit: parseInt(limit)
       });
 
-      res.json(data);
+      res.json({
+        data: rows,
+        totalPages: Math.ceil(count / limit),
+        currentPage: parseInt(page),
+        totalItems: count
+      });
     } catch (error) {
       console.error('Gagal mengambil data adjust:', error);
       res.status(500).json({ message: 'Gagal mengambil data adjust', error });

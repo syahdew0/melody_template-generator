@@ -61,9 +61,9 @@ async create(req, res) {
   }
 },
 
-  async list(req, res) {
+async list(req, res) {
   try {
-    const { status, username } = req.query;
+    const { status, username, page = 1, limit = 10 } = req.query;
     const whereClause = {};
 
     if (status && ['pending', 'success', 'failed'].includes(status)) {
@@ -74,17 +74,26 @@ async create(req, res) {
       whereClause.username = username;
     }
 
-    const data = await Topup.findAll({
-      where: whereClause, 
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const { rows, count } = await Topup.findAndCountAll({
+      where: whereClause,
       include: [{
         model: Customer,
         as: 'Customer',
         attributes: ['id', 'username', 'nama_rekening']
       }],
-      order: [['createdon', 'DESC']]
+      order: [['createdon', 'DESC']],
+      offset,
+      limit: parseInt(limit)
     });
 
-    res.json(data);
+    return res.json({
+      data: rows,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      totalItems: count
+    });
   } catch (error) {
     console.error('Topup list error:', error);
     res.status(500).json({ message: 'Gagal mengambil data topup', error });

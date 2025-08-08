@@ -234,6 +234,12 @@ const routes = [
   name: 'Adjust',
   component: () => import('@/views/transaksi/AdjustPage.vue'),
 },
+
+{
+  path: '/admin/transaksi/history',
+  name: 'TransaksiHistoryPage',
+  component: () => import('@/views/transaksi/TransaksiHistoryPage.vue'),
+},
 {
   path: '/admin/transaksi/TransaksiHistory',
   name: 'TransaksiHistory',
