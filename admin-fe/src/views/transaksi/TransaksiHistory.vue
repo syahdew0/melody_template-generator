@@ -1,5 +1,12 @@
 <template>
   <div class="p-6 space-y-6">
+     <!-- Tombol Kembali -->
+    <button
+      @click="$router.back()"
+      class="flex items-center text-blue-600 hover:underline mb-4"
+    >
+      ← Kembali
+    </button>
    <h1 class="text-2xl font-bold mb-4">
     Riwayat Transaksi <span v-if="filters.username">- {{ filters.username }}</span>
   </h1>
@@ -17,6 +24,10 @@
       <!-- <div>
         <label class="block text-sm font-medium">Username</label>
         <input type="text" v-model="filters.username" class="border px-2 py-1 rounded w-full" />
+      </div> -->
+      <!-- <div>
+        <label class="block text-sm font-medium">Wallet ID</label>
+        <input type="text" v-model="filters.wallet_id" class="border px-2 py-1 rounded w-full" />
       </div> -->
       <div>
         <label class="block text-sm font-medium">Transaction Type</label>
@@ -47,7 +58,7 @@
           <th class="border px-2 py-1">Wallet ID</th>
           <th class="border px-2 py-1">Tipe</th>
           <th class="border px-2 py-1">Jumlah</th>
-          <th class="border px-2 py-1">Deskripsi</th>
+          <th class="border px-2 py-1">Keterangan</th>
         </tr>
       </thead>
       <tbody>
@@ -66,7 +77,7 @@
             {{ h.transaction_type === 'withdraw' || h.transaction_type === 'adjust_minus' ? '-' : '+' }}
             Rp{{ formatRupiah(h.amount) }}
           </td>
-          <td class="border px-2 py-1">{{ h.description || '-' }}</td>
+          <td class="border px-2 py-1">{{ h.remarks || '-' }}</td>
         </tr>
         <tr v-if="histories.length === 0">
           <td colspan="6" class="text-center py-4">Tidak ada data</td>

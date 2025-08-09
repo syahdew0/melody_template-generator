@@ -29,7 +29,7 @@ module.exports = {
         allowNull: false
       },
       walletId: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         allowNull: false,
         field: 'walletid' 
       },

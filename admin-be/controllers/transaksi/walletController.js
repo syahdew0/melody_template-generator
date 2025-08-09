@@ -232,6 +232,7 @@ exports.getAdminWalletHistory = async (req, res) => {
       offset,
       limit: parseInt(limit),
       raw: true,
+      
     });
 
     res.json({

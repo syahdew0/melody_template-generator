@@ -58,8 +58,8 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        name: 'After Login Menu',
-        slug: 'after_login',
+        name: 'After Login',
+        slug: 'after-login',
         is_main: false,
         is_footer: false,
         is_after_login: true,
