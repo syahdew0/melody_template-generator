@@ -120,7 +120,7 @@ app.use('/api/admin/themes', require('./routes/themeRoutes'));
 
 // Transaksi routes (Topup, Withdraw, Adjust)
 app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
-app.use('/customer/transaksi', require('./routes/transaksiCustomerRoutes'));
+app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 // app.use('/api/public/banks', require('./routes/masterbankRoutes'));
 
 
