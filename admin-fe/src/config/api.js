@@ -81,9 +81,17 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     saveFavicon: `${API_URL}/apis/icons/save`,      
     
     // Transaksi
-    topup: `${API_URL}/api/transaksi/topup`,
-   topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
-   summaryTopup: `${API_URL}/api/transaksi/topup-summary`,
+  //   topup: `${API_URL}/api/transaksi/topup`,
+  //   bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
+  //  topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
+  //  summaryTopup: `${API_URL}/api/transaksi/topup-summary`,
+topup: {
+  list: `${API_URL}/api/transaksi/topup`,
+  bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
+  byId: (id) => `${API_URL}/api/transaksi/topup/${id}`,
+  summary: `${API_URL}/api/transaksi/topup-summary`,
+},
+
 
     // withdraws: `${API_URL}/apis/withdraws`,
     // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,
@@ -94,6 +102,7 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     if (username) params.append('username', username)
     return `${API_URL}/api/transaksi/withdraw?${params.toString()}`},
   updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
+   bulkUpdateStatus: () => `${API_URL}/api/transaksi/withdraw/bulk-update-status`,
 },
 
   adjust: {
@@ -107,6 +116,8 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
     // walletHistory: `${API_URL}/api/transaksi/wallet-histories`,
    adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
     // walletHistory: `${API_URL}/api/admin/transaksi/wallet-history`,
+    company_banks: `${API_URL}/api/company-banks`,
+
 
 
 

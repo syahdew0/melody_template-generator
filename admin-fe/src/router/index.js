@@ -246,6 +246,12 @@ const routes = [
   component: () => import('@/views/transaksi/TransaksiHistory.vue'),
 },
 
+{
+  path: '/admin/bank/CompanyBank',
+  name: 'CompanyBank',
+  component: () => import('@/views/bank/CompanyBank.vue'),
+},
+
 ]
 
 const base = process.env.VUE_APP_BASE_PATH || '/'

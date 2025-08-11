@@ -69,6 +69,7 @@ module.exports = {
         transaction_type: type === 'in' ? 'adjust_plus' : 'adjust_minus',
         source_type: 'adjust',
         source_id: adjust.id,
+        reference_id: adjust.id,
         amount: type === 'in' ? adjAmount : -adjAmount,
         balance_before: balanceBefore,
         balance_after: finalBalance,

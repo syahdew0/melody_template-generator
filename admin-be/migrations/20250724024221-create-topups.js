@@ -33,13 +33,23 @@ module.exports = {
         allowNull: false,
         field: 'walletid' 
       },
-      referenceid: {
+      reference_id: {
         type: Sequelize.STRING,
         allowNull: true
       },
       remarks: {
         type: Sequelize.STRING,
         allowNull: true
+      },
+      bank_id: { 
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'company_banks',
+          key: 'id'
+        },
+        onUpdate: 'NO ACTION',
+        onDelete: 'SET NULL'
       },
       createdon: {
         type: Sequelize.DATE,

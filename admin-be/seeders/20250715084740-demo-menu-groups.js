@@ -57,15 +57,15 @@ module.exports = {
         created_at: new Date(),
         updated_at: new Date(),
       },
-      {
-        name: 'After Login',
-        slug: 'after-login',
-        is_main: false,
-        is_footer: false,
-        is_after_login: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
+      // {
+      //   name: 'After Login',
+      //   slug: 'after-login',
+      //   is_main: false,
+      //   is_footer: false,
+      //   is_after_login: true,
+      //   created_at: new Date(),
+      //   updated_at: new Date(),
+      // },
     ], {});
   },
 

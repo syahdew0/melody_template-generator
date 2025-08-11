@@ -400,6 +400,41 @@
             </transition>
           </li>
 
+
+           <li class="relative">
+              <div
+                @click.stop="toggleSubDropdown('bank')"
+                class="dropdown-btn flex items-center gap-2"
+                :class="subDropdownOpen === 'bank' ? 'text-amber-400 bg-slate-700/50' : ''"
+              >
+                <span>BANK</span>
+                <svg
+                  class="w-3 h-3 ml-auto transition-transform"
+                  :class="subDropdownOpen === 'bank' ? 'rotate-180' : ''"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <transition>
+                <ul v-show="subDropdownOpen === 'bank'" class="dropdown-submenu">
+                  <li>
+                    <router-link
+                      :to="{ name: 'CompanyBank' }"
+                      class="submenu-link"
+                      :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CompanyBankList') }"
+                    >
+                      Company Bank
+                    </router-link>
+                  </li>
+                </ul>
+              </transition>
+            </li>
       </ul>
     </nav>
 

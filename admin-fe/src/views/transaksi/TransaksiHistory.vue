@@ -1,34 +1,34 @@
 <template>
   <div class="p-6 space-y-6">
-     <!-- Tombol Kembali -->
+    <!-- Tombol Kembali -->
     <button
       @click="$router.back()"
       class="flex items-center text-blue-600 hover:underline mb-4"
     >
       ← Kembali
     </button>
-   <h1 class="text-2xl font-bold mb-4">
-    Riwayat Transaksi <span v-if="filters.username">- {{ filters.username }}</span>
-  </h1>
+    <h1 class="text-2xl font-bold mb-4">
+      Riwayat Transaksi <span v-if="filters.username">- {{ filters.username }}</span>
+    </h1>
 
     <!-- Filter Form -->
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm font-medium">From Date</label>
-        <input type="date" v-model="filters.fromDate" class="border px-2 py-1 rounded w-full" />
+        <input
+          type="date"
+          v-model="filters.fromDate"
+          class="border px-2 py-1 rounded w-full"
+        />
       </div>
       <div>
         <label class="block text-sm font-medium">To Date</label>
-        <input type="date" v-model="filters.toDate" class="border px-2 py-1 rounded w-full" />
+        <input
+          type="date"
+          v-model="filters.toDate"
+          class="border px-2 py-1 rounded w-full"
+        />
       </div>
-      <!-- <div>
-        <label class="block text-sm font-medium">Username</label>
-        <input type="text" v-model="filters.username" class="border px-2 py-1 rounded w-full" />
-      </div> -->
-      <!-- <div>
-        <label class="block text-sm font-medium">Wallet ID</label>
-        <input type="text" v-model="filters.wallet_id" class="border px-2 py-1 rounded w-full" />
-      </div> -->
       <div>
         <label class="block text-sm font-medium">Transaction Type</label>
         <select v-model="filters.transaction_type" class="border px-2 py-1 rounded w-full">
@@ -42,15 +42,19 @@
     </div>
 
     <button
-  @click="() => { pagination.page = 1; fetchHistories() }"
-  class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
->
-  Cari
-</button>
+      @click="handleSearch"
+      class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
+    >
+      Cari
+    </button>
 
+    <!-- Pesan sebelum cari -->
+    <div v-if="!isSearched" class="text-center py-6 text-gray-500">
+      Silakan pilih filter dan klik tombol Cari untuk melihat data.
+    </div>
 
     <!-- Data Table -->
-    <table class="w-full mt-6 text-sm border">
+    <table v-if="isSearched" class="w-full mt-6 text-sm border">
       <thead class="bg-gray-100">
         <tr>
           <th class="border px-2 py-1">Tanggal</th>
@@ -86,7 +90,7 @@
     </table>
 
     <!-- Pagination Controls -->
-    <div class="mt-4 flex justify-between items-center">
+    <div v-if="isSearched" class="mt-4 flex justify-between items-center">
       <button
         class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
         :disabled="pagination.page <= 1"
@@ -103,7 +107,6 @@
         Berikutnya
       </button>
     </div>
-
   </div>
 </template>
 
@@ -127,7 +130,7 @@ const pagination = ref({
   limit: 15,
   totalPages: 1
 })
-
+const isSearched = ref(false)
 
 const fetchHistories = async () => {
   try {
@@ -159,14 +162,24 @@ const changePage = (newPage) => {
   fetchHistories()
 }
 
+const handleSearch = () => {
+  pagination.value.page = 1
+  isSearched.value = true
+  fetchHistories()
+}
+
 onMounted(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  filters.value.fromDate = today
+  filters.value.toDate = today
+
   const usernameQuery = route.query.username
   if (usernameQuery) {
     filters.value.username = usernameQuery
   }
-  fetchHistories()
-})
 
+  // Jangan fetch otomatis supaya data tidak muncul saat load halaman
+})
 
 const formatDate = (val) => {
   if (!val) return '-'

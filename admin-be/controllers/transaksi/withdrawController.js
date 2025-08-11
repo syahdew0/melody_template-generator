@@ -75,7 +75,7 @@ module.exports = {
         amount: withdraw.amount,
         source_type: 'withdraw',
         source_id: withdraw.id,
-        referenceid: `withdraw-${withdraw.id}`,
+        reference_id: withdraw.id,
         balance_before: currentBalance,
         balance_after: currentBalance, 
         remarks: 'Pengajuan withdraw',
@@ -210,7 +210,7 @@ module.exports = {
         amount: data.amount,
         source_type: 'withdraw',
         source_id: data.id,
-        referenceid: `withdraw-${data.id}`,
+       reference_id: data.id,
         balance_before: previousBalance,
         balance_after: newBalance,
         remarks: 'Withdraw berhasil',
@@ -228,7 +228,7 @@ module.exports = {
         amount: 0,
         source_type: 'withdraw',
         source_id: data.id,
-        referenceid: `withdraw-${data.id}`,
+        reference_id: data.id,
         balance_before: previousBalance,
         balance_after: previousBalance,
         remarks: 'Withdraw ditolak oleh admin',
@@ -272,7 +272,92 @@ module.exports = {
         console.error('Withdraw customer list error:', error);
         res.status(500).json({ message: 'Gagal mengambil data withdraw', error });
       }
+    },
+
+    async bulkUpdateStatus(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { ids, status } = req.body;
+    const validStatus = ['success', 'failed'];
+    if (!Array.isArray(ids) || !validStatus.includes(status)) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Data tidak valid' });
     }
+
+    for (const id of ids) {
+      const data = await Withdraw.findByPk(id, { transaction: t });
+      if (!data) continue; // skip jika tidak ditemukan
+
+      if (data.status === status) continue; // skip jika sudah sama
+
+      const wallet = await Wallet.findByPk(data.walletid, { transaction: t });
+      if (!wallet) continue;
+
+      const latestHistory = await WalletHistory.findOne({
+        where: { walletid: wallet.id },
+        order: [['created_at', 'DESC']],
+        transaction: t
+      });
+
+      const previousBalance = latestHistory?.balance_after || 0;
+
+      if (status === 'success') {
+        const newBalance = previousBalance - parseFloat(data.amount);
+        if (newBalance < 0) {
+          await t.rollback();
+          return res.status(400).json({ message: `Saldo tidak cukup untuk withdraw ID ${id}` });
+        }
+
+        await WalletHistory.create({
+          walletId: wallet.id,
+          username: data.username,
+          type: 'out',
+          transaction_type: 'withdraw',
+          amount: data.amount,
+          source_type: 'withdraw',
+          source_id: data.id,
+          reference_id: data.id,
+          balance_before: previousBalance,
+          balance_after: newBalance,
+          remarks: 'Withdraw berhasil',
+          created_at: new Date()
+        }, { transaction: t });
+      }
+
+      if (status === 'failed') {
+        await WalletHistory.create({
+          walletId: wallet.id,
+          username: data.username,
+          type: 'out',
+          transaction_type: 'withdraw',
+          amount: 0,
+          source_type: 'withdraw',
+          source_id: data.id,
+          reference_id: data.id,
+          balance_before: previousBalance,
+          balance_after: previousBalance,
+          remarks: 'Withdraw ditolak oleh admin',
+          created_at: new Date()
+        }, { transaction: t });
+      }
+
+      // Update status withdraw
+      data.status = status;
+      data.updatedon = new Date();
+      data.updatedby = req.user?.username || 'admin';
+      await data.save({ transaction: t });
+    }
+
+    await t.commit();
+    res.json({ message: `Berhasil update status ke ${status}` });
+  } catch (error) {
+    await t.rollback();
+    console.error('Bulk update withdraw error:', error);
+    res.status(500).json({ message: 'Gagal update status massal', error });
+  }
+}
+
     };
 
+    
 // module.exports = withdrawController;

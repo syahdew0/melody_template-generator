@@ -23,12 +23,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    referenceid: {
+    reference_id: {
       type: DataTypes.STRING,
       allowNull: true
     },
     remarks: {
       type: DataTypes.STRING,
+      allowNull: true
+    },
+    bank_id: {
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     createdon: {

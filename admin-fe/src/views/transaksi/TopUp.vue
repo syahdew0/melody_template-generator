@@ -2,14 +2,6 @@
   <div class="p-6 space-y-6">
     <h1 class="text-2xl font-bold mb-4">Manajemen Topup</h1>
 
-    <!-- <div class="flex justify-between items-center mb-4">
-      <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
-        <option value="">Semua</option>
-        <option value="success">Sukses</option>
-        <option value="pending">Pending</option>
-        <option value="failed">Ditolak</option>
-      </select>
-    </div> -->
     <!-- Filter Area -->
     <div class="flex items-center gap-4 mb-4">
       <select v-model="statusFilter" @change="fetchTopups" class="border px-4 py-2 rounded">
@@ -29,45 +21,59 @@
     </div>
 
     <div v-if="summary.length" class="mt-6">
-    <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
-    <table class="w-full table-auto border border-gray-300 text-sm">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="border px-3 py-2">Status</th>
-          <th class="border px-3 py-2">Total Nominal</th>
-          <th class="border px-3 py-2">Jumlah Transaksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in summary" :key="item.status">
-          <td class="border px-3 py-2 capitalize">{{ item.status }}</td>
-          <td class="border px-3 py-2">
-            Rp{{ Number(item.total_amount).toLocaleString('id-ID') }}
-          </td>
-          <td class="border px-3 py-2">{{ item.count }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+      <h2 class="text-lg font-semibold mb-2">Summary Topup</h2>
+      <table class="w-full table-auto border border-gray-300 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="border px-3 py-2">Status</th>
+            <th class="border px-3 py-2">Total Nominal</th>
+            <th class="border px-3 py-2">Jumlah Transaksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in summary" :key="item.status">
+            <td class="border px-3 py-2 capitalize">{{ item.status }}</td>
+            <td class="border px-3 py-2">
+              Rp{{ Number(item.total_amount).toLocaleString('id-ID') }}
+            </td>
+            <td class="border px-3 py-2">{{ item.count }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div v-if="loading">Memuat data...</div>
 
     <table v-else class="w-full table-auto border border-gray-300 text-sm">
       <thead class="bg-gray-100">
         <tr>
+          <th class="border px-3 py-2">
+            <input
+              type="checkbox"
+              :checked="allSelected"
+              @change="toggleSelectAll($event.target.checked)"
+            />
+          </th>
           <th class="border px-3 py-2">ID</th>
           <th class="border px-3 py-2">Tanggal</th>
           <th class="border px-3 py-2">Username</th>
           <th class="border px-3 py-2">Nominal</th>
           <th class="border px-3 py-2">Keterangan</th>
-             <!-- <th class="border px-3 py-2">Bank</th> -->
           <th class="border px-3 py-2">Status</th>
           <th class="border px-3 py-2">Aksi</th>
         </tr>
       </thead>
 
       <tbody>
-        <tr v-for="topup in topups" :key="topup.id">
+        <tr v-for="topup in topups" :key="topup.id" :class="{'bg-yellow-50': selectedTopupIds.has(topup.id)}">
+          <td class="border px-3 py-2 text-center">
+            <input
+              type="checkbox"
+              :disabled="topup.status !== 'pending'"
+              :checked="selectedTopupIds.has(topup.id)"
+              @change="toggleSelection(topup.id, $event.target.checked)"
+            />
+          </td>
           <td class="border px-3 py-2">{{ topup.id }}</td>
           <td class="border px-3 py-2">{{ formatDate(topup.createdon) }}</td>
           <td class="border px-3 py-2">{{ topup.username }}</td>
@@ -75,13 +81,6 @@
             Rp{{ Number(topup.amount).toLocaleString('id-ID') }}
           </td>
           <td class="border px-3 py-2 italic text-gray-700">{{ topup.remarks || '-' }}</td>
-           <!-- <td class="border px-3 py-2">
-            <div v-if="topup.bank">
-              <div class="font-semibold">{{ topup.bank.bank_name }}</div>
-              <div class="text-xs">{{ topup.bank.account_name }} ({{ topup.bank.account_number }})</div>
-            </div>
-            <div v-else class="text-gray-400 italic">-</div>
-          </td> -->
           <td class="border px-3 py-2 capitalize">{{ topup.status }}</td>
           <td class="border px-3 py-2 space-x-2">
             <button
@@ -99,7 +98,6 @@
               Tolak
             </button>
           </td>
-
         </tr>
         <tr v-if="!loading && topups.length === 0">
           <td colspan="8" class="text-center py-4 text-gray-500">Tidak ada data</td>
@@ -107,11 +105,26 @@
       </tbody>
     </table>
 
+    <div v-if="selectedTopupIds.size > 0" class="mt-4 space-x-2">
+      <button
+        @click="bulkUpdateStatus('success')"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        Setujui Semua ({{ selectedTopupIds.size }})
+      </button>
+      <button
+        @click="bulkUpdateStatus('failed')"
+        class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+      >
+        Tolak Semua ({{ selectedTopupIds.size }})
+      </button>
+    </div>
+
     <!-- Pagination -->
-    <div v-if="totalPages > 1" class="flex justify-center items-center mt-6 space-x-2 text-sm">
+    <div v-if="totalPages >= 1" class="flex justify-center items-center mt-6 space-x-2 text-sm">
       <button
         :disabled="currentPage === 1"
-        @click="currentPage--; fetchTopups()"
+        @click="currentPage--; fetchWithdraws()"
         class="px-3 py-1 border rounded disabled:opacity-50"
       >
         Prev
@@ -123,7 +136,7 @@
         @click="changePage(page)"
         :class="[
           'px-3 py-1 border rounded',
-          page === currentPage ? 'bg-blue-600 text-white' : 'bg-white'
+          page === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
         ]"
       >
         {{ page }}
@@ -131,18 +144,17 @@
 
       <button
         :disabled="currentPage === totalPages"
-        @click="currentPage++; fetchTopups()"
+        @click="currentPage++; fetchWithdraws()"
         class="px-3 py-1 border rounded disabled:opacity-50"
       >
         Next
       </button>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api.js'
 
@@ -153,30 +165,32 @@ const summary = ref([])
 const usernameFilter = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
-const perPage = 10
+
+// Menyimpan id topup yang dicentang
+const selectedTopupIds = ref(new Set())
 
 const fetchTopups = async () => {
   loading.value = true
   try {
-    const res = await axios.get(API_ENDPOINTS.topup, {
-      params: {
-        status: statusFilter.value || undefined,
-        username: usernameFilter.value || undefined,
-        page: currentPage.value,
-        limit: perPage
-      }
-    })
-
-    const payload = res.data?.data || []
-    topups.value = payload
+   const res = await axios.get(API_ENDPOINTS.topup.list, {
+  params: {
+    status: statusFilter.value || undefined,
+    username: usernameFilter.value || undefined,
+    page: currentPage.value,
+    limit: 10
+  }
+})
+    topups.value = res.data?.data || []
     totalPages.value = res.data?.totalPages || 1
 
-    const summaryRes = await axios.get(API_ENDPOINTS.summaryTopup, {
-      params: {
-        username: usernameFilter.value || undefined
-      }
-    })
+    const summaryRes = await axios.get(API_ENDPOINTS.topup.summary, {
+  params: {
+    username: usernameFilter.value || undefined
+  }
+})
     summary.value = Array.isArray(summaryRes.data) ? summaryRes.data : []
+
+    selectedTopupIds.value.clear()
   } catch (err) {
     console.error('Gagal mengambil data topup:', err)
     topups.value = []
@@ -186,12 +200,62 @@ const fetchTopups = async () => {
 }
 
 const updateStatus = async (id, status) => {
+  const confirmMsg =
+    status === 'success'
+      ? 'Apakah Anda yakin ingin menyetujui topup ini?'
+      : 'Apakah Anda yakin ingin menolak topup ini?'
+
+  if (!confirm(confirmMsg)) return
+
   try {
-    // route backend kamu: PUT /apis/transaksi/topup/:id/status
     await axios.put(`${API_ENDPOINTS.topupById(id)}/status`, { status })
     await fetchTopups()
   } catch (err) {
     console.error('Gagal update status:', err)
+    alert('Gagal memperbarui status topup')
+  }
+}
+
+const toggleSelection = (id, checked) => {
+  if (checked) {
+    selectedTopupIds.value.add(id)
+  } else {
+    selectedTopupIds.value.delete(id)
+  }
+}
+
+const toggleSelectAll = (checked) => {
+  if (checked) {
+    topups.value.forEach(topup => {
+      if (topup.status === 'pending') selectedTopupIds.value.add(topup.id)
+    })
+  } else {
+    selectedTopupIds.value.clear()
+  }
+}
+
+const allSelected = computed(() => {
+  const pendingIds = topups.value.filter(topup => topup.status === 'pending').map(t => t.id)
+  return pendingIds.length > 0 && pendingIds.every(id => selectedTopupIds.value.has(id))
+})
+
+const bulkUpdateStatus = async (status) => {
+  const confirmMsg =
+    status === 'success'
+      ? `Apakah Anda yakin ingin menyetujui semua topup yang dipilih?`
+      : `Apakah Anda yakin ingin menolak semua topup yang dipilih?`
+
+  if (!confirm(confirmMsg)) return
+
+  try {
+   await axios.put(API_ENDPOINTS.topup.bulkUpdateStatus(), {
+  ids: Array.from(selectedTopupIds.value),
+  status
+})
+    await fetchTopups()
+  } catch (err) {
+    console.error('Gagal update status bulk:', err)
+    alert('Gagal memperbarui status topup secara massal')
   }
 }
 
@@ -200,6 +264,7 @@ const formatDate = (dateStr) => {
   const date = new Date(dateStr)
   return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('id-ID')
 }
+
 const changePage = (page) => {
   if (page !== currentPage.value) {
     currentPage.value = page
@@ -207,6 +272,5 @@ const changePage = (page) => {
   }
 }
 
-onMounted(
-  fetchTopups)
+onMounted(fetchTopups)
 </script>

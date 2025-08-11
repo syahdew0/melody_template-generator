@@ -82,6 +82,7 @@ app.use('/company-banks', require('./routes/companybankRoutes'));
 app.use('/customer/company-banks', require('./routes/companybankRoutes'));
 
 
+
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);
 
@@ -122,6 +123,8 @@ app.use('/api/admin/themes', require('./routes/themeRoutes'));
 app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 // app.use('/api/public/banks', require('./routes/masterbankRoutes'));
+
+app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));

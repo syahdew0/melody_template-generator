@@ -26,7 +26,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      referenceid: {
+      reference_id: {
         type: Sequelize.STRING,
         allowNull: true,
       },
