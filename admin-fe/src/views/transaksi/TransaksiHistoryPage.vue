@@ -1,25 +1,45 @@
 <template>
-  <div class="p-6 space-y-6">
+  <div class="p-6 space-y-6 max-w-xl">
     <h1 class="text-2xl font-bold mb-4">Daftar Username Transaksi</h1>
 
-    <!-- Filter Form -->
-    <!-- <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4"> -->
-      <!-- <div>
-        <label class="block text-sm font-medium">From Date</label>
-        <input type="date" v-model="filters.fromDate" class="border px-2 py-1 rounded w-full" />
+    <!-- Filter Username dan Tanggal -->
+    <div class="flex flex-wrap gap-4 mb-6 items-end">
+      <div class="flex-1 min-w-[150px]">
+        <label for="usernameSearch" class="block mb-1 font-medium">Cari Username</label>
+        <input
+          type="text"
+          id="usernameSearch"
+          v-model="filters.username"
+          @keyup.enter="fetchUsernames"
+          placeholder="Masukkan username"
+          class="border p-2 rounded w-full"
+        />
       </div>
-      <div>
-        <label class="block text-sm font-medium">To Date</label>
-        <input type="date" v-model="filters.toDate" class="border px-2 py-1 rounded w-full" />
-      </div> -->
-    <!-- </div> -->
 
-    <!-- <button
-      @click="fetchUsernames"
-      class="bg-blue-600 hover:bg-blue-700 text-white w-full px-4 py-2 rounded"
-    >
-      Cari
-    </button> -->
+      <div>
+        <label for="fromDate" class="block mb-1 font-medium">Dari Tanggal</label>
+        <input
+          type="date"
+          id="fromDate"
+          v-model="filters.fromDate"
+          class="border p-2 rounded"
+        />
+      </div>
+
+      <div>
+        <label for="toDate" class="block mb-1 font-medium">Sampai Tanggal</label>
+        <input
+          type="date"
+          id="toDate"
+          v-model="filters.toDate"
+          class="border p-2 rounded"
+        />
+      </div>
+
+      <button @click="fetchUsernames" class="bg-blue-600 text-white px-4 py-2 rounded">
+        Filter
+      </button>
+    </div>
 
     <!-- Data Table -->
     <table class="w-full mt-6 text-sm border">
@@ -57,17 +77,33 @@ import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 
 const usernames = ref([])
+
+// Fungsi untuk dapatkan tanggal hari ini dalam format YYYY-MM-DD
+function getTodayDate() {
+  const today = new Date()
+  const yyyy = today.getFullYear()
+  const mm = String(today.getMonth() + 1).padStart(2, '0')
+  const dd = String(today.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 const filters = ref({
-  fromDate: '',
-  toDate: ''
+  username: '',
+  fromDate: getTodayDate(),
+  toDate: getTodayDate()
 })
 
 const fetchUsernames = async () => {
   try {
     const token = localStorage.getItem('token')
 
+    const params = {}
+    if (filters.value.username) params.username = filters.value.username
+    if (filters.value.fromDate) params.fromDate = filters.value.fromDate
+    if (filters.value.toDate) params.toDate = filters.value.toDate
+
     const res = await axios.get(`${API_ENDPOINTS.adminWalletHistory}/usernames`, {
-      params: filters.value,
+      params,
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -79,7 +115,6 @@ const fetchUsernames = async () => {
   }
 }
 
-// Panggil saat komponen di-mount
 onMounted(() => {
   fetchUsernames()
 })

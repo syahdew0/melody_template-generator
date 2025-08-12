@@ -22,6 +22,10 @@ module.exports = {
         type: Sequelize.ENUM('in', 'out'),
         allowNull: false,
       },
+      category: {
+        type: Sequelize.ENUM('saldo', 'point', 'stamp'),
+        allowNull: false,
+      },
       walletid: {
         type: Sequelize.STRING,
         allowNull: true,

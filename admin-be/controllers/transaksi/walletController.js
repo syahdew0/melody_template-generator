@@ -299,7 +299,7 @@ exports.getMyDailyWallets = async (req, res) => {
 
 exports.getWalletUsernames = async (req, res) => {
   try {
-    const { fromDate, toDate } = req.query;
+    const { fromDate, toDate, username } = req.query;
     const where = {};
 
     if (fromDate && toDate) {
@@ -308,6 +308,10 @@ exports.getWalletUsernames = async (req, res) => {
       where.created_at = {
         [Op.between]: [start, end]
       };
+    }
+
+    if (username) {
+      where.username = username; // exact match tanpa LOWER
     }
 
     const usernames = await WalletHistory.findAll({
@@ -325,4 +329,5 @@ exports.getWalletUsernames = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil username' });
   }
 };
+
 

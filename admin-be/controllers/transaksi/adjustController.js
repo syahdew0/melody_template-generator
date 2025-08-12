@@ -1,112 +1,172 @@
 const { Adjust, Customer, Wallet, WalletHistory } = require('../../models');
 const { Op } = require('sequelize');
 
-
 module.exports = {
   async create(req, res) {
-    try {
-      const { username, amount, type, remarks } = req.body;
-      const adminUsername = req.user?.username || 'system';
+  try {
+    const { username, amount, category, type, remarks } = req.body;
+    const adminUsername = req.user?.username || 'system';
 
-      // Validasi
-      if (!username || !amount || !type) {
-        return res.status(400).json({ message: 'Data tidak lengkap' });
-      }
+    if (!username || amount === undefined || !category || !type) {
+      return res.status(400).json({ message: 'Data tidak lengkap' });
+    }
 
-      if (amount <= 0) {
-        return res.status(400).json({ message: 'Nominal tidak boleh <= 0' });
-      }
+    if (amount === 0) {
+      return res.status(400).json({ message: 'Jumlah tidak boleh nol' });
+    }
 
-      if (!['in', 'out'].includes(type)) {
-        return res.status(400).json({ message: 'Tipe hanya boleh "in" atau "out"' });
-      }
+    if (!['saldo', 'point', 'stamp'].includes(category)) {
+      return res.status(400).json({ message: 'Category harus salah satu dari saldo, point, atau stamp' });
+    }
 
-      // Ambil customer & wallet
-      const customer = await Customer.findOne({ where: { username } });
-      if (!customer) {
-        return res.status(404).json({ message: 'Customer tidak ditemukan' });
-      }
+    if (!['in', 'out'].includes(type)) {
+      return res.status(400).json({ message: 'Type harus salah satu dari in atau out' });
+    }
 
+    const customer = await Customer.findOne({ where: { username } });
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer tidak ditemukan' });
+    }
+
+    const adjustedAmount = type === 'out' ? -Math.abs(amount) : Math.abs(amount);
+
+    if (category === 'saldo') {
+      // SALDO
       const wallet = await Wallet.findOne({ where: { customer_id: customer.id } });
       if (!wallet) {
         return res.status(404).json({ message: 'Wallet tidak ditemukan' });
       }
 
-      // Hitung saldo terakhir dari wallet history
       const lastHistory = await WalletHistory.findOne({
         where: { walletId: wallet.id },
         order: [['created_at', 'DESC']],
       });
 
       const balanceBefore = lastHistory?.balance_after || 0;
-      const adjAmount = parseFloat(amount);
+      const finalBalance = balanceBefore + adjustedAmount;
 
-      let finalBalance = balanceBefore;
-      if (type === 'in') {
-        finalBalance += adjAmount;
-      } else {
-        if (finalBalance < adjAmount) {
-          return res.status(400).json({ message: 'Saldo tidak mencukupi' });
-        }
-        finalBalance -= adjAmount;
-      }
+      // if (finalBalance < 0) {
+      //   return res.status(400).json({ message: 'Saldo tidak boleh negatif' });
+      // }
 
-      // Simpan ke Adjust
       const adjust = await Adjust.create({
         username,
-        amount: adjAmount,
+        amount: adjustedAmount,
         type,
+        category,
         walletid: wallet.id,
+        
         remarks,
         createdby: adminUsername,
         createdon: new Date(),
       });
 
-      // Simpan ke WalletHistory
+      const transactionType = adjustedAmount > 0 ? 'adjust_plus' : 'adjust_minus';
+
       await WalletHistory.create({
         walletId: wallet.id,
         username,
-        transaction_type: type === 'in' ? 'adjust_plus' : 'adjust_minus',
+        transaction_type: transactionType,
         source_type: 'adjust',
         source_id: adjust.id,
         reference_id: adjust.id,
-        amount: type === 'in' ? adjAmount : -adjAmount,
+        amount: adjustedAmount,
         balance_before: balanceBefore,
         balance_after: finalBalance,
-        balance: finalBalance,
         remarks,
+        status: 'success',
         createdby: adminUsername,
         created_at: new Date(),
+        wallet_type: category,
       });
 
-      // Update saldo terakhir wallet
-      // await Wallet.update(
-      //   { balance: finalBalance },
-      //   { where: { id: wallet.id } }
-      // );
+      await Wallet.update({ balance: finalBalance }, { where: { id: wallet.id } });
 
-      return res.json({ message: 'Penyesuaian berhasil', data: adjust });
+      return res.json({ message: 'Penyesuaian saldo berhasil', data: adjust });
 
-    } catch (error) {
-      console.error('Gagal membuat adjust:', error);
-      return res.status(500).json({ message: 'Gagal membuat adjust', error });
+    } else {
+      // POINT & STAMP
+      const lastHistory = await WalletHistory.findOne({
+        where: { username, wallet_type: category },
+        order: [['created_at', 'DESC']],
+      });
+
+      const balanceBefore = lastHistory?.balance_after || 0;
+      const finalBalance = balanceBefore + adjustedAmount;
+
+      // if (finalBalance < 0) {
+      //   return res.status(400).json({ message: `${category} tidak boleh negatif` });
+      // }
+
+      const adjust = await Adjust.create({
+        username,
+        amount: adjustedAmount,
+        type,
+        category,
+        walletid: null,
+        remarks,
+        createdby: adminUsername,
+        createdon: new Date(),
+      });
+
+      if (category === 'point') {
+        await customer.update({ point: finalBalance });
+      } else {
+        await customer.update({ stamp: finalBalance });
+      }
+
+      const dummyWalletId = 0;
+
+      let transactionType = '';
+      if (category === 'point') {
+        transactionType = adjustedAmount > 0 ? 'point_plus' : 'point_minus';
+      } else if (category === 'stamp') {
+        transactionType = adjustedAmount > 0 ? 'stamp_plus' : 'stamp_minus';
+      }
+
+      await WalletHistory.create({
+        walletId: dummyWalletId,
+        username,
+        transaction_type: transactionType,
+        source_type: 'adjust',
+        source_id: adjust.id,
+        reference_id: adjust.id,
+        amount: adjustedAmount,
+        balance_before: balanceBefore,
+        balance_after: finalBalance,
+        remarks,
+        status: 'success',
+        createdby: adminUsername,
+        created_at: new Date(),
+        wallet_type: category,
+      });
+
+      return res.json({ message: `Penyesuaian ${category} berhasil`, data: adjust });
     }
-  },
+  } catch (error) {
+    console.error('Gagal membuat adjust:', error);
+    return res.status(500).json({ message: 'Gagal membuat adjust', error });
+  }
+},
 
   async list(req, res) {
     try {
-      const { username, startDate, endDate, page = 1, limit = 10 } = req.query;
+      const { username, fromDate, toDate, page = 1, limit = 10 } = req.query;
 
       const whereClause = {};
+      if (username) whereClause.username = username;
 
-      if (username) {
-        whereClause.username = username;
-      }
-
-      if (startDate && endDate) {
+      if (fromDate && toDate) {
         whereClause.createdon = {
-          [Op.between]: [new Date(startDate), new Date(endDate)],
+          [Op.between]: [
+            new Date(fromDate),
+            new Date(new Date(toDate).setHours(23, 59, 59, 999)),
+          ],
         };
+      } else if (fromDate) {
+        whereClause.createdon = { [Op.gte]: new Date(fromDate) };
+      } else if (toDate) {
+        whereClause.createdon = { [Op.lte]: new Date(new Date(toDate).setHours(23, 59, 59, 999)) };
       }
 
       const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -115,14 +175,14 @@ module.exports = {
         where: whereClause,
         order: [['createdon', 'DESC']],
         offset,
-        limit: parseInt(limit)
+        limit: parseInt(limit),
       });
 
       res.json({
         data: rows,
         totalPages: Math.ceil(count / limit),
         currentPage: parseInt(page),
-        totalItems: count
+        totalItems: count,
       });
     } catch (error) {
       console.error('Gagal mengambil data adjust:', error);
@@ -130,37 +190,39 @@ module.exports = {
     }
   },
 
-async getAdjustSummary(req, res) {
-  try {
-    const { username, startDate, endDate } = req.query;
+  async getAdjustSummary(req, res) {
+    try {
+      const { username, fromDate, toDate } = req.query;
 
-    const whereClause = {};
+      const whereClause = {};
+      if (username) whereClause.username = username;
 
-    if (username) {
-      whereClause.username = username;
-    }
-
-    if (startDate && endDate) {
-      whereClause.createdon = {
-        [Op.between]: [new Date(startDate), new Date(endDate)],
-      };
-    }
-
-    const [inResult, outResult] = await Promise.all([
-      Adjust.sum('amount', { where: { ...whereClause, type: 'in' } }),
-      Adjust.sum('amount', { where: { ...whereClause, type: 'out' } }),
-    ]);
-
-    res.json({
-      total: {
-        in: inResult || 0,
-        out: outResult || 0,
-        net: (inResult || 0) - (outResult || 0)
+      if (fromDate && toDate) {
+        whereClause.createdon = {
+          [Op.between]: [
+            new Date(fromDate),
+            new Date(new Date(toDate).setHours(23, 59, 59, 999)),
+          ],
+        };
+      } else if (fromDate) {
+        whereClause.createdon = { [Op.gte]: new Date(fromDate) };
+      } else if (toDate) {
+        whereClause.createdon = { [Op.lte]: new Date(new Date(toDate).setHours(23, 59, 59, 999)) };
       }
-    });
-  } catch (err) {
-    console.error('Error fetching adjust summary:', err);
-    res.status(500).json({ message: 'Gagal mengambil data summary adjust.' });
-  }
-}
+
+      const inResult = await Adjust.sum('amount', { where: { ...whereClause, amount: { [Op.gt]: 0 } } });
+      const outResult = await Adjust.sum('amount', { where: { ...whereClause, amount: { [Op.lt]: 0 } } });
+
+      res.json({
+        total: {
+          in: inResult || 0,
+          out: outResult || 0,
+          net: (inResult || 0) + (outResult || 0),
+        },
+      });
+    } catch (err) {
+      console.error('Error fetching adjust summary:', err);
+      res.status(500).json({ message: 'Gagal mengambil data summary adjust.' });
+    }
+  },
 };

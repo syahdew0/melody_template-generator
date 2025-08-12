@@ -34,6 +34,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    email_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    email_verification_code: DataTypes.STRING,
+    email_pending: DataTypes.STRING,
+
   }, {
     underscored: true,
     tableName: 'Customers'

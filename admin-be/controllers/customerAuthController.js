@@ -1,6 +1,9 @@
 const { Customer, Wallet } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
 exports.register = async (req, res) => {
   try {
@@ -19,7 +22,6 @@ exports.register = async (req, res) => {
       username, email, no_hp, bank, no_rekening, nama_rekening, referral,
       password: hashedPassword
     });
-
      // Tambahkan wallet default setelah customer berhasil dibuat
     await Wallet.create({
     customer_id: newUser.id,
@@ -52,11 +54,6 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: 'Password salah' });
     }
-
-    // Generate token
-    // const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'mysecret', {
-    //   expiresIn: '7d'
-    // });
     const token = jwt.sign(
     { CustomerId: user.id, email: user.email },
     process.env.JWT_CUSTOMER_SECRET || 'customer_secret_123',
@@ -64,17 +61,16 @@ exports.login = async (req, res) => {
   )
 
     res.json({
-  message: 'Login berhasil',
-  data: {
-    token,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email
+    message: 'Login berhasil',
+     data: {
+      token,
+       user: {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      }
     }
-  }
 });
-
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Terjadi kesalahan saat login' });
@@ -170,5 +166,109 @@ exports.changePassword = async (req, res) => {
   } catch (error) {
     console.error('Gagal mengganti password:', error);
     res.status(500).json({ message: 'Terjadi kesalahan saat mengganti password.' });
+  }
+};
+exports.requestEmailVerificationOld = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id);
+    if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
+
+    const oldEmail = customer.email;
+    if (!oldEmail) return res.status(400).json({ message: 'Email lama tidak ditemukan' });
+
+    // Generate kode random 6 digit hex uppercase
+    const code = crypto.randomBytes(3).toString('hex').toUpperCase();
+
+    customer.email_verification_code = code;
+    await customer.save();
+
+    await sendEmail({
+      to: oldEmail,
+      subject: 'Kode Verifikasi Email Lama',
+      text: `Kode verifikasi email lama Anda: ${code}`
+    });
+
+    res.json({ message: 'Kode verifikasi telah dikirim ke email lama Anda.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengirim kode verifikasi email lama.' });
+  }
+};
+exports.confirmEmailVerificationOld = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id);
+    if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
+
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: 'Kode verifikasi wajib diisi.' });
+
+    if (customer.email_verification_code !== code) {
+      return res.status(400).json({ message: 'Kode verifikasi salah.' });
+    }
+
+    // Tandai email lama sudah diverifikasi
+    customer.email_verified = true;
+    customer.email_verification_code = null;
+    await customer.save();
+
+    res.json({ message: 'Email lama berhasil diverifikasi.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal memverifikasi email lama.' });
+  }
+};
+
+exports.requestEmailVerification = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id);
+    if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
+
+    const { new_email } = req.body;
+    if (!new_email) return res.status(400).json({ message: 'Email baru wajib diisi' });
+
+    // Generate kode random 6 digit hex uppercase
+    const code = crypto.randomBytes(3).toString('hex').toUpperCase();
+
+    customer.email_pending = new_email;
+    customer.email_verification_code = code;
+    customer.email_verified = false; // harus verifikasi ulang
+    await customer.save();
+
+    // Kirim kode ke email baru (gunakan fungsi sendEmail)
+    await sendEmail({
+      to: new_email,
+      subject: 'Kode Verifikasi Email Baru',
+      text: `Kode verifikasi email Anda: ${code}`
+    });
+
+    res.json({ message: 'Kode verifikasi telah dikirim ke email baru Anda.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengirim kode verifikasi email.' });
+  }
+};
+exports.confirmEmailVerification = async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.customer.id);
+    if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
+
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: 'Kode verifikasi wajib diisi.' });
+
+    if (customer.email_verification_code !== code.toUpperCase()) {
+    return res.status(400).json({ message: 'Kode verifikasi salah.' });
+  }
+
+    // Update email utama dari email_pending
+    customer.email = customer.email_pending;
+    customer.email_pending = null;
+    customer.email_verification_code = null;
+    customer.email_verified = true;
+    await customer.save();
+
+    res.json({ message: 'Email berhasil diverifikasi dan diperbarui.', email: customer.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal memverifikasi email.' });
   }
 };

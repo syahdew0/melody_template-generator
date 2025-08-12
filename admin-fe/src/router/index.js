@@ -251,6 +251,11 @@ const routes = [
   name: 'CompanyBank',
   component: () => import('@/views/bank/CompanyBank.vue'),
 },
+{
+  path: '/admin/user/customerlist',
+  name: 'CustomerList',
+  component: () => import('@/views/user/CustomerList.vue'),
+},
 
 ]
 

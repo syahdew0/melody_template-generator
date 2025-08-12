@@ -61,6 +61,8 @@
           <th class="border px-2 py-1">Username</th>
           <th class="border px-2 py-1">Wallet ID</th>
           <th class="border px-2 py-1">Tipe</th>
+          <th class="border px-2 py-1">Saldo Sebelum</th>
+          <th class="border px-2 py-1">Saldo Sesudah</th>
           <th class="border px-2 py-1">Jumlah</th>
           <th class="border px-2 py-1">Keterangan</th>
         </tr>
@@ -71,6 +73,8 @@
           <td class="border px-2 py-1">{{ h.username }}</td>
           <td class="border px-2 py-1">{{ h.walletId }}</td>
           <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td>
+          <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_before) }}</td>
+          <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_after) }}</td>
           <td
             class="border px-2 py-1"
             :class="{

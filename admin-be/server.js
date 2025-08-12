@@ -126,6 +126,7 @@ app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 
 app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
+app.use('/api/admin', require('./routes/adminCustomerRoutes'));
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));
 

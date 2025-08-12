@@ -1,5 +1,5 @@
 const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory,CompanyBank, sequelize } = require('../../models');
-// const { Op } = require('sequelize');
+const { Op } = require('sequelize');
 
 module.exports = {
 async create(req, res) {
@@ -26,7 +26,7 @@ async create(req, res) {
     const wallet = await Wallet.findOne({
       where: {
         customer_id: customer.id,
-        wallet_type: 'saldo' // jika kamu pakai tipe wallet
+        wallet_type: 'saldo' 
       }
     });
 
@@ -60,10 +60,9 @@ async create(req, res) {
     res.status(500).json({ message: 'Gagal membuat topup', error });
   }
 },
-
 async list(req, res) {
   try {
-    const { status, username, page = 1, limit = 10 } = req.query;
+    const { status, username, fromDate, toDate, page = 1, limit = 10 } = req.query;
     const whereClause = {};
 
     if (status && ['pending', 'success', 'failed'].includes(status)) {
@@ -72,6 +71,19 @@ async list(req, res) {
 
     if (username) {
       whereClause.username = username;
+    }
+
+    if (fromDate || toDate) {
+      whereClause.createdon = {};
+      if (fromDate) {
+        whereClause.createdon[Op.gte] = new Date(fromDate);
+      }
+      if (toDate) {
+        // Supaya sampai akhir hari toDate, bisa tambahkan 1 hari minus 1ms atau set waktu ke 23:59:59
+        const toDateEnd = new Date(toDate);
+        toDateEnd.setHours(23, 59, 59, 999);
+        whereClause.createdon[Op.lte] = toDateEnd;
+      }
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -185,29 +197,57 @@ async list(req, res) {
   }
 },
 async getTopupList(req, res) {
-  const customerId = req.customer.id;
-  const topups = await Topup.findAll({
-    where: { username: req.customer.username },
-    order: [['date', 'DESC']],
-    include: [
-  {
-    model: CompanyBank,
-    as: 'bank',
-    attributes: ['id', 'bank_name', 'account_name', 'account_number']
+  try {
+    const { fromDate, toDate } = req.query;
+    const whereClause = {
+      username: req.customer.username
+    };
+
+    if (fromDate || toDate) {
+      whereClause.createdon = {};
+      if (fromDate) whereClause.createdon[Op.gte] = new Date(fromDate);
+      if (toDate) {
+        const toDateEnd = new Date(toDate);
+        toDateEnd.setHours(23, 59, 59, 999);
+        whereClause.createdon[Op.lte] = toDateEnd;
+      }
+    }
+
+    const topups = await Topup.findAll({
+      where: whereClause,
+      order: [['date', 'DESC']],
+      include: [
+        {
+          model: CompanyBank,
+          as: 'bank',
+          attributes: ['id', 'bank_name', 'account_name', 'account_number']
+        }
+      ]
+    });
+
+    res.json({ data: topups });
+  } catch (error) {
+    console.error('Gagal ambil data topup:', error);
+    res.status(500).json({ message: 'Gagal ambil data topup', error });
   }
-]
-  });
-  // res.json(topups);
-   res.json({ data: topups });
 },
 
 async getTopupSummary(req, res) {
   try {
-    const { username } = req.query;
+    const { username, fromDate, toDate } = req.query;
 
     const where = {};
     if (username) {
       where.username = username;
+    }
+    if (fromDate || toDate) {
+      where.createdon = {};
+      if (fromDate) where.createdon[Op.gte] = new Date(fromDate);
+      if (toDate) {
+        const toDateEnd = new Date(toDate);
+        toDateEnd.setHours(23, 59, 59, 999);
+        where.createdon[Op.lte] = toDateEnd;
+      }
     }
 
     const summary = await Topup.findAll({

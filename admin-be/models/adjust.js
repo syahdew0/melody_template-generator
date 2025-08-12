@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('in', 'out'),
       allowNull: false
     },
+     category: {  
+      type: DataTypes.ENUM('saldo', 'point', 'stamp'),
+      allowNull: false
+    },
     walletid: {
       type: DataTypes.STRING,
       allowNull: true

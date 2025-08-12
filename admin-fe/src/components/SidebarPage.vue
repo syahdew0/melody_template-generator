@@ -435,6 +435,15 @@
                 </ul>
               </transition>
             </li>
+
+        <router-link
+        to="/admin/user/customerlist"
+        class="block py-2 px-3 rounded hover:bg-gray-700"
+        active-class="bg-gray-700 font-semibold"
+      >
+        Daftar Customer
+      </router-link>
+
       </ul>
     </nav>
 

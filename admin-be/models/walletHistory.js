@@ -10,8 +10,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     transaction_type: {
-      type: DataTypes.ENUM('topup', 'withdraw', 'adjust_plus', 'adjust_minus'),
+      type: DataTypes.ENUM('topup', 'withdraw', 'adjust_plus', 'adjust_minus', 'point_plus', 'point_minus', 'stamp_plus', 'stamp_minus'), // sesuaikan enum dengan yang kamu pakai
       allowNull: false
+    },
+    wallet_type: {
+      type: DataTypes.ENUM('saldo', 'point', 'stamp'),
+      allowNull: false,
+      defaultValue: 'saldo',
     },
     reference_id: {
       type: DataTypes.INTEGER,

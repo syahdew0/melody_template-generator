@@ -44,11 +44,11 @@ export const API_ENDPOINTS = {
 
   posts: `${API_URL}/apis/admin/posts`,               
   postBySlug: (slug) => `${API_URL}/apis/posts/slug/${slug}`,  
-UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
+  UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
   categories: `${API_URL}/apis/categories`,          
 
   pages: `${API_URL}/apis/admin/posts`,              
-pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
+  pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
   customPages: `${API_URL}/api/admin/custom-pages`,
 
   activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
@@ -75,27 +75,26 @@ pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
   UPDATE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,
   DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,   
 
-    siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
-    favicon: `${API_URL}/apis/icons/favicon`,        
-    icons: `${API_URL}/apis/icons/upload`,           
-    saveFavicon: `${API_URL}/apis/icons/save`,      
+  siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
+  favicon: `${API_URL}/apis/icons/favicon`,        
+  icons: `${API_URL}/apis/icons/upload`,           
+  saveFavicon: `${API_URL}/apis/icons/save`,      
     
     // Transaksi
   //   topup: `${API_URL}/api/transaksi/topup`,
   //   bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
   //  topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
   //  summaryTopup: `${API_URL}/api/transaksi/topup-summary`,
-topup: {
-  list: `${API_URL}/api/transaksi/topup`,
-  bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
-  byId: (id) => `${API_URL}/api/transaksi/topup/${id}`,
-  summary: `${API_URL}/api/transaksi/topup-summary`,
-},
-
+  topup: {
+    list: `${API_URL}/api/transaksi/topup`,
+    bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
+    byId: (id) => `${API_URL}/api/transaksi/topup/${id}`,
+    summary: `${API_URL}/api/transaksi/topup-summary`,
+  },
 
     // withdraws: `${API_URL}/apis/withdraws`,
     // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,
-   withdraw: {
+  withdraw: {
   list: (status = '', username = '') => {
     const params = new URLSearchParams()
     if (status) params.append('status', status)
@@ -103,28 +102,22 @@ topup: {
     return `${API_URL}/api/transaksi/withdraw?${params.toString()}`},
   updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
    bulkUpdateStatus: () => `${API_URL}/api/transaksi/withdraw/bulk-update-status`,
-},
+  },
 
   adjust: {
-      create: `${API_URL}/api/transaksi/adjust`,
-      list: `${API_URL}/api/transaksi/adjust`,
-        // summary: `${API_URL}/api/transaksi/adjust-summary`,
-        summaryAdjust: `${API_URL}/api/transaksi/adjust-summary`,
-
+   create: `${API_URL}/api/transaksi/adjust`,
+   list: `${API_URL}/api/transaksi/adjust`,
+    // summary: `${API_URL}/api/transaksi/adjust-summary`,
+   summaryAdjust: `${API_URL}/api/transaksi/adjust-summary`,
   },
-    walletMe: `${API_URL}/api/transaksi/me`, 
-    // walletHistory: `${API_URL}/api/transaksi/wallet-histories`,
-   adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
-    // walletHistory: `${API_URL}/api/admin/transaksi/wallet-history`,
-    company_banks: `${API_URL}/api/company-banks`,
 
-
-
-
-      // topup: `${API_URL}/api/transaksi/topup`,
-      // withdraw: `${API_URL}/api/transaksi/withdraw`,
-      // adjust: `${API_URL}/api/transaksi/adjust`,
-
+  walletMe: `${API_URL}/api/transaksi/me`, 
+  // walletHistory: `${API_URL}/api/transaksi/wallet-histories`,
+  adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
+  // walletHistory: `${API_URL}/api/admin/transaksi/wallet-history`,
+  company_banks: `${API_URL}/api/company-banks`,
+    adminCustomersList: `${API_URL}/api/admin/customers`,
+  customersList: `${API_URL}/customer/auth/user/customers`,
 
 }
 
