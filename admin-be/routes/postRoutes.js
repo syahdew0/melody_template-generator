@@ -2,25 +2,27 @@ const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/postController');
 
+const { requireAuth, requireAdmin } = require('../middlewares/authMiddleware');
+
 
 // Ambil semua post (dengan filter kategori, jika ada)
 // router.get('/posts', postController.getAll);
 
 // Ambil detail post by slug (misal: /post/slug-berita)
-router.get('/posts/category/:slug', postController.getPostsByCategory)
-router.get('/slug/:slug', postController.getBySlug);
-router.get('/category/:slug', postController.getBySlug);
-router.get('/post/:slug/:slug', postController.getBySlug);
-router.get('/post/:slug', postController.getBySlug);
-router.get('/page/:slug', postController.getBySlug);
-router.get('/pages/slug/:slug', postController.getBySlug);
-router.get('/', postController.getAll);
-router.delete('/slug/:slug', postController.deleteBySlug)
-router.get('/posts', postController.getAll);
-router.post('/', postController.create);
-router.put('/:id', postController.update);
-router.delete('/:id', postController.remove)
-router.get('/:id', postController.getById);
-router.put('/slug/:slug', postController.updateBySlug);
+router.get('/posts/category/:slug', requireAuth, requireAdmin, postController.getPostsByCategory)
+router.get('/slug/:slug', requireAuth, requireAdmin,postController.getBySlug);
+router.get('/category/:slug',requireAuth, requireAdmin, postController.getBySlug);
+router.get('/post/:slug/:slug',requireAuth, requireAdmin, postController.getBySlug);
+router.get('/post/:slug',requireAuth, requireAdmin, postController.getBySlug);
+router.get('/page/:slug',requireAuth, requireAdmin, postController.getBySlug);
+router.get('/pages/slug/:slug',requireAuth, requireAdmin, postController.getBySlug);
+router.get('/',requireAuth, requireAdmin, postController.getAll);
+router.delete('/slug/:slug',requireAuth, requireAdmin, postController.deleteBySlug)
+router.get('/posts',requireAuth, requireAdmin, postController.getAll);
+router.post('/',requireAuth, requireAdmin, postController.create);
+router.put('/:id',requireAuth, requireAdmin, postController.update);
+router.delete('/:id',requireAuth, requireAdmin, postController.remove)
+router.get('/:id',requireAuth, requireAdmin, postController.getById);
+router.put('/slug/:slug',requireAuth, requireAdmin, postController.updateBySlug);
 
 module.exports = router;

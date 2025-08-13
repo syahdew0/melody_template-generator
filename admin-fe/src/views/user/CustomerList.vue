@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 max-w-5xl mx-auto">
+  <div class="p-4 max-w-full px-6 py-12 mx-auto">
     <h1 class="text-xl font-bold mb-4">Daftar Customer</h1>
 
     <!-- Filter Form -->
@@ -70,13 +70,13 @@
         />
       </div>
 
-      <div class="md:col-span-3 flex gap-4 mt-2">
-        <button @click="fetchCustomers" class="px-4 py-2 bg-blue-600 text-white rounded">
+      <div class="  gap-4 mt-2">
+        <button @click="fetchCustomers" class="px-4 max-w-full py-2 bg-blue-600 text-white rounded">
           Cari
         </button>
-        <button @click="resetFilters" class="px-4 py-2 bg-gray-500 text-white rounded">
+        <!-- <button @click="resetFilters" class="px-4 py-2 bg-gray-500 text-white rounded">
           Reset
-        </button>
+        </button> -->
       </div>
     </div>
 
@@ -93,25 +93,25 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="customer in customers"
-          :key="customer.id"
-          class="hover:bg-gray-100"
-        >
-          <td class="border px-4 py-2">{{ customer.id }}</td>
-          <td class="border px-4 py-2">{{ customer.username }}</td>
-          <td class="border px-4 py-2">{{ customer.email }}</td>
-          <td class="border px-4 py-2">{{ customer.bank || '-' }}</td>
-          <td class="border px-4 py-2">{{ customer.no_rekening || '-' }}</td>
-          <td class="border px-4 py-2">{{ customer.nama_rekening || '-' }}</td>
-          <td class="border px-4 py-2">
-            {{ new Date(customer.createdAt).toLocaleString() }}
-          </td>
-        </tr>
-        <tr v-if="customers.length === 0">
-          <td colspan="7" class="text-center py-4">Data tidak ditemukan</td>
-        </tr>
-      </tbody>
+  <tr v-if="!hasSearched">
+    <td colspan="7" class="text-center py-4">Silakan klik Cari untuk menampilkan data</td>
+  </tr>
+  
+  <tr v-else v-for="customer in customers" :key="customer.id" class="hover:bg-gray-100">
+    <td class="border px-4 py-2">{{ customer.id }}</td>
+    <td class="border px-4 py-2">{{ customer.username }}</td>
+    <td class="border px-4 py-2">{{ customer.email }}</td>
+    <td class="border px-4 py-2">{{ customer.bank || '-' }}</td>
+    <td class="border px-4 py-2">{{ customer.no_rekening || '-' }}</td>
+    <td class="border px-4 py-2">{{ customer.nama_rekening || '-' }}</td>
+    <td class="border px-4 py-2">{{ new Date(customer.createdAt).toLocaleString() }}</td>
+  </tr>
+
+  <tr v-if="hasSearched && customers.length === 0">
+    <td colspan="7" class="text-center py-4">Data tidak ditemukan</td>
+  </tr>
+</tbody>
+
     </table>
 
     <p v-if="errorMessage" class="text-red-600 mt-4">{{ errorMessage }}</p>
@@ -180,20 +180,20 @@ const fetchCustomers = async () => {
   }
 };
 
-const resetFilters = () => {
-  filters.value = {
-    fromDate: formatDateToInput(today), 
-    toDate: formatDateToInput(today),
-    username: '',
-    bank: '',
-    no_rekening: '',
-    nama_rekening: '',
-  };
-  fetchCustomers();
-};
+// const resetFilters = () => {
+//   filters.value = {
+//     fromDate: formatDateToInput(today), 
+//     toDate: formatDateToInput(today),
+//     username: '',
+//     bank: '',
+//     no_rekening: '',
+//     nama_rekening: '',
+//   };
+//   fetchCustomers();
+// };
 
 // Auto fetch saat component mounted
-fetchCustomers();
+// fetchCustomers();
 </script>
 
 <style scoped>

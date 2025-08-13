@@ -112,7 +112,7 @@
             </td>
             <td class="border px-3 py-2 capitalize">{{ topup.status }}</td>
             <td class="border px-3 py-2 space-x-2">
-              <button
+             <button
                 v-if="topup.status === 'pending'"
                 @click="updateStatus(topup.id, 'success')"
                 class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
@@ -249,7 +249,7 @@ const updateStatus = async (id, status) => {
   if (!confirm(confirmMsg)) return
 
   try {
-    await axios.put(`${API_ENDPOINTS.topupById(id)}/status`, { status })
+    await axios.put(`${API_ENDPOINTS.topup.byId(id)}/status`, { status })
     await fetchTopups()
   } catch (err) {
     console.error('Gagal update status:', err)

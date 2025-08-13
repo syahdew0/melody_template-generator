@@ -33,7 +33,6 @@ const authenticateCustomer = async (req, res, next) => {
 module.exports = authenticateCustomer;
 
 
-// // authCustomer.js
 // const jwt = require('jsonwebtoken');
 // const { Customer } = require('../models');
 

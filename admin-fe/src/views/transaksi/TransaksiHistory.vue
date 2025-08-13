@@ -72,7 +72,8 @@
           <td class="border px-2 py-1">{{ formatDate(h.created_at) }}</td>
           <td class="border px-2 py-1">{{ h.username }}</td>
           <td class="border px-2 py-1">{{ h.walletId }}</td>
-          <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td>
+          <!-- <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td> -->
+           <td class="border px-3 py-2">{{ formatType(h.transaction_type, h.status) }}</td>
           <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_before) }}</td>
           <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_after) }}</td>
           <td
@@ -194,13 +195,31 @@ const formatRupiah = (val) => {
   return Number(val || 0).toLocaleString('id-ID')
 }
 
-const formatType = (val) => {
+// const formatType = (val) => {
+//   switch (val) {
+//     case 'topup': return 'Topup'
+//     case 'withdraw': return 'Withdraw'
+//     case 'adjust_plus': return 'Adjust Masuk'
+//     case 'adjust_minus': return 'Adjust Keluar'
+//     default: return val
+//   }
+// }
+const formatType = (val, status) => {
+  if (val === 'withdraw') {
+    if (status === 'success') return 'Withdraw disetujui'
+    if (status === 'failed') return 'Withdraw ditolak'
+    return 'Withdraw'
+  }
+
   switch (val) {
-    case 'topup': return 'Topup'
-    case 'withdraw': return 'Withdraw'
-    case 'adjust_plus': return 'Adjust Masuk'
-    case 'adjust_minus': return 'Adjust Keluar'
-    default: return val
+    case 'topup':
+      return 'Topup'
+    case 'adjust_plus':
+      return 'Adjust Masuk'
+    case 'adjust_minus':
+      return 'Adjust Keluar'
+    default:
+      return val
   }
 }
 </script>

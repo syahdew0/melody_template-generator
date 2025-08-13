@@ -79,8 +79,12 @@ app.use('/apis/posts', require('./routes/postRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
 app.use('/banks', require('./routes/masterbankRoutes'));
 app.use('/company-banks', require('./routes/companybankRoutes'));
-app.use('/customer/company-banks', require('./routes/companybankRoutes'));
+// app.use('/customer/company-banks', require('./routes/companybankRoutes'));
+// Admin
+// app.use('/company-banks', require('./routes/admin/companyBank'));
 
+// Customer
+app.use('/customer/company-banks', require('./routes/customer/companybankRoutes'));
 
 
 // === Protected Routes (Require Auth) ===

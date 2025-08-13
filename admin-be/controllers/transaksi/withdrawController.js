@@ -70,20 +70,20 @@ module.exports = {
     }, { transaction: t });
 
     // Catat history
-    await WalletHistory.create({
-        walletId: wallet.id,
-        username: customer.username,
-        type: 'out',
-        amount: withdraw.amount,
-        source_type: 'withdraw',
-        source_id: withdraw.id,
-        reference_id: withdraw.id,
-        balance_before: currentBalance,
-        balance_after: currentBalance, 
-        remarks: 'Pengajuan withdraw',
-        created_at: new Date(),
-        transaction_type: 'withdraw'
-      }, { transaction: t });
+    // await WalletHistory.create({
+    //     walletId: wallet.id,
+    //     username: customer.username,
+    //     type: 'out',
+    //     amount: withdraw.amount,
+    //     source_type: 'withdraw',
+    //     source_id: withdraw.id,
+    //     reference_id: withdraw.id,
+    //     balance_before: currentBalance,
+    //     balance_after: currentBalance, 
+    //     remarks: 'Pengajuan withdraw',
+    //     created_at: new Date(),
+    //     transaction_type: 'withdraw'
+    //   }, { transaction: t });
 
 
     await t.commit();
@@ -213,6 +213,7 @@ module.exports = {
         transaction_type: 'withdraw',
         amount: data.amount,
         source_type: 'withdraw',
+         status,
         source_id: data.id,
        reference_id: data.id,
         balance_before: previousBalance,
@@ -224,21 +225,23 @@ module.exports = {
 
     // Jika status diubah menjadi failed
     if (status === 'failed') {
-      await WalletHistory.create({
-         walletId: wallet.id,
-        username: data.username,
-        type: 'out',
-        transaction_type: 'withdraw',
-        amount: 0,
-        source_type: 'withdraw',
-        source_id: data.id,
-        reference_id: data.id,
-        balance_before: previousBalance,
-        balance_after: previousBalance,
-        remarks: 'Withdraw ditolak oleh admin',
-        created_at: new Date()
-      }, { transaction: t });
-    }
+    await WalletHistory.create({
+      walletId: wallet.id,
+      username: data.username,
+      type: 'out',
+      transaction_type: 'withdraw',
+      // amount: 0,
+      amount: -parseFloat(data.amount),
+      source_type: 'withdraw',
+       status,
+      source_id: data.id,
+      reference_id: data.id,
+      balance_before: previousBalance,
+      balance_after: previousBalance,
+      remarks: 'Withdraw ditolak oleh admin',
+      created_at: new Date()
+    }, { transaction: t });
+}
 
     // Update status withdraw
     data.status = status;
@@ -341,22 +344,39 @@ module.exports = {
         }, { transaction: t });
       }
 
+      // if (status === 'failed') {
+      //   await WalletHistory.create({
+      //     walletId: wallet.id,
+      //     username: data.username,
+      //     type: 'out',
+      //     transaction_type: 'withdraw',
+      //     amount: 0,
+      //     source_type: 'withdraw',
+      //     source_id: data.id,
+      //     reference_id: data.id,
+      //     balance_before: previousBalance,
+      //     balance_after: previousBalance,
+      //     remarks: 'Withdraw ditolak oleh admin',
+      //     created_at: new Date()
+      //   }, { transaction: t });
+      // }
       if (status === 'failed') {
-        await WalletHistory.create({
-          walletId: wallet.id,
-          username: data.username,
-          type: 'out',
-          transaction_type: 'withdraw',
-          amount: 0,
-          source_type: 'withdraw',
-          source_id: data.id,
-          reference_id: data.id,
-          balance_before: previousBalance,
-          balance_after: previousBalance,
-          remarks: 'Withdraw ditolak oleh admin',
-          created_at: new Date()
-        }, { transaction: t });
-      }
+      await WalletHistory.create({
+        walletId: wallet.id,
+        username: data.username,
+        type: 'out',
+        transaction_type: 'withdraw',
+        amount: -parseFloat(data.amount), 
+        source_type: 'withdraw',
+        status,
+        source_id: data.id,
+        reference_id: data.id,
+        balance_before: previousBalance,
+        balance_after: previousBalance, 
+        remarks: 'Withdraw ditolak oleh admin',
+        created_at: new Date()
+      }, { transaction: t });
+}
 
       // Update status withdraw
       data.status = status;

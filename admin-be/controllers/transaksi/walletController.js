@@ -182,11 +182,15 @@ exports.getMyWalletHistory = async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const result = await WalletHistory.findAndCountAll({
-      where,
-      order: [['created_at', 'DESC']],
-      offset,
-      limit: parseInt(limit),
-    });
+    where,
+    attributes: [
+    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
+    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
+  ],
+    order: [['created_at', 'DESC']],
+    offset,
+    limit: parseInt(limit),
+  });
 
     res.json({
       count: result.count,
@@ -226,15 +230,24 @@ exports.getAdminWalletHistory = async (req, res) => {
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const result = await WalletHistory.findAndCountAll({
-      where,
-      order: [['created_at', 'DESC']],
-      offset,
-      limit: parseInt(limit),
-      raw: true,
+    // const result = await WalletHistory.findAndCountAll({
+    //   where,
+    //   order: [['created_at', 'DESC']],
+    //   offset,
+    //   limit: parseInt(limit),
+    //   raw: true,
       
-    });
-
+    // });
+const result = await WalletHistory.findAndCountAll({
+    where,
+    attributes: [
+    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
+    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
+  ],
+    order: [['created_at', 'DESC']],
+    offset,
+    limit: parseInt(limit),
+  });
     res.json({
       count: result.count,
       rows: result.rows

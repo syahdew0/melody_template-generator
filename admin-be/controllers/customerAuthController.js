@@ -80,7 +80,17 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.customer.id, {
-      attributes: ['id', 'username', 'email', 'no_hp', 'bank', 'no_rekening', 'nama_rekening']
+      attributes: [
+        'id',
+        'username',
+        'email',
+        'no_hp',
+        'bank',
+        'no_rekening',
+        'nama_rekening',
+        'email_verified',
+        'email_pending'
+      ]
     });
 
     if (!customer) {
@@ -91,6 +101,15 @@ exports.me = async (req, res) => {
       where: { customer_id: req.customer.id }
     });
 
+    let statusEmail;
+    if (customer.email_pending) {
+      statusEmail = 'Menunggu verifikasi email baru';
+    } else if (!customer.email_verified) {
+      statusEmail = 'Email belum diverifikasi';
+    } else {
+      statusEmail = 'Email terverifikasi';
+    }
+
     res.json({
       id: customer.id,
       username: customer.username,
@@ -99,7 +118,9 @@ exports.me = async (req, res) => {
       bank: customer.bank,
       no_rekening: customer.no_rekening,
       nama_rekening: customer.nama_rekening,
-      balance: wallet?.balance || 0
+      balance: wallet?.balance || 0,
+      email_verified: customer.email_verified,
+      status_email: statusEmail
     });
 
   } catch (error) {
@@ -107,6 +128,7 @@ exports.me = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data customer' });
   }
 };
+
 
 exports.updateProfile = async (req, res) => {
   try {
@@ -202,8 +224,9 @@ exports.confirmEmailVerificationOld = async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ message: 'Kode verifikasi wajib diisi.' });
 
-    if (customer.email_verification_code !== code) {
-      return res.status(400).json({ message: 'Kode verifikasi salah.' });
+    // if (customer.email_verification_code !== code) {
+    if (customer.email_verification_code !== code.toUpperCase()) {
+    return res.status(400).json({ message: 'Kode verifikasi salah.' });
     }
 
     // Tandai email lama sudah diverifikasi
@@ -225,6 +248,22 @@ exports.requestEmailVerification = async (req, res) => {
 
     const { new_email } = req.body;
     if (!new_email) return res.status(400).json({ message: 'Email baru wajib diisi' });
+
+    if (new_email.toLowerCase() === customer.email.toLowerCase()) {
+      return res.status(400).json({ message: 'Email baru tidak boleh sama dengan email lama.' });
+    }
+    const lastUpdated = new Date(customer.updatedAt);
+    const now = new Date();
+    const diffDays = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+    if (diffDays < 7) {
+      return res.status(400).json({ message: 'Email hanya bisa diubah setiap 7 hari sekali.' });
+    }
+    // const now = new Date();
+    // const diffMinutes = (now - lastUpdated) / (1000 * 60); // selisih dalam menit
+
+    // if (diffMinutes < 30) {
+    //   return res.status(400).json({ message: 'Email hanya bisa diubah setiap 30 menit sekali (testing).' });
+    // }
 
     // Generate kode random 6 digit hex uppercase
     const code = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -255,11 +294,14 @@ exports.confirmEmailVerification = async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ message: 'Kode verifikasi wajib diisi.' });
 
-    if (customer.email_verification_code !== code.toUpperCase()) {
+  //   if (customer.email_verification_code !== code.toUpperCase()) {
+  //   return res.status(400).json({ message: 'Kode verifikasi salah.' });
+  // }
+
+  if (customer.email_verification_code !== code.toUpperCase()) {
     return res.status(400).json({ message: 'Kode verifikasi salah.' });
   }
-
-    // Update email utama dari email_pending
+  // Update email utama dari email_pending
     customer.email = customer.email_pending;
     customer.email_pending = null;
     customer.email_verification_code = null;

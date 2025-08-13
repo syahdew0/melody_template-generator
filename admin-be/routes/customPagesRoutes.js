@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const customPageController = require('../controllers/customPageController');
 
-router.delete('/deleteByTag/:tag', customPageController.deleteByTag)
+const { requireAuth, requireAdmin } = require('../middlewares/authMiddleware');
+router.delete('/deleteByTag/:tag', requireAuth, requireAdmin, customPageController.deleteByTag)
 
 router.get('/frontend', customPageController.getByPage);
-router.get('/', customPageController.getAll);
-router.post('/', customPageController.create);
-router.get('/:id', customPageController.getById);
-router.put('/:id', customPageController.update);
-router.delete('/:id', customPageController.remove);
+router.get('/',requireAuth, requireAdmin, customPageController.getAll);
+router.post('/',requireAuth, requireAdmin, customPageController.create);
+router.get('/:id', requireAuth, requireAdmin,customPageController.getById);
+router.put('/:id',requireAuth, requireAdmin, customPageController.update);
+router.delete('/:id',requireAuth, requireAdmin, customPageController.remove);
 
 module.exports = router;
