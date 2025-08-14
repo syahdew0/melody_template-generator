@@ -249,13 +249,19 @@ const updateStatus = async (id, status) => {
   if (!confirm(confirmMsg)) return
 
   try {
-    await axios.put(`${API_ENDPOINTS.topup.byId(id)}/status`, { status })
+    const token = localStorage.getItem('adminToken')
+    await axios.put(
+      `${API_ENDPOINTS.topup.byId(id)}/status`,
+      { status },
+      { headers: { Authorization: `Bearer ${token}` } } 
+    )
     await fetchTopups()
   } catch (err) {
     console.error('Gagal update status:', err)
     alert('Gagal memperbarui status topup')
   }
 }
+
 
 const toggleSelection = (id, checked) => {
   if (checked) {
@@ -291,16 +297,19 @@ const bulkUpdateStatus = async (status) => {
   if (!confirm(confirmMsg)) return
 
   try {
-    await axios.put(API_ENDPOINTS.topup.bulkUpdateStatus(), {
-      ids: Array.from(selectedTopupIds.value),
-      status,
-    })
+    const token = localStorage.getItem('adminToken') 
+    await axios.put(
+      API_ENDPOINTS.topup.bulkUpdateStatus(),
+      { ids: Array.from(selectedTopupIds.value), status },
+      { headers: { Authorization: `Bearer ${token}` } } 
+    )
     await fetchTopups()
   } catch (err) {
     console.error('Gagal update status bulk:', err)
     alert('Gagal memperbarui status topup secara massal')
   }
 }
+
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'

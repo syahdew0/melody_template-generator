@@ -59,11 +59,11 @@
         <tr>
           <th class="border px-2 py-1">Tanggal</th>
           <th class="border px-2 py-1">Username</th>
-          <th class="border px-2 py-1">Wallet ID</th>
+          <!-- <th class="border px-2 py-1">Wallet ID</th> -->
           <th class="border px-2 py-1">Tipe</th>
           <th class="border px-2 py-1">Saldo Sebelum</th>
-          <th class="border px-2 py-1">Saldo Sesudah</th>
           <th class="border px-2 py-1">Jumlah</th>
+          <th class="border px-2 py-1">Saldo Sesudah</th>
           <th class="border px-2 py-1">Keterangan</th>
         </tr>
       </thead>
@@ -71,21 +71,19 @@
         <tr v-for="h in histories" :key="h.id">
           <td class="border px-2 py-1">{{ formatDate(h.created_at) }}</td>
           <td class="border px-2 py-1">{{ h.username }}</td>
-          <td class="border px-2 py-1">{{ h.walletId }}</td>
+          <!-- <td class="border px-2 py-1">{{ h.walletId }}</td> -->
           <!-- <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td> -->
-           <td class="border px-3 py-2">{{ formatType(h.transaction_type, h.status) }}</td>
-          <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_before) }}</td>
-          <td class="border px-2 py-1">Rp{{ formatRupiah(h.balance_after) }}</td>
+          <td class="border px-3 py-2">{{ formatType(h.transaction_type, h.status) }}</td>
+          <td class="border px-2 py-1">{{ formatAmount(h.balance_before, h.wallet_type) }}</td>
           <td
-            class="border px-2 py-1"
+            class="border px-3 py-2 text-center font-semibold"
             :class="{
-              'text-green-600': h.transaction_type.includes('topup') || h.transaction_type.includes('adjust_plus'),
-              'text-red-600': h.transaction_type.includes('withdraw') || h.transaction_type.includes('adjust_minus')
-            }"
-          >
-            {{ h.transaction_type === 'withdraw' || h.transaction_type === 'adjust_minus' ? '-' : '+' }}
-            Rp{{ formatRupiah(h.amount) }}
+              'text-green-600': h.amount > 0 && h.status !== 'failed',
+              'text-red-600': h.amount < 0 || h.status === 'failed'
+            }">
+            {{ h.amount < 0 ? '-' : '+' }} {{ formatAmount(Math.abs(h.amount), h.wallet_type) }}
           </td>
+          <td class="border px-2 py-1">{{ formatAmount(h.balance_after, h.wallet_type) }}</td>
           <td class="border px-2 py-1">{{ h.remarks || '-' }}</td>
         </tr>
         <tr v-if="histories.length === 0">
@@ -191,9 +189,13 @@ const formatDate = (val) => {
   return new Date(val).toLocaleString('id-ID')
 }
 
-const formatRupiah = (val) => {
-  return Number(val || 0).toLocaleString('id-ID')
+const formatAmount = (val, walletType) => {
+  if (walletType === 'point' || walletType === 'stamp') {
+    return val ?? 0; // tampilkan angka saja
+  }
+  return 'Rp' + (val != null ? Number(val).toLocaleString('id-ID') : 0);
 }
+
 
 // const formatType = (val) => {
 //   switch (val) {
@@ -211,9 +213,13 @@ const formatType = (val, status) => {
     return 'Withdraw'
   }
 
+  if (val === 'topup') {
+    if (status === 'success') return 'Topup berhasil'
+    if (status === 'failed') return 'Topup ditolak'
+    return 'Topup'
+  }
+
   switch (val) {
-    case 'topup':
-      return 'Topup'
     case 'adjust_plus':
       return 'Adjust Masuk'
     case 'adjust_minus':
@@ -222,4 +228,5 @@ const formatType = (val, status) => {
       return val
   }
 }
+
 </script>

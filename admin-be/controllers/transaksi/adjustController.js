@@ -86,62 +86,63 @@ module.exports = {
 
     } else {
       // POINT & STAMP
-      const lastHistory = await WalletHistory.findOne({
-        where: { username, wallet_type: category },
-        order: [['created_at', 'DESC']],
-      });
+const lastHistory = await WalletHistory.findOne({
+  where: { username, wallet_type: category },
+  order: [['created_at', 'DESC']],
+});
 
-      const balanceBefore = lastHistory?.balance_after || 0;
-      const finalBalance = balanceBefore + adjustedAmount;
+const balanceBefore = lastHistory?.balance_after || 0;
+const finalBalance = balanceBefore + adjustedAmount;
 
-      // if (finalBalance < 0) {
-      //   return res.status(400).json({ message: `${category} tidak boleh negatif` });
-      // }
+// Tambahkan pengecekan
+if (finalBalance < 0) {
+  return res.status(400).json({ message: `${category} tidak cukup` });
+}
 
-      const adjust = await Adjust.create({
-        username,
-        amount: adjustedAmount,
-        type,
-        category,
-        walletid: null,
-        remarks,
-        createdby: adminUsername,
-        createdon: new Date(),
-      });
+const adjust = await Adjust.create({
+  username,
+  amount: adjustedAmount,
+  type,
+  category,
+  walletid: null,
+  remarks,
+  createdby: adminUsername,
+  createdon: new Date(),
+});
 
-      if (category === 'point') {
-        await customer.update({ point: finalBalance });
-      } else {
-        await customer.update({ stamp: finalBalance });
-      }
+if (category === 'point') {
+  await customer.update({ point: finalBalance });
+} else {
+  await customer.update({ stamp: finalBalance });
+}
 
-      const dummyWalletId = 0;
+const dummyWalletId = 0;
+let transactionType = '';
+if (category === 'point') {
+  transactionType = adjustedAmount > 0 ? 'point_plus' : 'point_minus';
+} else if (category === 'stamp') {
+  transactionType = adjustedAmount > 0 ? 'stamp_plus' : 'stamp_minus';
+}
 
-      let transactionType = '';
-      if (category === 'point') {
-        transactionType = adjustedAmount > 0 ? 'point_plus' : 'point_minus';
-      } else if (category === 'stamp') {
-        transactionType = adjustedAmount > 0 ? 'stamp_plus' : 'stamp_minus';
-      }
+await WalletHistory.create({
+  walletId: dummyWalletId,
+  username,
+  transaction_type: transactionType,
+  source_type: 'adjust',
+  source_id: adjust.id,
+  reference_id: adjust.id,
+  amount: adjustedAmount,
+  balance_before: balanceBefore,
+  balance_after: finalBalance,
+  remarks,
+  status: 'success',
+  createdby: adminUsername,
+  created_at: new Date(),
+  wallet_type: category,
+});
 
-      await WalletHistory.create({
-        walletId: dummyWalletId,
-        username,
-        transaction_type: transactionType,
-        source_type: 'adjust',
-        source_id: adjust.id,
-        reference_id: adjust.id,
-        amount: adjustedAmount,
-        balance_before: balanceBefore,
-        balance_after: finalBalance,
-        remarks,
-        status: 'success',
-        createdby: adminUsername,
-        created_at: new Date(),
-        wallet_type: category,
-      });
+return res.json({ message: `Penyesuaian ${category} berhasil`, data: adjust });
 
-      return res.json({ message: `Penyesuaian ${category} berhasil`, data: adjust });
     }
   } catch (error) {
     console.error('Gagal membuat adjust:', error);

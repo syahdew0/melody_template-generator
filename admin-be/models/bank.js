@@ -11,7 +11,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'banks',
-    timestamps: true, // ganti ke true jika pakai createdAt, updatedAt otomatis
+    timestamps: true,           // tetap pakai timestamp
+    createdAt: 'created_at',    // sesuaikan nama kolom di DB
+    updatedAt: false            // tidak pakai updated_at
   });
 
   return Bank;

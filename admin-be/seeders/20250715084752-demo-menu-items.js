@@ -1,126 +1,111 @@
-// 'use strict';
-
-// /** @type {import('sequelize-cli').Seeder} */
-// module.exports = {
-//   async up(queryInterface, Sequelize) {
-//     await queryInterface.bulkInsert('menu_items', [
-//       {
-//         menu_group_id: 1,
-//         parent_id: null,
-//         title: 'Beranda',
-//         path: '/beranda',
-//         order: 1,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       },
-//       {
-//         menu_group_id: 1,
-//         parent_id: null,
-//         title: 'Tentang Kami',
-//         path: '/tentang-kami',
-//         order: 2,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       },
-//       {
-//         menu_group_id: 1,
-//         parent_id: null,
-//         title: 'Kontak',
-//         path: '/kontak',
-//         order: 3,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       },
-
-//       {
-//         menu_group_id: 2,
-//         parent_id: null,
-//         title: 'Beranda',
-//         path: '/beranda',
-//         order: 1,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       },
-//       {
-//         menu_group_id: 2,
-//         parent_id: null,
-//         title: 'Tentang Kami',
-//         path: '/tentang-kami',
-//         order: 2,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       },
-//       {
-//         menu_group_id: 2,
-//         parent_id: null,
-//         title: 'Kontak',
-//         path: '/kontak',
-//         order: 3,
-//         created_at: new Date(),
-//         updated_at: new Date()
-//       }
-//     ], {});
-//   },
-
-//   async down(queryInterface, Sequelize) {
-//     await queryInterface.bulkDelete('menu_items', null, {});
-//   }
-// };
-
-
 'use strict';
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('menu_items', [
       {
-        menu_group_id: 1, // Main Menu
+        id: 28,
+        menu_group_id: 3,
+        parent_id: null,
         title: 'Beranda',
-        path: '/',
-        icon: null,
-        parent_id: null,
-        order: 1,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        path: '/pages/home',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-19 14:20:57'),
+        updated_at: new Date('2025-07-23 03:29:45')
       },
       {
-        menu_group_id: 1,
+        id: 29,
+        menu_group_id: 3,
+        parent_id: null,
+        title: 'About',
+        path: '/pages/about',
+        order: 1,
+        is_active: 1,
+        created_at: new Date('2025-07-19 14:20:57'),
+        updated_at: new Date('2025-07-22 11:00:02')
+      },
+      {
+        id: 31,
+        menu_group_id: 4,
+        parent_id: null,
         title: 'Tentang Kami',
-        path: '/tentang-kami',
-        icon: null,
-        parent_id: null,
-        order: 2,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        menu_group_id: 2, // Footer Menu
-        title: 'Kebijakan Privasi',
-        path: '/kebijakan-privasi',
-        icon: null,
-        parent_id: null,
+        path: '/about',
         order: 1,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        is_active: 1,
+        created_at: new Date('2025-07-19 17:29:23'),
+        updated_at: new Date('2025-07-19 17:29:23')
       },
       {
-        menu_group_id: 2,
-        title: 'Syarat & Ketentuan',
-        path: '/syarat-ketentuan',
-        icon: null,
+        id: 32,
+        menu_group_id: 4,
         parent_id: null,
-        order: 2,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      }
+        title: 'hhhhh',
+        path: '',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-19 12:03:41'),
+        updated_at: new Date('2025-07-19 12:03:41')
+      },
+      {
+        id: 33,
+        menu_group_id: 4,
+        parent_id: null,
+        title: 'ssss',
+        path: '',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-19 12:03:45'),
+        updated_at: new Date('2025-07-19 12:03:45')
+      },
+      {
+        id: 36,
+        menu_group_id: 3,
+        parent_id: null,
+        title: 'Blog',
+        path: '/pages/post',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-22 08:53:26'),
+        updated_at: new Date('2025-07-22 11:11:39')
+      },
+      {
+        id: 37,
+        menu_group_id: 3,
+        parent_id: null,
+        title: 'Contact',
+        path: '/pages/contact',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-22 08:53:45'),
+        updated_at: new Date('2025-07-23 07:00:42')
+      },
+      {
+        id: 43,
+        menu_group_id: 9,
+        parent_id: null,
+        title: 'Beranda',
+        path: 'home',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-23 06:32:33'),
+        updated_at: new Date('2025-07-23 06:32:33')
+      },
+      {
+        id: 44,
+        menu_group_id: 3,
+        parent_id: null,
+        title: 'login',
+        path: '/pages/login',
+        order: 0,
+        is_active: 1,
+        created_at: new Date('2025-07-23 10:58:08'),
+        updated_at: new Date('2025-07-23 11:18:34')
+      },
     ], {});
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete('menu_items', null, {});
   }
 };

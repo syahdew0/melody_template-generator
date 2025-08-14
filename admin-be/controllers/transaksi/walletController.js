@@ -10,13 +10,8 @@ exports.getMyWallet = async (req, res) => {
       raw: true,
     });
 
-    // if (!wallets || wallets.length === 0) {
-    //   return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-    // }
-
     const walletIds = wallets.map((w) => w.id);
 
-    // Ambil history terakhir per wallet
     const lastHistories = await WalletHistory.findAll({
       where: {
         walletId: { [Op.in]: walletIds },
@@ -24,25 +19,54 @@ exports.getMyWallet = async (req, res) => {
       },
       attributes: [
         'walletId',
+        [sequelize.fn('MAX', sequelize.col('created_at')), 'latest'],
         'balance_after',
-        [sequelize.fn('MAX', sequelize.col('created_at')), 'latest']
       ],
-      group: ['walletId'],
+      group: ['walletId', 'balance_after'],
       raw: true,
     });
 
-    // Buat map balance
     const balanceMap = {};
     for (const h of lastHistories) {
       balanceMap[h.walletId] = h.balance_after;
     }
 
+    // Ambil balance dari adjusts (untuk kategori tanpa wallet)
+    const adjustBalances = await Adjust.findAll({
+      where: { username: req.customer.username },
+      attributes: [
+        'category',
+        [sequelize.fn('SUM', sequelize.col('amount')), 'total']
+      ],
+      group: ['category'],
+      raw: true
+    });
+
+    const adjustMap = {};
+    adjustBalances.forEach(a => {
+      adjustMap[a.category] = parseFloat(a.total || 0);
+    });
+
+    // Gabungkan
     const enrichedWallets = wallets.map((w) => {
       return {
         ...w,
-        balance: balanceMap[w.id] || 0,
-        balance_source: 'wallet_history_latest',
+        balance: balanceMap[w.id] || adjustMap[w.wallet_type] || 0,
+        balance_source: balanceMap[w.id] ? 'wallet_history_latest' : 'adjusts',
       };
+    });
+
+    // Tambahkan kategori dari adjusts yang belum punya wallet
+    ['point', 'stamp'].forEach(cat => {
+      if (!wallets.find(w => w.wallet_type === cat) && adjustMap[cat] !== undefined) {
+        enrichedWallets.push({
+          id: null,
+          customer_id: customerId,
+          wallet_type: cat,
+          balance: adjustMap[cat],
+          balance_source: 'adjusts'
+        });
+      }
     });
 
     res.json({ wallets: enrichedWallets });
@@ -51,6 +75,7 @@ exports.getMyWallet = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data wallet' });
   }
 };
+
 
 exports.getMyTotalBalance = async (req, res) => {
   try {
@@ -152,53 +177,72 @@ exports.getMyWalletHistory = async (req, res) => {
     const { fromDate, toDate, transactionType, page = 1, limit = 10 } = req.query;
     const customerId = req.customer.id;
 
-    // Ambil wallet milik customer
+    // Ambil semua wallet customer
     const wallets = await Wallet.findAll({
       where: { customer_id: customerId },
-      attributes: ['id'],
+      attributes: ['id', 'wallet_type'],
       raw: true,
     });
-
     const walletIds = wallets.map(w => w.id);
-    if (walletIds.length === 0) return res.json({ count: 0, rows: [] });
 
-    const where = {
-      walletId: walletIds.length > 0 ? { [Op.in]: walletIds } : undefined
+    // Ambil WalletHistory biasa
+    const whereHistory = {
+      walletId: walletIds.length ? { [Op.in]: walletIds } : undefined,
+      ...(fromDate && toDate
+        ? { created_at: { [Op.between]: [new Date(fromDate+'T00:00:00'), new Date(toDate+'T23:59:59')] } }
+        : {}),
+      ...(transactionType ? { transaction_type: transactionType } : {})
     };
-
-    if (fromDate && toDate) {
-      const start = new Date(fromDate + 'T00:00:00');
-      const end = new Date(toDate + 'T23:59:59');
-
-      where.created_at = {
-        [Op.between]: [start, end],
-      };
-    }
-
-    if (transactionType) {
-      where.transaction_type = transactionType;
-    }
-
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-
-    const result = await WalletHistory.findAndCountAll({
-    where,
-    attributes: [
-    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
-    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
-  ],
-    order: [['created_at', 'DESC']],
-    offset,
-    limit: parseInt(limit),
-  });
-
-    res.json({
-      count: result.count,
-      rows: result.rows,
+    const walletHistories = await WalletHistory.findAll({
+      where: whereHistory,
+      order: [['created_at', 'ASC']], // urut ascending supaya saldo kumulatif bisa dihitung
+      raw: true
     });
-  } catch (err) {
+
+    // Ambil Adjust untuk kategori point/stamp
+    const whereAdjust = { username: req.customer.username };
+    if(fromDate && toDate) whereAdjust.createdon = { [Op.between]: [new Date(fromDate+'T00:00:00'), new Date(toDate+'T23:59:59')] };
+
+    const adjustData = await Adjust.findAll({
+      where: whereAdjust,
+      order: [['createdon', 'ASC']], // ascending supaya saldo kumulatif bisa dihitung
+      raw: true
+    });
+
+    // Hitung saldo kumulatif untuk point/stamp
+   const runningBalance = { point: 0, stamp: 0 };
+   const adjustHistories = adjustData.map(a => {
+    const category = a.category; // point / stamp
+    const before = runningBalance[category] || 0;
+    runningBalance[category] = before + a.amount;
+    return {
+      id: `adj-${a.id}`,
+      walletId: null,
+      username: req.customer.username,
+      reference_id: null,
+      wallet_type: category,
+      transaction_type: a.amount > 0 ? 'adjust_plus' : 'adjust_minus',
+      status: 'success',
+      amount: a.amount,
+      balance_before: before,
+      balance_after: runningBalance[category],
+      remarks: a.remarks,
+      created_at: a.createdon
+    };
+  });
+    // Gabungkan & urutkan descending
+    let allHistories = [...walletHistories, ...adjustHistories];
+    allHistories.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Pagination manual
+    const totalCount = allHistories.length;
+    const offset = (page-1)*limit;
+    const paginatedData = allHistories.slice(offset, offset+parseInt(limit));
+
+    res.json({ count: totalCount, rows: paginatedData });
+  } catch(err) {
     console.error(err);
-    res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
+    res.status(500).json({ message:'Gagal mengambil riwayat wallet' });
   }
 };
 

@@ -209,7 +209,9 @@ const updateStatus = async (id, status) => {
   if (!confirm(`Apakah Anda yakin ingin ${actionText} withdraw ini?`)) return
 
   try {
-    await axios.put(API_ENDPOINTS.withdraw.updateStatus(id), { status })
+    const token = localStorage.getItem('adminToken')
+    await axios.put(API_ENDPOINTS.withdraw.updateStatus(id), { status },
+    { headers: { Authorization: `Bearer ${token}` } } )
     await fetchWithdraws()
   } catch (err) {
     console.error('Gagal update status:', err)
@@ -247,10 +249,12 @@ const bulkUpdateStatus = async (status) => {
   if (!confirm(`Apakah Anda yakin ingin ${actionText} semua withdraw yang dipilih?`)) return
 
   try {
+     const token = localStorage.getItem('adminToken')
     await axios.put(API_ENDPOINTS.withdraw.bulkUpdateStatus(), {
       ids: Array.from(selectedWithdrawIds.value),
       status,
-    })
+    }
+    , { headers: { Authorization: `Bearer ${token}` } } )
     await fetchWithdraws()
   } catch (err) {
     console.error('Gagal update status bulk:', err)

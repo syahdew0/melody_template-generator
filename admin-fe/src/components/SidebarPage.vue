@@ -431,6 +431,13 @@
                     >
                       Company Bank
                     </router-link>
+                     <router-link
+                      :to="{ name: 'MasterBank' }"
+                      class="submenu-link"
+                      :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MasterBankList') }"
+                    >
+                      Master Bank
+                    </router-link>
                   </li>
                 </ul>
               </transition>

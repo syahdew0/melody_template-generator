@@ -17,6 +17,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      type: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'static'
+      },
       is_top: {
         type: Sequelize.BOOLEAN,
         defaultValue: false

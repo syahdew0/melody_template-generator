@@ -28,5 +28,4 @@ router.put('/withdraw/bulk-update-status', requireAuth, requireAdmin, withdrawCo
 router.get('/wallet-histories', requireAuth, requireAdmin, walletController.getAdminWalletHistory);
 router.get('/wallet-histories/usernames', requireAuth, requireAdmin, walletController.getWalletUsernames);
 
-
 module.exports = router;

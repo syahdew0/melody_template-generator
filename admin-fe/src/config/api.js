@@ -1,8 +1,10 @@
+import axios from 'axios';
 // export const API_URL = 'https://api-interuma.pasifiksgroup.com:8443'
 // export const API_URL = 'http://localhost:3001'
 // export const API_URL = process.env.VUE_APP_API_URL;
 // export const API_URL = 'compro.pasifiksgroup.com:8443'
 export const API_URL = process.env.VUE_APP_API_URL;
+
 
 
 export const API_ENDPOINTS = {
@@ -118,7 +120,40 @@ export const API_ENDPOINTS = {
   company_banks: `${API_URL}/api/company-banks`,
     adminCustomersList: `${API_URL}/api/admin/customers`,
   customersList: `${API_URL}/customer/auth/user/customers`,
-
+  banks: `${API_URL}/banks`,
 }
 
-export default API_ENDPOINTS
+
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+// Interceptor untuk request (inject token)
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => Promise.reject(error));
+
+// Interceptor untuk response (refresh token otomatis)
+api.interceptors.response.use(response => {
+  const refreshedToken = response.headers['x-refreshed-token'];
+  if (refreshedToken) {
+    localStorage.setItem('token', refreshedToken);
+    console.log('[Axios] Token diperbarui otomatis.');
+  }
+  return response;
+}, error => {
+  if (error.response?.status === 401) {
+    console.warn('[Axios] Token tidak valid. Logout...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+  return Promise.reject(error);
+});
+
+export { api };
+export default API_ENDPOINTS;

@@ -18,9 +18,18 @@ module.exports = {
         allowNull: false,
       },
       transaction_type: {
-        type: Sequelize.ENUM('topup', 'withdraw', 'adjust_plus', 'adjust_minus'),
-        allowNull: false,
-      },
+      type: Sequelize.ENUM(
+        'topup',
+        'withdraw',
+        'adjust_plus',
+        'adjust_minus',
+        'point_plus',
+        'point_minus',
+        'stamp_plus',
+        'stamp_minus'
+      ),
+      allowNull: false,
+    },
       reference_id: {
         type: Sequelize.INTEGER,
         allowNull: true,

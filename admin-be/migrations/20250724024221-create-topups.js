@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       date: {
         type: Sequelize.DATE,
@@ -41,8 +41,8 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      bank_id: { 
-        type: Sequelize.INTEGER,
+     bank_id: {
+        type: Sequelize.INTEGER.UNSIGNED,
         allowNull: true,
         references: {
           model: 'company_banks',

@@ -112,7 +112,7 @@ async list(req, res) {
   }
 },
 
-  async updateStatus(req, res) {
+async updateStatus(req, res) {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
@@ -130,9 +130,8 @@ async list(req, res) {
       return res.status(400).json({ message: 'Status tidak valid' });
     }
 
-    // Jalankan hanya jika status dari non-sukses ke sukses
+    // Jika status jadi success
     if (status === 'success' && data.status !== 'success') {
-      // const wallet = await Wallet.findByPk(data.walletId, { transaction: t });
       const wallet = await Wallet.findByPk(data.walletid, { transaction: t });
       if (!wallet) {
         await t.rollback();
@@ -154,34 +153,62 @@ async list(req, res) {
         type: 'in',
         transaction_type: 'topup',
         amount: data.amount,
-       reference_id: data.id,
+        reference_id: data.id,
         source_type: 'topup',
         source_id: data.id,
         balance_before: previousBalance,
         balance_after: newBalance,
         remarks: 'Topup berhasil',
-        // createdon: new Date(),
         created_at: new Date(),
       }, { transaction: t });
 
-      // Optional: update balance wallet langsung (jika sistem kamu pakai live balance)
-      // wallet.balance = newBalance;
-      // await wallet.save({ transaction: t });
       await Wallet.update(
         { balance: newBalance },
         { where: { id: wallet.id }, transaction: t }
       );
 
-       // Insert ke WalletSummary
       await WalletSummary.create({
-      summary_date: new Date(),
-      wallet_id: data.walletid,
-      username: data.username,
-      transaction_type_id: 1, 
-      amount: data.amount
-    }, { transaction: t });
-
+        summary_date: new Date(),
+        wallet_id: data.walletid,
+        username: data.username,
+        transaction_type_id: 1,
+        amount: data.amount
+      }, { transaction: t });
     }
+
+    // Jika status jadi failed
+  if (status === 'failed' && data.status !== 'failed') {
+  const wallet = await Wallet.findByPk(data.walletid, { transaction: t });
+  if (!wallet) {
+    await t.rollback();
+    return res.status(404).json({ message: 'Wallet tidak ditemukan' });
+  }
+
+  const latestHistory = await WalletHistory.findOne({
+    where: { walletid: wallet.id },
+    order: [['created_at', 'DESC']],
+    transaction: t,
+  });
+
+  const previousBalance = latestHistory?.balance_after || 0;
+
+  await WalletHistory.create({
+    walletId: wallet.id,
+    username: data.username,
+    type: 'out', // keluar supaya mudah dibedakan
+    transaction_type: 'topup',
+    amount: -Math.abs(data.amount), // NEGATIF agar di frontend otomatis merah & minus
+    reference_id: data.id,
+    source_type: 'topup',
+    source_id: data.id,
+    balance_before: previousBalance,
+    balance_after: previousBalance,
+    status: 'failed', // penting supaya frontend bisa baca
+    remarks: 'Topup gagal',
+    created_at: new Date(),
+  }, { transaction: t });
+}
+
 
     data.status = status;
     data.updatedon = new Date();
@@ -198,10 +225,14 @@ async list(req, res) {
 },
 async getTopupList(req, res) {
   try {
-    const { fromDate, toDate } = req.query;
-    const whereClause = {
-      username: req.customer.username
-    };
+    const { fromDate, toDate, status } = req.query;
+    const whereClause = { username: req.customer.username };
+
+    if (status) {
+      whereClause.status = status; // optional filter dari query
+    } else {
+      whereClause.status = { [Op.in]: ['pending', 'success', 'failed'] };
+    }
 
     if (fromDate || toDate) {
       whereClause.createdon = {};

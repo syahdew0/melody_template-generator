@@ -129,7 +129,7 @@ function formatDateToInput(date) {
   const dd = date.getDate().toString().padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
-
+const hasSearched = ref(false);
 const today = new Date();
 
 const filters = ref({
@@ -168,6 +168,7 @@ const fetchCustomers = async () => {
     });
 
     customers.value = response.data;
+    hasSearched.value = true;
   } catch (error) {
     if (error.response?.status === 401) {
       errorMessage.value = 'Token tidak valid atau sesi telah habis. Silakan login ulang.';
