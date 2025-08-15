@@ -153,43 +153,119 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-exports.changePassword = async (req, res) => {
-  try {
-    const customerId = req.customer.id;
-    const { old_password, new_password, confirm_password } = req.body;
+// exports.changePassword = async (req, res) => {
+//   try {
+//     const customerId = req.customer.id;
+//     const { old_password, new_password, confirm_password } = req.body;
 
-    if (!old_password || !new_password || !confirm_password) {
-      return res.status(400).json({ message: 'Semua field wajib diisi.' });
-    }
+//     if (!old_password || !new_password || !confirm_password) {
+//       return res.status(400).json({ message: 'Semua field wajib diisi.' });
+//     }
 
-    if (new_password !== confirm_password) {
-      return res.status(400).json({ message: 'Konfirmasi password tidak cocok.' });
-    }
+//     if (new_password !== confirm_password) {
+//       return res.status(400).json({ message: 'Konfirmasi password tidak cocok.' });
+//     }
 
-    if (new_password.length < 6) {
-      return res.status(400).json({ message: 'Password baru minimal 6 karakter.' });
-    }
+//     if (new_password.length < 6) {
+//       return res.status(400).json({ message: 'Password baru minimal 6 karakter.' });
+//     }
 
-    const customer = await Customer.findByPk(customerId);
-    if (!customer) {
-      return res.status(404).json({ message: 'Customer tidak ditemukan.' });
-    }
+//     const customer = await Customer.findByPk(customerId);
+//     if (!customer) {
+//       return res.status(404).json({ message: 'Customer tidak ditemukan.' });
+//     }
 
-    const isMatch = await bcrypt.compare(old_password, customer.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Password lama salah.' });
-    }
+//     const isMatch = await bcrypt.compare(old_password, customer.password);
+//     if (!isMatch) {
+//       return res.status(400).json({ message: 'Password lama salah.' });
+//     }
 
-    const hashedNewPassword = await bcrypt.hash(new_password, 10);
-    customer.password = hashedNewPassword;
-    await customer.save();
+//     const hashedNewPassword = await bcrypt.hash(new_password, 10);
+//     customer.password = hashedNewPassword;
+//     await customer.save();
 
-    res.json({ message: 'Password berhasil diubah.' });
-  } catch (error) {
-    console.error('Gagal mengganti password:', error);
-    res.status(500).json({ message: 'Terjadi kesalahan saat mengganti password.' });
-  }
-};
+//     res.json({ message: 'Password berhasil diubah.' });
+//   } catch (error) {
+//     console.error('Gagal mengganti password:', error);
+//     res.status(500).json({ message: 'Terjadi kesalahan saat mengganti password.' });
+//   }
+// };
+// exports.requestPasswordChangeCode = async (req, res) => {
+//   try {
+//     const { email } = req.body; // Ambil dulu email dari body
+
+//     if (!email) {
+//       return res.status(400).json({ message: 'Email wajib diisi' });
+//     }
+
+//     const customer = await Customer.findOne({ where: { email } });
+//     if (!customer) {
+//       return res.status(400).json({ message: 'Email tidak ditemukan.' });
+//     }
+
+//     // generate kode baru
+//     const code = crypto.randomBytes(3).toString('hex').toUpperCase().trim();
+//     customer.password_reset_code = code;
+//     customer.password_reset_expires_at = new Date(Date.now() + 15 * 60 * 1000); // 15 menit
+//     await customer.save();
+
+//     await sendEmail({
+//       to: customer.email,
+//       subject: 'Kode Verifikasi Ganti Password',
+//       text: `Kode verifikasi untuk ganti password Anda: ${code}`
+//     });
+
+//     res.json({ message: 'Kode verifikasi telah dikirim ke email Anda.' });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Gagal mengirim kode verifikasi password.' });
+//   }
+// };
+
+
+// exports.changePasswordWithCode = async (req, res) => {
+//   try {
+//     const { email, code, new_password, confirm_password } = req.body;
+
+//     if (!email || !code || !new_password || !confirm_password) {
+//       return res.status(400).json({ message: 'Semua field wajib diisi.' });
+//     }
+//     if (new_password !== confirm_password) {
+//       return res.status(400).json({ message: 'Konfirmasi password tidak cocok.' });
+//     }
+//     if (new_password.length < 6) {
+//       return res.status(400).json({ message: 'Password baru minimal 6 karakter.' });
+//     }
+
+//     // Cari user dengan email & kode yang match (case-insensitive via toUpperCase)
+//     const customer = await Customer.findOne({
+//       where: {
+//         email,
+//         password_reset_code: code.toUpperCase().trim(),
+//       },
+//     });
+
+//     if (!customer) {
+//       return res.status(400).json({ message: 'Kode verifikasi salah.' });
+//     }
+
+//     // Cek expiry
+//     if (!customer.password_reset_expires_at || new Date() > customer.password_reset_expires_at) {
+//       return res.status(400).json({ message: 'Kode verifikasi sudah kedaluwarsa.' });
+//     }
+
+//     customer.password = await bcrypt.hash(new_password, 10);
+//     customer.password_reset_code = null;
+//     customer.password_reset_expires_at = null;
+//     await customer.save();
+
+//     res.json({ message: 'Password berhasil diubah.' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Gagal mengganti password.' });
+//   }
+// }
+
 exports.requestEmailVerificationOld = async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.customer.id);

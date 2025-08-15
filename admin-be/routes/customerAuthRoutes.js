@@ -8,7 +8,9 @@ router.post('/login', customerAuthController.login);
 
 router.get('/me', authenticateCustomer, customerAuthController.me);
 router.put('/update', authenticateCustomer, customerAuthController.updateProfile);
-router.put('/change-password', authenticateCustomer, customerAuthController.changePassword);
+// router.put('/change-password', authenticateCustomer, customerAuthController.changePassword);
+// router.post('/password/send-code', authenticateCustomer, customerAuthController.requestPasswordChangeCode);
+// router.post('/password/change-with-code', authenticateCustomer, customerAuthController.changePasswordWithCode);
 
 router.post('/email/send-old', authenticateCustomer, customerAuthController.requestEmailVerificationOld);
 // router.post('/email/verify-old', authenticateCustomer, customerAuthController.confirmEmailVerificationOld);

@@ -192,38 +192,43 @@ return res.json({ message: `Penyesuaian ${category} berhasil`, data: adjust });
   },
 
   async getAdjustSummary(req, res) {
-    try {
-      const { username, fromDate, toDate } = req.query;
+  try {
+    const { username, fromDate, toDate } = req.query;
 
-      const whereClause = {};
-      if (username) whereClause.username = username;
+    const whereClause = {};
+    if (username) whereClause.username = username;
 
-      if (fromDate && toDate) {
-        whereClause.createdon = {
-          [Op.between]: [
-            new Date(fromDate),
-            new Date(new Date(toDate).setHours(23, 59, 59, 999)),
-          ],
-        };
-      } else if (fromDate) {
-        whereClause.createdon = { [Op.gte]: new Date(fromDate) };
-      } else if (toDate) {
-        whereClause.createdon = { [Op.lte]: new Date(new Date(toDate).setHours(23, 59, 59, 999)) };
-      }
-
-      const inResult = await Adjust.sum('amount', { where: { ...whereClause, amount: { [Op.gt]: 0 } } });
-      const outResult = await Adjust.sum('amount', { where: { ...whereClause, amount: { [Op.lt]: 0 } } });
-
-      res.json({
-        total: {
-          in: inResult || 0,
-          out: outResult || 0,
-          net: (inResult || 0) + (outResult || 0),
-        },
-      });
-    } catch (err) {
-      console.error('Error fetching adjust summary:', err);
-      res.status(500).json({ message: 'Gagal mengambil data summary adjust.' });
+    if (fromDate && toDate) {
+      whereClause.createdon = {
+        [Op.between]: [
+          new Date(fromDate),
+          new Date(new Date(toDate).setHours(23, 59, 59, 999)),
+        ],
+      };
+    } else if (fromDate) {
+      whereClause.createdon = { [Op.gte]: new Date(fromDate) };
+    } else if (toDate) {
+      whereClause.createdon = { [Op.lte]: new Date(new Date(toDate).setHours(23, 59, 59, 999)) };
     }
-  },
+
+    const categories = ['saldo', 'point', 'stamp'];
+    const total = {};
+
+    for (let cat of categories) {
+      const inResult = await Adjust.sum('amount', { where: { ...whereClause, category: cat, amount: { [Op.gt]: 0 } } });
+      const outResult = await Adjust.sum('amount', { where: { ...whereClause, category: cat, amount: { [Op.lt]: 0 } } });
+
+      total[cat] = {
+        in: inResult || 0,
+        out: outResult || 0,
+        net: (inResult || 0) + (outResult || 0),
+      };
+    }
+
+    res.json({ total });
+  } catch (err) {
+    console.error('Error fetching adjust summary:', err);
+    res.status(500).json({ message: 'Gagal mengambil data summary adjust.' });
+  }
+},
 };

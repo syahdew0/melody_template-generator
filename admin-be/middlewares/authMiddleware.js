@@ -10,7 +10,6 @@ exports.requireAuth = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'SECRET_KEY');
     req.user = decoded;
 
-    // Buat token baru dengan expiry 2 jam dari sekarang
     const newToken = jwt.sign(
       {
         UserId: decoded.UserId,
@@ -21,8 +20,6 @@ exports.requireAuth = (req, res, next) => {
       process.env.JWT_SECRET || 'SECRET_KEY',
       { expiresIn: '2h' }
     );
-
-    // Kirim token baru di header
     res.setHeader('x-refreshed-token', newToken);
 
     next();

@@ -10,7 +10,7 @@ module.exports = {
         title: 'Beranda',
         path: '/pages/home',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-19 14:20:57'),
         updated_at: new Date('2025-07-23 03:29:45')
       },
@@ -21,7 +21,7 @@ module.exports = {
         title: 'About',
         path: '/pages/about',
         order: 1,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-19 14:20:57'),
         updated_at: new Date('2025-07-22 11:00:02')
       },
@@ -32,7 +32,7 @@ module.exports = {
         title: 'Tentang Kami',
         path: '/about',
         order: 1,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-19 17:29:23'),
         updated_at: new Date('2025-07-19 17:29:23')
       },
@@ -43,7 +43,7 @@ module.exports = {
         title: 'hhhhh',
         path: '',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-19 12:03:41'),
         updated_at: new Date('2025-07-19 12:03:41')
       },
@@ -54,7 +54,7 @@ module.exports = {
         title: 'ssss',
         path: '',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-19 12:03:45'),
         updated_at: new Date('2025-07-19 12:03:45')
       },
@@ -65,7 +65,7 @@ module.exports = {
         title: 'Blog',
         path: '/pages/post',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-22 08:53:26'),
         updated_at: new Date('2025-07-22 11:11:39')
       },
@@ -76,7 +76,7 @@ module.exports = {
         title: 'Contact',
         path: '/pages/contact',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-22 08:53:45'),
         updated_at: new Date('2025-07-23 07:00:42')
       },
@@ -87,7 +87,7 @@ module.exports = {
         title: 'Beranda',
         path: 'home',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-23 06:32:33'),
         updated_at: new Date('2025-07-23 06:32:33')
       },
@@ -98,7 +98,7 @@ module.exports = {
         title: 'login',
         path: '/pages/login',
         order: 0,
-        is_active: 1,
+        isActive: 1,
         created_at: new Date('2025-07-23 10:58:08'),
         updated_at: new Date('2025-07-23 11:18:34')
       },

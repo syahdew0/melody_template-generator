@@ -79,27 +79,28 @@
       Silakan pilih filter dan klik tombol Cari untuk melihat data.
     </div>
 
-    <!-- Ringkasan Adjust -->
-    <div v-if="isSearched" class="bg-gray-100 p-4 rounded shadow mt-6 max-w-full">
-      <h2 class="text-lg font-bold mb-2">
-        Ringkasan Adjust
-        <span v-if="filters.username"> - {{ filters.username }}</span>
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          Masuk: <strong>{{ formatNumber(summary.in) }}</strong>
-        </div>
-        <div>
-          Keluar: <strong>{{ formatNumber(summary.out) }}</strong>
-        </div>
-        <div>
-          Net:
-          <strong :class="summary.net >= 0 ? 'text-green-600' : 'text-red-600'">
-            {{ formatNumber(summary.net) }}
-          </strong>
-        </div>
+   <!-- Ringkasan Adjust per Kategori -->
+<div v-if="isSearched" class="bg-gray-100 p-4 rounded shadow mt-6 max-w-full">
+  <h2 class="text-lg font-bold mb-2">
+    Ringkasan Adjust
+    <span v-if="filters.username"> - {{ filters.username }}</span>
+  </h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div v-for="cat in ['saldo','point','stamp']" :key="cat" class="p-2 border rounded">
+      <h3 class="font-semibold capitalize">{{ cat }}</h3>
+      <div>Masuk: <strong>{{ formatNumber(summary.total[cat]?.in || 0) }}</strong></div>
+      <div>Keluar: <strong>{{ formatNumber(summary.total[cat]?.out || 0) }}</strong></div>
+      <div>
+        Net: 
+        <strong :class="(summary.total[cat]?.net || 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+          {{ formatNumber(summary.total[cat]?.net || 0) }}
+        </strong>
       </div>
     </div>
+  </div>
+</div>
+
 
     <!-- Tabel Adjust -->
     <div v-if="isSearched" class="overflow-x-auto max-w-full">
@@ -188,7 +189,14 @@ const form = ref({
 const message = ref('')
 const error = ref('')
 const adjusts = ref([])
-const summary = ref({ in: 0, out: 0, net: 0 })
+const summary = ref({
+  total: {
+    saldo: { in: 0, out: 0, net: 0 },
+    point: { in: 0, out: 0, net: 0 },
+    stamp: { in: 0, out: 0, net: 0 },
+  }
+});
+
 
 const filters = ref({
   fromDate: '',
@@ -209,11 +217,12 @@ const fetchAdjustSummary = async () => {
     const res = await axios.get(API_ENDPOINTS.adjust.summaryAdjust, {
       params: { fromDate, toDate, username },
     })
-    summary.value = res.data.total
+    summary.value = res.data
   } catch (err) {
     console.error('Gagal fetch summary:', err)
   }
 }
+
 
 const fetchAdjustList = async () => {
   try {

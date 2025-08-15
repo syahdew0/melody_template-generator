@@ -104,7 +104,8 @@
     <td class="border px-4 py-2">{{ customer.bank || '-' }}</td>
     <td class="border px-4 py-2">{{ customer.no_rekening || '-' }}</td>
     <td class="border px-4 py-2">{{ customer.nama_rekening || '-' }}</td>
-    <td class="border px-4 py-2">{{ new Date(customer.createdAt).toLocaleString() }}</td>
+    <!-- <td class="border px-4 py-2">{{ new Date(customer.createdAt).toLocaleString() }}</td> -->
+     <td class="border px-4 py-2">{{ new Date(customer.created_at).toLocaleString() }}</td>
   </tr>
 
   <tr v-if="hasSearched && customers.length === 0">

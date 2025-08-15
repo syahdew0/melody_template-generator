@@ -14,7 +14,7 @@ const app = express();
 const db = require('./models');
 const { requireAuth } = require('./middlewares/authMiddleware');
 const customerAuthRoutes = require('./routes/customerAuthRoutes');
-
+const changePasswordRoutes = require('./routes/changepasswordRoutes');
 
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -62,6 +62,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // customer
 app.use('/customer/auth', customerAuthRoutes);
+app.use('/customer/auth', changePasswordRoutes);
+
+
 
 
 // app.use('/menu', require('./routes/customermenuRoutes')); // untuk frontend

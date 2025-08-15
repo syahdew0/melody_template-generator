@@ -24,22 +24,21 @@ exports.getAllCustomers = async (req, res) => {
     }
 
     if (fromDate && toDate) {
-      where.createdAt = {
+      where.created_at = {
         [Op.between]: [new Date(fromDate + 'T00:00:00'), new Date(toDate + 'T23:59:59')],
       };
     } else if (fromDate) {
-      where.createdAt = { [Op.gte]: new Date(fromDate + 'T00:00:00') };
+      where.created_at = { [Op.gte]: new Date(fromDate + 'T00:00:00') };
     } else if (toDate) {
-      where.createdAt = { [Op.lte]: new Date(toDate + 'T23:59:59') };
+      where.created_at = { [Op.lte]: new Date(toDate + 'T23:59:59') };
     }
-
     const customers = await Customer.findAll({
       where,
       attributes: [
-        'id', 'username', 'email', 'createdAt',
+        'id', 'username', 'email', ['created_at', 'createdAt'],
         'bank', 'no_rekening', 'nama_rekening'
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
 
     res.json(customers);

@@ -436,7 +436,7 @@
                       class="submenu-link"
                       :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MasterBankList') }"
                     >
-                      Master Bank
+                      Bank
                     </router-link>
                   </li>
                 </ul>
