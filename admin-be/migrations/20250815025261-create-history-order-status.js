@@ -4,19 +4,28 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('history_order_status', {
-      id: { type: Sequelize.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+      id: { 
+        type: Sequelize.BIGINT.UNSIGNED, 
+        autoIncrement: true, 
+        primaryKey: true 
+      },
       order_id: {
         type: Sequelize.BIGINT.UNSIGNED,
-        allowNull: false,
-        references: { model: 'orders', key: 'id' },
-        onDelete: 'CASCADE'
+        allowNull: false
       },
       status: { 
         type: Sequelize.ENUM('Unpaid', 'Paid', 'Cancel', 'Refund', 'Payment Expired'), 
         allowNull: false 
       },
-      remarks: { type: Sequelize.TEXT, allowNull: true },
-      created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn('NOW') }
+      remarks: { 
+        type: Sequelize.TEXT, 
+        allowNull: true 
+      },
+      created_at: { 
+        type: Sequelize.DATE, 
+        allowNull: false, 
+        defaultValue: Sequelize.fn('NOW') 
+      }
     });
   },
   async down(queryInterface) {

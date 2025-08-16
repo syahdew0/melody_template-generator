@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     payment_date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     },
     amount: {
       type: DataTypes.DECIMAL(15, 2),
@@ -28,14 +29,18 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'orderpayments',
-    underscored: true
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   OrderPayment.associate = function(models) {
     OrderPayment.belongsTo(models.Order, { 
       foreignKey: 'order_id', 
-      as: 'order', 
-      constraints: false });
+      as: 'order',
+      constraints: false   
+    });
   };
 
   return OrderPayment;

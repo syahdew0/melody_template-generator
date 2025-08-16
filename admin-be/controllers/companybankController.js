@@ -24,3 +24,38 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: 'Gagal membuat data bank' });
   }
 };
+
+exports.update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bank_name, account_name, account_number } = req.body;
+
+    const bank = await CompanyBank.findByPk(id);
+    if (!bank) {
+      return res.status(404).json({ message: 'Bank tidak ditemukan' });
+    }
+
+    await bank.update({ bank_name, account_name, account_number });
+    res.json({ data: bank });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengupdate data bank' });
+  }
+};
+
+exports.remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bank = await CompanyBank.findByPk(id);
+    if (!bank) {
+      return res.status(404).json({ message: 'Bank tidak ditemukan' });
+    }
+
+    await bank.destroy();
+    res.json({ message: 'Data bank berhasil dihapus' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal menghapus data bank' });
+  }
+};

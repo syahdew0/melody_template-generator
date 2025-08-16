@@ -75,10 +75,10 @@ app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/apis/setting-logo', require('./routes/settingLogoRoutes'));
-app.use('/apis/admin/posts', require('./routes/postRoutes'));// admin
+app.use('/apis/admin/posts', require('./routes/postadminRoutes'));// admin
 app.use('/apis/categories', require('./routes/categoryRoutes'));
 app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
-app.use('/apis/posts', require('./routes/postRoutes')); // publik
+app.use('/apis/posts', require('./routes/postcustomerRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
 app.use('/banks', require('./routes/masterbankRoutes'));
 app.use('/company-banks', require('./routes/companybankRoutes'));

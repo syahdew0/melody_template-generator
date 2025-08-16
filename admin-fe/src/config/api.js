@@ -8,8 +8,6 @@ export const API_URL = process.env.VUE_APP_API_URL;
 
 
 export const API_ENDPOINTS = {
-
-
   mediaList: `${API_URL}/api/media`,
   mediaUpload: `${API_URL}/api/media`,
   mediaDelete: `${API_URL}/api/media`,
@@ -18,24 +16,26 @@ export const API_ENDPOINTS = {
   newsletterSubscribers: `${API_URL}/api/admin/newsletter-subscribers`,
 
   menuList: `${API_URL}/api/admin/menus`,
-    menuCreate: `${API_URL}/api/admin/menus`,
-    menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
-    menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,          
-    settingLogo: `${API_URL}/apis/setting-logo`,
+  menuCreate: `${API_URL}/api/admin/menus`,
+  menuUpdate: (id) => `${API_URL}/api/admin/menus/${id}`,
+  menuDelete: (id) => `${API_URL}/api/admin/menus/${id}`,
+  settingLogo: `${API_URL}/api/setting-logo`,
 
   ctaAdmin: `${API_URL}/api/admin/cta`,
   cta: `${API_URL}/api/cta`,
 
   auth: {
-   ping: `${API_URL}/api/auth/ping`, 
+    ping: `${API_URL}/api/auth/ping`, 
     login: `${API_URL}/api/auth/login`,
     register: `${API_URL}/api/auth/register`,
     forgotPassword: `${API_URL}/api/auth/forgot-password`,
     resetPassword: `${API_URL}/api/auth/reset-password`,
   },
- headers: {
+
+  headers: {
     Authorization: `Bearer ${localStorage.getItem('token')}`,
   },
+
   users: `${API_URL}/api/admin/users`,
   profile: `${API_URL}/user/profile`,
   userById: (id) => `${API_URL}/api/admin/users/${id}`,
@@ -44,13 +44,19 @@ export const API_ENDPOINTS = {
   deleteUser: (id) => `${API_URL}/api/admin/users/${id}`,
   authMe: `${API_URL}/api/auth/me`,
 
-  posts: `${API_URL}/apis/admin/posts`,               
-  postBySlug: (slug) => `${API_URL}/apis/posts/slug/${slug}`,  
-  UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
-  categories: `${API_URL}/apis/categories`,          
+  // === POSTS & CATEGORIES ADMIN ===
+   // posts: `${API_URL}/apis/admin/posts`,               
+  // postBySlug: (slug) => `${API_URL}/apis/posts/slug/${slug}`,  
+  // UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
+  // categories: `${API_URL}/apis/categories`,  
+  
+  posts: `${API_URL}/api/admin/posts`,
+  postBySlug: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
+  UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
+  categories: `${API_URL}/api/admin/categories`,
 
-  pages: `${API_URL}/apis/admin/posts`,              
-  pageBySlug: (slug) => `${API_URL}/apis/admin/posts/page/${slug}`,
+  pages: `${API_URL}/api/admin/posts`,
+  pageBySlug: (slug) => `${API_URL}/api/admin/posts/page/${slug}`,
   customPages: `${API_URL}/api/admin/custom-pages`,
 
   activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
@@ -59,11 +65,10 @@ export const API_ENDPOINTS = {
   setActiveTheme: (id) => `${API_URL}/api/admin/themes/${id}/active`,
 
   websiteSchema: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
-
   deleteByTag: (tag) => `${API_URL}/api/custom-pages/deleteByTag/${encodeURIComponent(tag)}`,
 
-  testimonials: `${API_URL}/apis/admin/posts?type=testimonial`,
-  testimonialDetail: (id) => `${API_URL}/apis/admin/posts/${id}`,
+  testimonials: `${API_URL}/api/admin/posts?type=testimonial`,
+  testimonialDetail: (id) => `${API_URL}/api/admin/posts/${id}`,
 
   MENU_GROUPS: `${API_URL}/api/menu-groups`,
   ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
@@ -78,15 +83,11 @@ export const API_ENDPOINTS = {
   DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,   
 
   siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
-  favicon: `${API_URL}/apis/icons/favicon`,        
-  icons: `${API_URL}/apis/icons/upload`,           
-  saveFavicon: `${API_URL}/apis/icons/save`,      
-    
-    // Transaksi
-  //   topup: `${API_URL}/api/transaksi/topup`,
-  //   bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
-  //  topupById: (id) => `${API_URL}/api/transaksi/topup/${id}`,
-  //  summaryTopup: `${API_URL}/api/transaksi/topup-summary`,
+  favicon: `${API_URL}/api/icons/favicon`,        
+  icons: `${API_URL}/api/icons/upload`,           
+  saveFavicon: `${API_URL}/api/icons/save`,      
+
+  // Transaksi
   topup: {
     list: `${API_URL}/api/transaksi/topup`,
     bulkUpdateStatus: () => `${API_URL}/api/transaksi/topup/bulk-update-status`,
@@ -94,34 +95,31 @@ export const API_ENDPOINTS = {
     summary: `${API_URL}/api/transaksi/topup-summary`,
   },
 
-    // withdraws: `${API_URL}/apis/withdraws`,
-    // withdrawById: (id) => `${API_URL}/apis/admin/withdraw/${id}`,
   withdraw: {
-  list: (status = '', username = '') => {
-    const params = new URLSearchParams()
-    if (status) params.append('status', status)
-    if (username) params.append('username', username)
-    return `${API_URL}/api/transaksi/withdraw?${params.toString()}`},
-  updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
-   bulkUpdateStatus: () => `${API_URL}/api/transaksi/withdraw/bulk-update-status`,
+    list: (status = '', username = '') => {
+      const params = new URLSearchParams()
+      if (status) params.append('status', status)
+      if (username) params.append('username', username)
+      return `${API_URL}/api/transaksi/withdraw?${params.toString()}`}
+    ,
+    updateStatus: (id) => `${API_URL}/api/transaksi/withdraw/${id}/status`,
+    bulkUpdateStatus: () => `${API_URL}/api/transaksi/withdraw/bulk-update-status`,
   },
 
   adjust: {
-   create: `${API_URL}/api/transaksi/adjust`,
-   list: `${API_URL}/api/transaksi/adjust`,
-    // summary: `${API_URL}/api/transaksi/adjust-summary`,
-   summaryAdjust: `${API_URL}/api/transaksi/adjust-summary`,
+    create: `${API_URL}/api/transaksi/adjust`,
+    list: `${API_URL}/api/transaksi/adjust`,
+    summaryAdjust: `${API_URL}/api/transaksi/adjust-summary`,
   },
 
   walletMe: `${API_URL}/api/transaksi/me`, 
-  // walletHistory: `${API_URL}/api/transaksi/wallet-histories`,
   adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
-  // walletHistory: `${API_URL}/api/admin/transaksi/wallet-history`,
   company_banks: `${API_URL}/api/company-banks`,
-    adminCustomersList: `${API_URL}/api/admin/customers`,
+  adminCustomersList: `${API_URL}/api/admin/customers`,
   customersList: `${API_URL}/customer/auth/user/customers`,
   banks: `${API_URL}/banks`,
 }
+
 
 
 const api = axios.create({

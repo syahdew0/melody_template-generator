@@ -34,4 +34,14 @@ exports.requireAdmin = (req, res, next) => {
     return res.status(403).json({ message: 'Hanya admin yang dapat mengakses' })
   }
   next()
-}
+};
+
+exports.requirePermission = (permission) => {
+  return (req, res, next) => {
+    const userPermissions = req.user?.permissions || []; 
+    if (!userPermissions.includes(permission)) {
+      return res.status(403).json({ message: 'Tidak memiliki izin' });
+    }
+    next();
+  };
+};

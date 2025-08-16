@@ -228,4 +228,14 @@ onMounted(() => {
     fetchUsers();
   }
 });
+// onMounted(() => {
+//   const user = JSON.parse(localStorage.getItem('user'));
+//   if (!user || !user.permissions.includes('manage_users')) {
+//     router.push('/'); // tidak punya izin → redirect
+//   } else {
+//     currentUserId.value = String(user.id);
+//     fetchUsers();
+//   }
+// });
+
 </script>

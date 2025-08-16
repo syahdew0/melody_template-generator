@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     order_date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.NOW   // 🔹 biar konsisten sama migration
     },
     total_amount: {
       type: DataTypes.DECIMAL(15, 2),
@@ -24,24 +25,30 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'orders',
-    underscored: true
+    underscored: true,
+    timestamps: true,         
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   Order.associate = function(models) {
     Order.hasMany(models.HistoryOrderStatus, { 
       foreignKey: 'order_id', 
-      as: 'statusHistory', 
-      constraints: false });
+      as: 'statusHistory',
+      constraints: false 
+    });
 
     Order.hasMany(models.OrderDetail, { 
       foreignKey: 'order_id', 
-      as: 'details', 
-      constraints: false });
+      as: 'details',
+      constraints: false 
+    });
 
     Order.hasMany(models.OrderPayment, { 
       foreignKey: 'order_id', 
-      as: 'payments', 
-      constraints: false });
+      as: 'payments',
+      constraints: false 
+    });
   };
 
   return Order;

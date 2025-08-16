@@ -7,9 +7,7 @@ module.exports = {
       id: { type: Sequelize.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
       order_id: {
         type: Sequelize.BIGINT.UNSIGNED,
-        allowNull: false,
-        references: { model: 'orders', key: 'id' },
-        onDelete: 'NO ACTION'
+        allowNull: false
       },
       payment_date: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn('NOW') },
       amount: { type: Sequelize.DECIMAL(15, 2), allowNull: false },
