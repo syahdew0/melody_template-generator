@@ -27,18 +27,7 @@ exports.create = async (req, res) => {
 
     // Buat post hanya sekali!
     const post = await Post.create({
-      website_id,
-      user_id,
-      title,
-      slug: finalSlug,
-      content,
-      excerpt,
-      thumbnail_url,
-      status,
-      published_at: status === 'published' ? new Date() : null,
-      type,
-      template,
-      parent_id
+      website_id, user_id, title, slug: finalSlug, content, excerpt, thumbnail_url, status, published_at: status === 'published' ? new Date() : null, type, template, parent_id
     })
 
     // Insert META
@@ -122,12 +111,8 @@ exports.getAll = async (req, res) => {
     ];
 
     const { count, rows } = await Post.findAndCountAll({
-      where,
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-      include,
-      distinct: true
+      where, offset, limit, order: [['createdAt', 'DESC']], include,
+     distinct: true
     });
 
     return res.json({ data: rows, total: count });
@@ -140,11 +125,10 @@ exports.getAll = async (req, res) => {
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
-    const post = await Post.findOne({
+const post = await Post.findOne({
   where: {
     id: req.params.id,
-    type: 'post',          
-    status: 'published'     
+    type: 'product' // ganti dari 'post' ke 'product'
   },
   include: [
     { model: PostMeta, as: 'meta' },
@@ -182,19 +166,8 @@ exports.update = async (req, res) => {
     if (!post) return res.status(404).json({ message: 'Post not found' })
 
     await post.update({
-      website_id,
-      user_id,
-      title,
-      slug,
-      content,
-      excerpt,
-      thumbnail_url,
-      status,
-      published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type,
-      template,
-      parent_id
-    })
+    website_id,user_id,title, slug, content: content ?? post.content, excerpt, thumbnail_url, status, published_at: status === 'published' ? (post.published_at || new Date()) : null, type, template, parent_id
+  })
 
     await PostMeta.destroy({ where: { post_id: postId } })
     if (meta.length > 0) {
@@ -210,16 +183,16 @@ exports.update = async (req, res) => {
       await post.setCategories(category_ids)
     }
 
-    if (type === 'product') {
-      const [detail, created] = await ProductDetail.findOrCreate({
-        where: { post_id: postId },
-        defaults: { ...product_detail, post_id: postId }
-      })
+   if (type === 'product') {
+  const [detail, created] = await ProductDetail.findOrCreate({
+    where: { post_id: post.id },
+    defaults: { ...product_detail, post_id: post.id }
+  });
 
-      if (!created) {
-        await detail.update(product_detail)
-      }
-    }
+  if (!created) {
+    await detail.update(product_detail);
+  }
+}
 
     res.json({ message: 'Post updated successfully', post })
   } catch (err) {
@@ -230,15 +203,22 @@ exports.update = async (req, res) => {
 // DELETE
 exports.remove = async (req, res) => {
   try {
-    const id = req.params.id
-    await PostMeta.destroy({ where: { post_id: id } })
-    await ProductDetail.destroy({ where: { post_id: id } }) 
-    await Post.destroy({ where: { id } })
-    res.json({ message: 'Deleted successfully' })
+    const id = req.params.id;
+
+    // Hapus semua relasi secara manual
+    await PostMeta.destroy({ where: { post_id: id } });
+    await ProductDetail.destroy({ where: { post_id: id } });
+    await PostCategory.destroy({ where: { post_id: id } });
+
+    // Baru hapus post
+    await Post.destroy({ where: { id } });
+
+    res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    res.status(500).json({ message: err.message })
+    res.status(500).json({ message: err.message });
   }
-}
+};
+
 
 // controllers/postController.js
 exports.getTestimonials = async (req, res) => {
@@ -328,18 +308,7 @@ exports.updateBySlug = async (req, res) => {
     } = req.body;
 
     await post.update({
-      website_id,
-      user_id,
-      title,
-      slug: newSlug || slug,
-      content,
-      excerpt,
-      thumbnail_url,
-      status,
-      published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type,
-      template,
-      parent_id
+      website_id, user_id, title, slug: newSlug || slug, content, excerpt, thumbnail_url, status, published_at: status === 'published' ? (post.published_at || new Date()) : null, type, template, parent_id
     });
 
     await PostMeta.destroy({ where: { post_id: post.id } });

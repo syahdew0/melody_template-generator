@@ -50,10 +50,15 @@ export const API_ENDPOINTS = {
   // UPDATE_POST_BY_SLUG: (slug) => `/apis/admin/posts/slug/${slug}`,
   // categories: `${API_URL}/apis/categories`,  
   
-  posts: `${API_URL}/api/admin/posts`,
-  postBySlug: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
-  UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
-  categories: `${API_URL}/api/admin/categories`,
+  posts: `${API_URL}/apis/admin/posts`,
+  postBySlug: (slug) => `${API_URL}/apis/admin/posts/slug/${slug}`,
+  UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/apis/admin/posts/slug/${slug}`,
+  categories: `${API_URL}/apis/categories`, 
+
+  // posts: `${API_URL}/api/admin/posts`,
+  // postBySlug: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
+  // UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
+  // categories: `${API_URL}/api/admin/categories`,
 
   pages: `${API_URL}/api/admin/posts`,
   pageBySlug: (slug) => `${API_URL}/api/admin/posts/page/${slug}`,

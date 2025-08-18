@@ -36,17 +36,19 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'post_id',
         sourceKey: 'id',
       });
+      
       Post.hasMany(models.PostCategory, {
         foreignKey: 'post_id',
-        as: 'post_categories',
-        onDelete: 'NO ACTION',
+        as: 'post_categories'
       });
+
       Post.belongsToMany(models.Category, {
       through: models.PostCategory,
       foreignKey: 'post_id',
       otherKey: 'category_id',
       as: 'categories'
     });
+    
     };
   
     return Post;

@@ -4,7 +4,8 @@ module.exports = {
   async getAll(req, res) {
     try {
       const orders = await Order.findAll({
-        include: [OrderDetail, OrderPayment, HistoryOrderStatus]
+        include: [OrderDetail, OrderPayment, HistoryOrderStatus],
+        order: [['order_date', 'DESC']]
       });
       res.json(orders);
     } catch (err) {
@@ -29,6 +30,9 @@ module.exports = {
     try {
       const { order_id } = req.params;
       const { status } = req.body;
+
+      const order = await Order.findByPk(order_id);
+      if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
 
       await Order.update({ status }, { where: { id: order_id } });
 

@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    isActive: {
+    is_active: {
   type: DataTypes.BOOLEAN,
   defaultValue: true
 }
