@@ -94,19 +94,17 @@ exports.getMyTotalBalance = async (req, res) => {
     }
 
     // Ambil history terakhir per wallet
-    const latestHistories = await Promise.all(
-      walletIds.map(async (walletId) => {
-        return await WalletHistory.findOne({
-          where: {
-            walletId,
-            status: 'success',
-          },
-          order: [['created_at', 'DESC']],
-          attributes: ['balance_after'],
-          raw: true,
-        });
-      })
-    );
+   const latestHistories = await Promise.all(
+  walletIds.map(async (walletId) => {
+    return await WalletHistory.findOne({
+      where: { walletId }, // jangan filter status='success'
+      order: [['created_at', 'DESC']],
+      attributes: ['balance_after'],
+      raw: true,
+    });
+  })
+);
+
     const totalBalance = latestHistories.reduce((acc, h) => acc + (h?.balance_after || 0), 0);
 
     return res.json({ total_balance: totalBalance });
@@ -173,76 +171,59 @@ exports.getWalletDetailsByType = async (req, res) => {
 };
 
 exports.getMyWalletHistory = async (req, res) => {
-  try {
-    const { fromDate, toDate, transactionType, page = 1, limit = 10 } = req.query;
-    const customerId = req.customer.id;
+ try {
+    const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
 
-    // Ambil semua wallet customer
-    const wallets = await Wallet.findAll({
-      where: { customer_id: customerId },
-      attributes: ['id', 'wallet_type'],
-      raw: true,
-    });
-    const walletIds = wallets.map(w => w.id);
+    const where = {};
 
-    // Ambil WalletHistory biasa
-    const whereHistory = {
-      walletId: walletIds.length ? { [Op.in]: walletIds } : undefined,
-      ...(fromDate && toDate
-        ? { created_at: { [Op.between]: [new Date(fromDate+'T00:00:00'), new Date(toDate+'T23:59:59')] } }
-        : {}),
-      ...(transactionType ? { transaction_type: transactionType } : {})
-    };
-    const walletHistories = await WalletHistory.findAll({
-      where: whereHistory,
-      order: [['created_at', 'ASC']], // urut ascending supaya saldo kumulatif bisa dihitung
-      raw: true
-    });
+    if (wallet_id) {
+      where.walletId = wallet_id;
+    }
 
-    // Ambil Adjust untuk kategori point/stamp
-    const whereAdjust = { username: req.customer.username };
-    if(fromDate && toDate) whereAdjust.createdon = { [Op.between]: [new Date(fromDate+'T00:00:00'), new Date(toDate+'T23:59:59')] };
+    if (username) {
+      where.username = username;
+    }
 
-    const adjustData = await Adjust.findAll({
-      where: whereAdjust,
-      order: [['createdon', 'ASC']], // ascending supaya saldo kumulatif bisa dihitung
-      raw: true
-    });
+    if (transaction_type) {
+      where.transaction_type = transaction_type;
+    }
 
-    // Hitung saldo kumulatif untuk point/stamp
-   const runningBalance = { point: 0, stamp: 0 };
-   const adjustHistories = adjustData.map(a => {
-    const category = a.category; // point / stamp
-    const before = runningBalance[category] || 0;
-    runningBalance[category] = before + a.amount;
-    return {
-      id: `adj-${a.id}`,
-      walletId: null,
-      username: req.customer.username,
-      reference_id: null,
-      wallet_type: category,
-      transaction_type: a.amount > 0 ? 'adjust_plus' : 'adjust_minus',
-      status: 'success',
-      amount: a.amount,
-      balance_before: before,
-      balance_after: runningBalance[category],
-      remarks: a.remarks,
-      created_at: a.createdon
-    };
+    if (fromDate && toDate) {
+      const start = new Date(fromDate + 'T00:00:00');
+      const end = new Date(toDate + 'T23:59:59');
+      where.created_at = {
+        [Op.between]: [start, end],
+      };
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // const result = await WalletHistory.findAndCountAll({
+    //   where,
+    //   order: [['created_at', 'DESC']],
+    //   offset,
+    //   limit: parseInt(limit),
+    //   raw: true,
+      
+    // });
+const result = await WalletHistory.findAndCountAll({
+    where,
+    attributes: [
+    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
+    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
+  ],
+    order: [['created_at', 'DESC']],
+    offset,
+    limit: parseInt(limit),
   });
-    // Gabungkan & urutkan descending
-    let allHistories = [...walletHistories, ...adjustHistories];
-    allHistories.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    res.json({
+      count: result.count,
+      rows: result.rows
+    });
 
-    // Pagination manual
-    const totalCount = allHistories.length;
-    const offset = (page-1)*limit;
-    const paginatedData = allHistories.slice(offset, offset+parseInt(limit));
-
-    res.json({ count: totalCount, rows: paginatedData });
-  } catch(err) {
-    console.error(err);
-    res.status(500).json({ message:'Gagal mengambil riwayat wallet' });
+  } catch (err) {
+    console.error('Admin Wallet History Error:', err);
+    res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
   }
 };
 

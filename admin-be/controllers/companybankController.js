@@ -1,4 +1,4 @@
-const { CompanyBank } = require('../models');
+const { CompanyBank, Topup } = require('../models');
 
 exports.getAll = async (req, res) => {
   try {
@@ -52,6 +52,15 @@ exports.remove = async (req, res) => {
       return res.status(404).json({ message: 'Bank tidak ditemukan' });
     }
 
+    // Cek apakah masih ada topup yang pakai bank ini
+    const topupCount = await Topup.count({ where: { bank_id: id } });
+    if (topupCount > 0) {
+      return res.status(400).json({ 
+        message: `Bank masih digunakan di ${topupCount} topup, tidak bisa dihapus` 
+      });
+    }
+
+    // Hapus bank
     await bank.destroy();
     res.json({ message: 'Data bank berhasil dihapus' });
   } catch (err) {

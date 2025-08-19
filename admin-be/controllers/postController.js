@@ -128,7 +128,7 @@ exports.getById = async (req, res) => {
 const post = await Post.findOne({
   where: {
     id: req.params.id,
-    type: 'product' // ganti dari 'post' ke 'product'
+    type: 'product' 
   },
   include: [
     { model: PostMeta, as: 'meta' },
