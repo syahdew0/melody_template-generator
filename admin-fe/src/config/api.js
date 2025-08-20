@@ -120,9 +120,15 @@ export const API_ENDPOINTS = {
   walletMe: `${API_URL}/api/transaksi/me`, 
   adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
   company_banks: `${API_URL}/api/company-banks`,
+  activate_company_bank: (id) => `${API_URL}/api/company-banks/${id}/activate`,
+  deactivate_company_bank: (id) => `${API_URL}/api/company-banks/${id}/deactivate`,
   adminCustomersList: `${API_URL}/api/admin/customers`,
   customersList: `${API_URL}/customer/auth/user/customers`,
   banks: `${API_URL}/banks`,
+
+ settingTopupWithdraw: `${API_URL}/api/admin/settings-transaksi`,
+
+
 }
 
 

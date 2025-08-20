@@ -383,6 +383,8 @@
                   Adjust
                 </router-link>
 
+                
+
                  <!-- <router-link 
                   :to="{ name: 'TransaksiHistory' }" 
                   class="submenu-link" 
@@ -395,6 +397,13 @@
                   class="submenu-link" 
                   :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TransaksiHistoryPage') }">
                   Transaksi History
+                </router-link>
+
+                <router-link 
+                  :to="{ name: 'SettingTransaksi' }" 
+                  class="submenu-link" 
+                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('SettingTransaksi') }">
+                  Setting Transaksi
                 </router-link>
               </ul>
             </transition>

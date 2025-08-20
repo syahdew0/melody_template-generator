@@ -1,9 +1,76 @@
-const { Op } = require('sequelize')
 const { Post, PostMeta, Category, ProductDetail, PostCategory } = require('../models')
+const { Op } = require('sequelize')
+const cron = require('node-cron');
 
-exports.index = (req, res) => {
-  res.json({ message: 'Post Controller is working.' });
+exports.index = async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      include: [
+        { model: ProductDetail, as: 'product_detail' },
+        { model: Category, as: 'categories' }
+      ]
+    });
+
+   const data = posts.map(post => {
+  let final_price = null;
+  let original_price = null;
+
+  if (post.product_detail) {
+    const { price, discount_price, discount_until } = post.product_detail;
+
+    // harga asli
+    original_price = price;
+
+    // default harga final = price
+    final_price = price;
+
+    // jika ada diskon dan masih berlaku
+    if (discount_price && discount_until && new Date(discount_until) > new Date()) {
+      final_price = discount_price;
+    }
+  }
+
+  return {
+    ...post.toJSON(),
+    product_detail: {
+      ...post.product_detail?.toJSON(),
+      original_price, // harga asli (buat dicoret)
+      final_price     // harga final (warna merah)
+    }
+  };
+});
+
+res.json(data);
+
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
+cron.schedule('0 * * * *', async () => {
+  try {
+    const now = new Date();
+
+    const [updatedCount] = await ProductDetail.update(
+      {
+        discount_price: null,
+        discount_until: null
+      },
+      {
+        where: {
+          discount_until: { [Op.lt]: now }
+        }
+      }
+    );
+
+    if (updatedCount > 0) {
+      console.log(`[CRON] ${updatedCount} produk expired discount dibersihkan (${now.toISOString()})`);
+    }
+  } catch (err) {
+    console.error('[CRON] Error saat bersihkan discount:', err);
+  }
+});
 
 // CREATE
 exports.create = async (req, res) => {
@@ -15,7 +82,7 @@ exports.create = async (req, res) => {
       meta = [], product_detail = {}, category_ids = []
     } = req.body
 
-    // SLUGIFY dulu sebelum create
+    // Fungsi slugify sederhana
     const slugify = (text) =>
       text
         .toString()
@@ -23,11 +90,33 @@ exports.create = async (req, res) => {
         .trim()
         .replace(/[\s\W-]+/g, '-')
 
-    const finalSlug = slug && slug !== '' ? slugify(slug) : slugify(title || 'untitled')
+    // Buat slug awal
+    let baseSlug = slug && slug !== '' ? slugify(slug) : slugify(title || 'untitled')
+    let finalSlug = baseSlug
+    let counter = 1
 
-    // Buat post hanya sekali!
+    // Loop cek slug unik di DB
+    while (await Post.findOne({ where: { slug: finalSlug } })) {
+      finalSlug = `${baseSlug}-${counter}`
+      counter++
+    }
+
+    // Buat post
     const post = await Post.create({
-      website_id, user_id, title, slug: finalSlug, content, excerpt, thumbnail_url, status, published_at: status === 'published' ? new Date() : null, type, template, parent_id
+      website_id,
+      user_id,
+      title,
+      slug: finalSlug,
+      content,
+      excerpt,
+      thumbnail_url,
+      status,
+      published_at: status === 'published' ? new Date() : null,
+      type,
+      template,
+      parent_id,
+      created_at: new Date(),
+      updated_at: new Date(),
     })
 
     // Insert META
@@ -53,7 +142,9 @@ exports.create = async (req, res) => {
     if (type === 'product' && product_detail) {
       await ProductDetail.create({
         ...product_detail,
-        post_id: post.id
+        post_id: post.id,
+        created_at: new Date(),
+        updated_at: new Date(),
       })
     }
 
@@ -365,3 +456,4 @@ exports.getPostsByCategory = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil postingan' })
   }
 }
+

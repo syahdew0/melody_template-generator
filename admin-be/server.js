@@ -133,13 +133,16 @@ app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 
 app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
-app.use('/api/admin', require('./routes/adminCustomerRoutes'));
+// Setting Transaksi (tetap pakai tabel Setting)
+app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoutes'));
+// app.use('/api/customer/settings-transaksi', require('./routes/settingTransaksiRoutes'));
+app.use('/customer/settings-transaksi', require('./routes/customer/settingTransaksiRoutes'))
+
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));
 
 // app.use('/api/menu-groups', require('./routes/menuGroupRoutes'));
 // app.use('/api/menu-items', require('./routes/menuItemRoutes'));
-
 
 
 // === Vue Fallback ===

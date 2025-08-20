@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     bank_name: DataTypes.STRING,
     account_name: DataTypes.STRING,
     account_number: DataTypes.STRING,
+     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
   }, {
     tableName: 'company_banks'
   });

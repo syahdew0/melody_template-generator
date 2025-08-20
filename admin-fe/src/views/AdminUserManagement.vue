@@ -2,6 +2,15 @@
   <div class="p-6">
     <h2 class="text-xl font-bold mb-4">Manajemen Pengguna</h2>
 
+    <!-- Tombol tambah user -->
+    <button
+      @click="openModal('add')"
+      class="bg-green-600 text-white px-4 py-2 rounded mb-4"
+    >
+      Tambah User
+    </button>
+
+    <!-- Tabel user -->
     <table class="w-full text-left border mb-6">
       <thead>
         <tr>
@@ -36,13 +45,12 @@
             <span v-else class="text-green-600 font-semibold">Admin</span>
 
             <button
-              @click="openEditModal(user)"
+              @click="openModal('edit', user)"
               class="bg-yellow-500 text-white px-2 py-1 rounded"
             >
               Edit
             </button>
 
-         <!-- Tombol hapus -->
             <button
               v-if="String(user.id) !== currentUserId && !user.isSuperAdmin"
               @click="deleteUser(user.id)"
@@ -50,65 +58,65 @@
             >
               Hapus
             </button>
-            <span
-              v-else-if="String(user.id) === currentUserId"
-              class="text-gray-400 text-sm italic"
-            >
+            <span v-else-if="String(user.id) === currentUserId" class="text-gray-400 text-sm italic">
               Tidak bisa hapus diri sendiri
             </span>
-            <span
-              v-else
-              class="text-gray-400 text-sm italic"
-            >
+            <span v-else class="text-gray-400 text-sm italic">
               Tidak bisa hapus admin utama
             </span>
-
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Edit Modal -->
+    <!-- Modal Add/Edit User -->
     <div
-      v-if="showEditModal"
+      v-if="showModal"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
       <div class="bg-white p-6 rounded-lg shadow-md w-96">
-        <h3 class="text-lg font-bold mb-4">Edit User</h3>
-        <form @submit.prevent="updateUser">
+        <h3 class="text-lg font-bold mb-4">
+          {{ modalType === 'add' ? 'Tambah User' : 'Edit User' }}
+        </h3>
+        <form @submit.prevent="modalType === 'add' ? addUser() : updateUser()">
           <input
-            v-model="editForm.username"
+            v-model="form.username"
             class="border w-full mb-2 px-2 py-1"
             placeholder="Username"
+            required
           />
           <input
-            v-model="editForm.email"
+            v-model="form.email"
             class="border w-full mb-2 px-2 py-1"
             placeholder="Email"
+            type="email"
+            required
           />
           <input
-            v-model="editForm.password"
+            v-model="form.password"
             type="password"
             class="border w-full mb-2 px-2 py-1"
-            placeholder="Password (opsional)"
+            :placeholder="modalType === 'add' ? 'Password' : 'Password (opsional)'"
+            :required="modalType === 'add'"
           />
-          <select
-            v-model="editForm.role"
-            class="border w-full mb-4 px-2 py-1"
-          >
+          <select v-model="form.role" class="border w-full mb-4 px-2 py-1">
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
           <div class="flex justify-end space-x-2">
             <button
-              @click="cancelEdit"
+              @click="closeModal"
               type="button"
               class="bg-gray-300 text-black px-4 py-1 rounded"
             >
               Batal
             </button>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded">
-              Simpan
+            <button
+              type="submit"
+              :class="modalType === 'add' ? 'bg-green-600' : 'bg-blue-600'"
+              class="text-white px-4 py-1 rounded"
+            >
+              {{ modalType === 'add' ? 'Tambah' : 'Simpan' }}
             </button>
           </div>
         </form>
@@ -126,116 +134,93 @@ import { API_ENDPOINTS } from '@/config/api';
 const router = useRouter();
 const users = ref([]);
 const currentUserId = ref(null);
-const showEditModal = ref(false);
-const editForm = ref({
-  id: null,
-  username: '',
-  email: '',
-  password: '',
-  role: 'user',
-});
+
+const showModal = ref(false);
+const modalType = ref('add'); // 'add' atau 'edit'
+const form = ref({ id: null, username: '', email: '', password: '', role: 'user' });
 
 const fetchUsers = async () => {
   try {
     const token = localStorage.getItem('token');
-    const { data } = await axios.get(API_ENDPOINTS.users, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const { data } = await axios.get(API_ENDPOINTS.users, { headers: { Authorization: `Bearer ${token}` } });
     users.value = data;
   } catch (err) {
     console.error('Gagal mengambil data user:', err);
   }
 };
 
-const promoteToAdmin = async (id) => {
-  if (!confirm('Yakin ingin menjadikan user ini sebagai admin?')) return;
+// Open modal Add/Edit
+const openModal = (type, user = null) => {
+  modalType.value = type;
+  if (type === 'edit' && user) {
+    form.value = { id: user.id, username: user.username, email: user.email, password: '', role: user.role };
+  } else {
+    form.value = { id: null, username: '', email: '', password: '', role: 'user' };
+  }
+  showModal.value = true;
+};
 
+const closeModal = () => {
+  showModal.value = false;
+  form.value = { id: null, username: '', email: '', password: '', role: 'user' };
+};
+
+// Tambah user
+const addUser = async () => {
   try {
     const token = localStorage.getItem('token');
-    await axios.put(API_ENDPOINTS.makeAdmin(id), {}, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await axios.post(API_ENDPOINTS.users, form.value, { headers: { Authorization: `Bearer ${token}` } });
     fetchUsers();
+    closeModal();
   } catch (err) {
-    alert('Gagal menjadikan admin: ' + (err.response?.data?.message || err.message));
+    alert('Gagal tambah user: ' + (err.response?.data?.message || err.message));
   }
 };
 
-const deleteUser = async (id) => {
-  if (String(id) === currentUserId.value) {
-    alert('Tidak bisa menghapus diri sendiri.');
-    return;
-  }
-
-  if (!confirm('Yakin ingin menghapus user ini?')) return;
-
+// Update user
+const updateUser = async () => {
   try {
     const token = localStorage.getItem('token');
-    await axios.delete(API_ENDPOINTS.userById(id), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const payload = { ...form.value };
+    if (!payload.password) delete payload.password;
+    await axios.put(API_ENDPOINTS.userById(payload.id), payload, { headers: { Authorization: `Bearer ${token}` } });
+    fetchUsers();
+    closeModal();
+  } catch (err) {
+    alert('Gagal update user: ' + (err.response?.data?.message || err.message));
+  }
+};
+
+// Hapus user
+const deleteUser = async (id) => {
+  if (!confirm('Yakin ingin menghapus user ini?')) return;
+  try {
+    const token = localStorage.getItem('token');
+    await axios.delete(API_ENDPOINTS.userById(id), { headers: { Authorization: `Bearer ${token}` } });
     fetchUsers();
   } catch (err) {
     alert('Gagal menghapus user: ' + (err.response?.data?.message || err.message));
   }
 };
 
-const openEditModal = (user) => {
-  editForm.value = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    password: '',
-    role: user.role,
-  };
-  showEditModal.value = true;
-};
-
-const cancelEdit = () => {
-  showEditModal.value = false;
-  editForm.value = {
-    id: null,
-    username: '',
-    email: '',
-    password: '',
-    role: 'user',
-  };
-};
-
-const updateUser = async () => {
+// Promote user
+const promoteToAdmin = async (id) => {
+  if (!confirm('Jadikan user ini admin?')) return;
   try {
     const token = localStorage.getItem('token');
-    const payload = { ...editForm.value };
-    if (!payload.password) delete payload.password;
-
-    await axios.put(API_ENDPOINTS.userById(payload.id), payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
+    await axios.put(API_ENDPOINTS.makeAdmin(id), {}, { headers: { Authorization: `Bearer ${token}` } });
     fetchUsers();
-    cancelEdit();
   } catch (err) {
-    alert('Gagal update user: ' + (err.response?.data?.message || err.message));
+    alert('Gagal menjadikan admin: ' + (err.response?.data?.message || err.message));
   }
 };
 
 onMounted(() => {
   const user = JSON.parse(localStorage.getItem('user'));
-  if (!user || user.role !== 'admin') {
-    router.push('/');
-  } else {
+  if (!user || user.role !== 'admin') router.push('/');
+  else {
     currentUserId.value = String(user.id);
     fetchUsers();
   }
 });
-// onMounted(() => {
-//   const user = JSON.parse(localStorage.getItem('user'));
-//   if (!user || !user.permissions.includes('manage_users')) {
-//     router.push('/'); // tidak punya izin → redirect
-//   } else {
-//     currentUserId.value = String(user.id);
-//     fetchUsers();
-//   }
-// });
-
 </script>

@@ -68,3 +68,46 @@ exports.remove = async (req, res) => {
     res.status(500).json({ message: 'Gagal menghapus data bank' });
   }
 };
+
+// Nonaktifkan bank (soft delete)
+exports.deactivate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bank = await CompanyBank.findByPk(id);
+    if (!bank) return res.status(404).json({ message: 'Bank tidak ditemukan' });
+
+    await bank.update({ is_active: false });
+    res.json({ message: 'Bank dinonaktifkan', data: bank });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal menonaktifkan bank' });
+  }
+};
+
+// Aktifkan kembali bank
+exports.activate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bank = await CompanyBank.findByPk(id);
+    if (!bank) return res.status(404).json({ message: 'Bank tidak ditemukan' });
+
+    await bank.update({ is_active: true });
+    res.json({ message: 'Bank diaktifkan kembali', data: bank });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengaktifkan bank' });
+  }
+};
+
+exports.getActiveBanksForCustomer = async (req, res) => {
+  try {
+    const banks = await CompanyBank.findAll({
+      where: { is_active: true }, // hanya bank aktif
+      order: [['bank_name', 'ASC']]
+    });
+    res.json({ data: banks });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil daftar bank aktif' });
+  }
+};

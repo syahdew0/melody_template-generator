@@ -1,9 +1,9 @@
-// routes/customer/companyBank.js
 const express = require('express');
 const router = express.Router();
-const companybankController = require('../../controllers/customer/companybankController');
+const companybankController = require('../../controllers/companybankController');
 const authenticateCustomer = require('../../middlewares/authCustomer');
 
-router.get('/', authenticateCustomer, companybankController.getAll);
+// Hanya bank aktif untuk customer
+router.get('/active', authenticateCustomer, companybankController.getActiveBanksForCustomer);
 
 module.exports = router;

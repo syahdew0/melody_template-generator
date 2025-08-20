@@ -29,19 +29,37 @@
           <td class="border p-2">{{ bank.account_name }}</td>
           <td class="border p-2">{{ bank.account_number }}</td>
           <td class="border p-2 text-center">
-            <button
-              @click="openForm(bank)"
-              class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded mr-1"
-            >
-              Edit
-            </button>
-            <button
-              @click="deleteBank(bank.id)"
-              class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-            >
-              Hapus
-            </button>
-          </td>
+  <button
+    @click="openForm(bank)"
+    class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded mr-1"
+  >
+    Edit
+  </button>
+
+  <button
+    v-if="bank.is_active"
+    @click="deactivateBank(bank.id)"
+    class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded mr-1"
+  >
+    Nonaktifkan
+  </button>
+
+  <button
+    v-else
+    @click="activateBank(bank.id)"
+    class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded mr-1"
+  >
+    Aktifkan
+  </button>
+
+  <button
+    @click="deleteBank(bank.id)"
+    class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+  >
+    Hapus
+  </button>
+</td>
+          
         </tr>
         <tr v-if="banks.length === 0">
           <td colspan="5" class="text-center p-4 text-gray-500">Tidak ada data bank</td>
@@ -136,8 +154,29 @@ const deleteBank = async (id) => {
     fetchBanks()
   } catch (err) {
     alert(err.response?.data?.message || 'Gagal menghapus data bank')
-  }
+ 
+ }
 }
+
+const deactivateBank = async (id) => {
+  if (!confirm('Yakin ingin menonaktifkan bank ini?')) return;
+  try {
+    await axios.patch(API_ENDPOINTS.deactivate_company_bank(id));
+    fetchBanks();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal menonaktifkan bank');
+  }
+};
+
+const activateBank = async (id) => {
+  if (!confirm('Yakin ingin mengaktifkan bank ini?')) return;
+  try {
+    await axios.patch(API_ENDPOINTS.activate_company_bank(id));
+    fetchBanks();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal mengaktifkan bank');
+  }
+};
 
 onMounted(fetchBanks)
 </script>

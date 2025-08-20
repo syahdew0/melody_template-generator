@@ -10,29 +10,47 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  try {
+    const { username, email, password, role } = req.body;
 
-  // Validasi input
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: 'Field wajib tidak boleh kosong' });
+    // Validasi input
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Field wajib tidak boleh kosong' });
+    }
+
+    // Cek apakah username atau email sudah ada
+    const existingUser = await User.findOne({ 
+      where: { 
+        [db.Sequelize.Op.or]: [{ username }, { email }] 
+      } 
+    });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username atau email sudah digunakan' });
+    }
+
+    // Cek apakah user pertama → superadmin
+    const totalUser = await User.count();
+    const isSuperAdmin = totalUser === 0;
+
+    // Hash password
+    const hash = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name: username,
+      username,
+      password: hash,
+      email,
+      role: role || (isSuperAdmin ? 'admin' : 'user'),
+      isSuperAdmin,
+    });
+
+    res.status(201).json(user);
+  } catch (err) {
+    console.error('createUser error:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
   }
-
-  // Cek apakah user pertama
-  const totalUser = await User.count();
-  const isSuperAdmin = totalUser === 0;
-
-  const hash = await bcrypt.hash(password, 10);
-
-  const user = await User.create({
-    username,
-    password: hash,
-    email,
-    role: role || (isSuperAdmin ? 'admin' : 'user'),
-    isSuperAdmin,
-  });
-
-  res.status(201).json(user);
 };
+
 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;

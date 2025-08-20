@@ -77,6 +77,7 @@ const routes = [
   { path: '/admin/transaksi/adjust', name: 'Adjust', component: () => import('@/views/transaksi/AdjustPage.vue') },
   { path: '/admin/transaksi/history', name: 'TransaksiHistoryPage', component: () => import('@/views/transaksi/TransaksiHistoryPage.vue') },
   { path: '/admin/transaksi/TransaksiHistory', name: 'TransaksiHistory', component: () => import('@/views/transaksi/TransaksiHistory.vue') },
+  { path: '/admin/transaksi/SettingTransaksi', name: 'SettingTransaksi', component: () => import('@/views/transaksi/SettingTransaksi.vue') },
 
   { path: '/admin/bank/CompanyBank', name: 'CompanyBank', component: () => import('@/views/bank/CompanyBank.vue') },
   { path: '/admin/bank/MasterBank', name: 'MasterBank', component: () => import('@/views/bank/MasterBank.vue') },

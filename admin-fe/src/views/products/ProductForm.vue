@@ -55,6 +55,14 @@
               <input v-model.number="form.product_detail.discount_price" type="number" class="input" />
             </div>
             <div>
+              <label class="block text-sm">Discount Until</label>
+              <input 
+                v-model="form.product_detail.discount_until" 
+                type="datetime-local" 
+                class="input" 
+              />
+            </div>
+            <div>
               <label class="block text-sm">Weight</label>
               <input v-model.number="form.product_detail.weight" type="number" class="input" />
             </div>
@@ -200,18 +208,27 @@ const fetchProduct = async () => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
 
-    form.value.title = data.title || ''
-    form.value.slug = data.slug || ''
-    form.value.content = data.content || ''
-    form.value.excerpt = data.excerpt || ''
-    form.value.thumbnail_url = data.thumbnail_url || ''
-    form.value.status = data.status || 'draft'
-    form.value.category_ids = data.post_categories?.map(pc => pc.category.id) || []
-
-    if (data.product_detail) {
-      form.value.product_detail = { ...form.value.product_detail, ...data.product_detail }
+    // isi form utama
+    form.value = {
+      ...form.value,
+      title: data.title || '',
+      slug: data.slug || '',
+      content: data.content || '',
+      excerpt: data.excerpt || '',
+      thumbnail_url: data.thumbnail_url || '',
+      status: data.status || 'draft',
+      category_ids: data.post_categories?.map(pc => pc.category.id) || [],
+      product_detail: { ...form.value.product_detail, ...data.product_detail }
     }
 
+    // format discount_until ke datetime-local
+    if (form.value.product_detail.discount_until) {
+      form.value.product_detail.discount_until = new Date(
+        form.value.product_detail.discount_until
+      ).toISOString().slice(0, 16)
+    }
+
+    // meta
     if (data.meta?.length) {
       seo.value.meta_title = data.meta.find(m => m.meta_key === 'meta_title')?.meta_value || ''
       seo.value.meta_description = data.meta.find(m => m.meta_key === 'meta_description')?.meta_value || ''
@@ -235,13 +252,20 @@ const fetchCategories = async () => {
 const submit = async () => {
   try {
     const payload = {
-  ...form.value,
-  meta: [
-    { meta_key: 'meta_title', meta_value: seo.value.meta_title },
-    { meta_key: 'meta_description', meta_value: seo.value.meta_description },
-    { meta_key: 'meta_keywords', meta_value: seo.value.meta_keywords }
-  ]
-}
+      ...form.value,
+      product_detail: {
+        ...form.value.product_detail,
+        discount_until: form.value.product_detail.discount_until
+          ? new Date(form.value.product_detail.discount_until).toISOString()
+          : null
+      },
+      meta: [
+        { meta_key: 'meta_title', meta_value: seo.value.meta_title },
+        { meta_key: 'meta_description', meta_value: seo.value.meta_description },
+        { meta_key: 'meta_keywords', meta_value: seo.value.meta_keywords }
+      ]
+    }
+
     const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
 
     if (isEdit) {
@@ -264,12 +288,3 @@ onMounted(async () => {
   if (isEdit) await fetchProduct()
 })
 </script>
-
-<style scoped>
-.input {
-  @apply w-full px-3 py-2 border rounded-md;
-}
-.btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700;
-}
-</style>
