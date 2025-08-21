@@ -42,35 +42,96 @@
           <input v-model="seo.meta_keywords" type="text" class="input" />
         </div>
 
-        <!-- Product Detail -->
-        <div class="border p-4 rounded shadow">
+         <!-- Product Details -->
+        <div class="border border-gray-300 p-4 rounded shadow">
           <h3 class="font-semibold mb-2">Product Details</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm">Price</label>
-              <input v-model.number="form.product_detail.price" type="number" class="input" />
+              <label>Price</label>
+              <input v-model.number="form.product_detail.price" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
             </div>
             <div>
-              <label class="block text-sm">Discount Price</label>
-              <input v-model.number="form.product_detail.discount_price" type="number" class="input" />
+              <label>Discount Price</label>
+              <input v-model.number="form.product_detail.discount_price" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
             </div>
             <div>
-              <label class="block text-sm">Discount Until</label>
-              <input 
-                v-model="form.product_detail.discount_until" 
-                type="datetime-local" 
-                class="input" 
-              />
+              <label>Discount Until</label>
+              <input v-model="form.product_detail.discount_until" type="datetime-local"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
             </div>
             <div>
-              <label class="block text-sm">Weight</label>
-              <input v-model.number="form.product_detail.weight" type="number" class="input" />
+              <label>Weight</label>
+              <input v-model.number="form.product_detail.weight" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
             </div>
             <div>
-              <label class="block text-sm">Unit Name</label>
-              <input v-model="form.product_detail.unit_name" type="text" class="input" />
+              <label>Unit Name</label>
+              <input v-model="form.product_detail.unit_name" type="text"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
             </div>
-            <!-- Tambahkan field lain sesuai kebutuhan -->
+            <div>
+              <label>Purchase Price</label>
+              <input v-model.number="form.product_detail.purchase_price" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div>
+              <label>Admin Info</label>
+              <textarea v-model="form.product_detail.admin_info" rows="2"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1"></textarea>
+            </div>
+            <div>
+              <label>Formula Price</label>
+              <input v-model="form.product_detail.formula_price" type="text"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" v-model="form.product_detail.is_preorder" class="border border-gray-400" />
+              <span>Is Preorder?</span>
+            </div>
+            <div>
+              <label>Product Type</label>
+              <select v-model="form.product_detail.product_type_id"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1">
+                <option :value="null">Select Type</option>
+                <option v-for="type in productTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label>Minimum Quantity</label>
+              <input v-model.number="form.product_detail.minimum_qty" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" v-model="form.product_detail.stock_integrated" class="border border-gray-400" />
+              <span>Stock Integrated?</span>
+            </div>
+            <div>
+              <label>Stock</label>
+              <input v-model.number="form.product_detail.stock" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div>
+              <label>Initial Stock</label>
+              <input v-model.number="form.product_detail.initial_stock" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div>
+              <label>DP Percentage</label>
+              <input v-model.number="form.product_detail.dp_percentage" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div>
+              <label>Minimum Order</label>
+              <input v-model.number="form.product_detail.minimum_order" type="number"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
+            <div>
+              <label>Dimension</label>
+              <input v-model="form.product_detail.dimension" type="text"
+                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+            </div>
           </div>
         </div>
       </div>
@@ -221,12 +282,16 @@ const fetchProduct = async () => {
       product_detail: { ...form.value.product_detail, ...data.product_detail }
     }
 
-    // format discount_until ke datetime-local
+    // format discount_until ke datetime-local (local time)
     if (form.value.product_detail.discount_until) {
-      form.value.product_detail.discount_until = new Date(
-        form.value.product_detail.discount_until
-      ).toISOString().slice(0, 16)
-    }
+    const date = new Date(form.value.product_detail.discount_until)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    form.value.product_detail.discount_until = `${year}-${month}-${day}T${hours}:${minutes}`
+  }
 
     // meta
     if (data.meta?.length) {

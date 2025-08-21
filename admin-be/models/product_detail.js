@@ -35,6 +35,7 @@ const ProductDetail = sequelize.define('ProductDetail', {
     ProductDetail.belongsTo(models.Post, {
       foreignKey: 'post_id',
       as: 'post'
+      
     });
   };
 

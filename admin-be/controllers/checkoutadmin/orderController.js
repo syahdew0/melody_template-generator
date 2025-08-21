@@ -39,7 +39,7 @@ module.exports = {
       const history = await HistoryOrderStatus.create({
         order_id,
         status,
-        changed_at: new Date()
+        created_at: new Date()
       });
 
       res.json({ message: 'Status diperbarui', history });
