@@ -83,6 +83,10 @@ const routes = [
   { path: '/admin/bank/MasterBank', name: 'MasterBank', component: () => import('@/views/bank/MasterBank.vue') },
 
   { path: '/admin/user/customerlist', name: 'CustomerList', component: () => import('@/views/user/CustomerList.vue') },
+
+    { path: '/admin/orders', name: 'OrderHistory', component: () => import('@/views/checkout/OrderHistory.vue') },
+  { path: '/admin/orders/:id', name: 'OrderDetail', component: () => import('@/views/checkout/OrderDetail.vue') },
+  
 ]
 
 const base = process.env.VUE_APP_BASE_PATH || '/'

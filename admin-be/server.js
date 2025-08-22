@@ -15,6 +15,7 @@ const db = require('./models');
 const { requireAuth } = require('./middlewares/authMiddleware');
 const customerAuthRoutes = require('./routes/customerAuthRoutes');
 const changePasswordRoutes = require('./routes/changepasswordRoutes');
+const adminCustomerRoutes = require('./routes/adminCustomerRoutes');
 
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -59,6 +60,7 @@ app.use(cors(corsOptions));
 
 // === Static Uploads ===
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/api/admin', adminCustomerRoutes);
 
 // customer
 app.use('/customer/auth', customerAuthRoutes);
@@ -88,6 +90,7 @@ app.use('/company-banks', require('./routes/companybankRoutes'));
 
 // Customer
 app.use('/customer/company-banks', require('./routes/customer/companybankRoutes'));
+app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
 
 // === Protected Routes (Require Auth) ===
@@ -131,7 +134,7 @@ app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 // app.use('/api/public/banks', require('./routes/masterbankRoutes'));
 
-app.use('/api/company-banks', require('./routes/companybankRoutes'));
+
 
 // Setting Transaksi (tetap pakai tabel Setting)
 app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoutes'));
@@ -141,6 +144,8 @@ app.use('/customer/settings-transaksi', require('./routes/customer/settingTransa
 app.use('/customer/address', require('./routes/customer/customerAddressRoutes'));
 // app.use('/customer/rajaongkir', require('./routes/customer/rajaongkirRoutes'));
 app.use('/customer/orders', require('./routes/customer/orderRoutes'));
+// server.js
+app.use('/api/admin/orders', require('./routes/checkoutadmin/orderRoutes'));
 
 
 

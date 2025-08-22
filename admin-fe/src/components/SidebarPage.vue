@@ -264,6 +264,8 @@
           <ul v-show="subDropdownOpen === 'products'" class="dropdown-submenu">
             <router-link :to="{ name: 'ProductList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('ProductList') }">All Products</router-link>
             <router-link :to="{ name: 'ProductCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('ProductCreate') }">Add New</router-link>
+             <router-link :to="{ name: 'OrderHistory' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('OrderHistory') }">Order History</router-link>
+               <!-- <router-link :to="{ name: 'OrderDetail' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('OrderDetail') }">Order Detail</router-link> -->
           </ul>
         </transition>
       </li>

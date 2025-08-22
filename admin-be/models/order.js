@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
     order_date: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW   // 🔹 biar konsisten sama migration
+      defaultValue: DataTypes.NOW   
     },
     total_amount: {
       type: DataTypes.DECIMAL(15, 2),
@@ -22,7 +22,12 @@ module.exports = (sequelize, DataTypes) => {
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
-    }
+    },
+    status: {
+      type: DataTypes.ENUM('Unpaid', 'Paid', 'Cancel', 'Refund', 'Payment Expired'),
+      allowNull: false,
+      defaultValue: 'Unpaid'
+    },
   }, {
     tableName: 'orders',
     underscored: true,

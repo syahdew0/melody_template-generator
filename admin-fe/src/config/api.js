@@ -128,7 +128,11 @@ export const API_ENDPOINTS = {
 
  settingTopupWithdraw: `${API_URL}/api/admin/settings-transaksi`,
 
-
+ orders: {
+    list: `${API_URL}/api/admin/orders`,
+    detail: (id) => `${API_URL}/api/admin/orders/${id}`,
+    updateStatus: (id) => `${API_URL}/api/admin/orders/${id}/status`
+  },
 }
 
 
