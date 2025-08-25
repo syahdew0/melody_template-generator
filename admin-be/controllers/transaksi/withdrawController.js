@@ -46,7 +46,7 @@ async create(req, res) {
     }
 
     const latestHistory = await WalletHistory.findOne({
-      where: { username: customer.username },
+      where: { username: customer.username,  wallet_type: 'saldo' },
       order: [['created_at', 'DESC']],
       transaction: t,
       raw: true
@@ -79,6 +79,7 @@ async create(req, res) {
       walletId: wallet.id,
       username: customer.username,
       type: 'out',
+      transaction_type_id: 2,
       transaction_type: 'withdraw',
       amount: -withdrawAmount,
       source_type: 'withdraw',
@@ -230,6 +231,7 @@ if (status === 'failed') {
     walletId: wallet.id,
     username: data.username,
     type: 'in',                    // saldo masuk
+    transaction_type_id: 2,
     transaction_type: 'withdraw',  // tetap ENUM valid
     amount: -withdrawAmount,        // positif
     source_type: 'withdraw',
@@ -335,6 +337,7 @@ if (status === 'failed') {
           walletId: wallet.id,
           username: data.username,
           type: 'out',
+          transaction_type_id: 2,
           transaction_type: 'withdraw',
           amount: data.amount,
           source_type: 'withdraw',
@@ -367,6 +370,7 @@ if (status === 'failed') {
       await WalletHistory.create({
         walletId: wallet.id,
         username: data.username,
+        transaction_type_id: 2,
         type: 'out',
         transaction_type: 'withdraw',
         amount: -parseFloat(data.amount), 

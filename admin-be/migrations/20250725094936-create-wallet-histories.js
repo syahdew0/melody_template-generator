@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('wallet_histories', {
       id: {
         type: Sequelize.INTEGER,
@@ -9,27 +9,22 @@ module.exports = {
         primaryKey: true,
       },
       walletId: {
-        type: Sequelize.BIGINT.UNSIGNED,
+        type: Sequelize.INTEGER.UNSIGNED,
         allowNull: false,
-        // Tidak pakai FK agar tidak error
       },
       username: {
         type: Sequelize.STRING(50),
         allowNull: false,
       },
-      transaction_type: {
-      type: Sequelize.ENUM(
-        'topup',
-        'withdraw',
-        'adjust_plus',
-        'adjust_minus',
-        'point_plus',
-        'point_minus',
-        'stamp_plus',
-        'stamp_minus'
-      ),
-      allowNull: false,
-    },
+      transaction_type_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      wallet_type: {
+        type: Sequelize.ENUM('saldo', 'point', 'stamp'),
+        allowNull: false,
+        defaultValue: 'saldo',
+      },
       reference_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -64,10 +59,10 @@ module.exports = {
 
     await queryInterface.addIndex('wallet_histories', ['walletId']);
     await queryInterface.addIndex('wallet_histories', ['username']);
-    await queryInterface.addIndex('wallet_histories', ['transaction_type']);
+    await queryInterface.addIndex('wallet_histories', ['transaction_type_id']);
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('wallet_histories');
   },
 };

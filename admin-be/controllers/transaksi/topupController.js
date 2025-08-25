@@ -1,4 +1,4 @@
-const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory,CompanyBank, sequelize } = require('../../models');
+const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory,CompanyBank, TransactionType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -151,7 +151,8 @@ async updateStatus(req, res) {
         walletId: wallet.id,
         username: data.username,
         type: 'in',
-        transaction_type: 'topup',
+      transaction_type_id: 1,
+        // transaction_type: 'topup',
         amount: data.amount,
         reference_id: data.id,
         source_type: 'topup',
@@ -196,6 +197,7 @@ async updateStatus(req, res) {
     walletId: wallet.id,
     username: data.username,
     type: 'out', // keluar supaya mudah dibedakan
+    transaction_type_id: 1,
     transaction_type: 'topup',
     amount: -Math.abs(data.amount), // NEGATIF agar di frontend otomatis merah & minus
     reference_id: data.id,
@@ -348,6 +350,7 @@ async bulkUpdateStatus(req, res) {
           walletId: wallet.id,
           username: topup.username,
           type: 'in',
+         transaction_type_id: 1,
           transaction_type: 'topup',
           amount: topup.amount,
           reference_id: topup.id,

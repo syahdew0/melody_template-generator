@@ -9,14 +9,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false
     },
-    transaction_type: {
-      type: DataTypes.ENUM('topup', 'withdraw', 'adjust_plus', 'adjust_minus', 'point_plus', 'point_minus', 'stamp_plus', 'stamp_minus'), 
+    transaction_type_id: {
+      type: DataTypes.INTEGER,
       allowNull: false
     },
     wallet_type: {
       type: DataTypes.ENUM('saldo', 'point', 'stamp'),
       allowNull: false,
-      defaultValue: 'saldo',
+      defaultValue: 'saldo'
     },
     reference_id: {
       type: DataTypes.INTEGER,
@@ -45,24 +45,28 @@ module.exports = (sequelize, DataTypes) => {
     },
     created_at: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     }
   }, {
     tableName: 'wallet_histories',
     timestamps: false
   });
 
-  // WalletHistory.associate = function(models) {
-  //   WalletHistory.belongsTo(models.Wallet, { foreignKey: 'walletId' });
-  // };
   WalletHistory.associate = function(models) {
-  WalletHistory.belongsTo(models.Wallet, {
-    foreignKey: 'walletId',
-    targetKey: 'id',
-    constraints: false 
-  });
-};
+    WalletHistory.belongsTo(models.Wallet, {
+      foreignKey: 'walletId',
+      targetKey: 'id',
+      constraints: false
+    });
 
+    WalletHistory.belongsTo(models.TransactionType, {
+      foreignKey: 'transaction_type_id',
+      targetKey: 'id',
+       as: 'transaction_type_data',
+      constraints: false
+    });
+  };
 
   return WalletHistory;
 };

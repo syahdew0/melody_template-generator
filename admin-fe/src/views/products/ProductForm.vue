@@ -42,6 +42,7 @@
           <input v-model="seo.meta_keywords" type="text" class="input" />
         </div>
 
+        
          <!-- Product Details -->
         <div class="border border-gray-300 p-4 rounded shadow">
           <h3 class="font-semibold mb-2">Product Details</h3>

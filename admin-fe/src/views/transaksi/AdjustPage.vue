@@ -21,16 +21,18 @@
       </div>
 
       <div>
-        <label class="block mb-1 font-semibold">Jumlah (positif untuk tambah, negatif untuk kurangi)</label>
-        <input
-          type="number"
-          v-model.number="form.amount"
-          class="border w-full px-4 py-2 rounded"
-          required
-          :min="-999999"
-          :max="999999"
-        />
-      </div>
+      <label class="block mb-1 font-semibold">
+        Jumlah (positif untuk tambah, negatif untuk kurangi)
+      </label>
+      <input
+        v-model="formattedAmount"
+        type="text"
+        class="border w-full px-4 py-2 rounded"
+        required
+        @input="formatAdjustInput"
+        placeholder="Misal: 10000 atau -5000"
+      />
+    </div>
 
       <div>
         <label class="block mb-1 font-semibold">Keterangan</label>
@@ -184,7 +186,8 @@ const form = ref({
   amount: 0,
   remarks: '',
 })
-
+const rawAmount = ref(0)            
+const formattedAmount = ref('')     
 
 const message = ref('')
 const error = ref('')
@@ -208,6 +211,17 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const isSearched = ref(false)
 
+
+const formatAdjustInput = (e) => {
+  let val = e.target.value
+  const isNegative = val.startsWith('-')
+  let raw = val.replace(/\D/g, '')
+  rawAmount.value = raw ? parseInt(raw) * (isNegative ? -1 : 1) : 0
+ 
+  formattedAmount.value = raw
+    ? (isNegative ? '-' : '') + parseInt(raw).toLocaleString('id-ID')
+    : (isNegative ? '-' : '')
+}
 const formatDate = (date) => new Date(date).toLocaleString('id-ID')
 const formatNumber = (val) => Number(val).toLocaleString('id-ID')
 
@@ -260,26 +274,28 @@ const submitAdjust = async () => {
     return
   }
 
-  if (form.value.amount === 0) {
+  if (rawAmount.value === 0) {
     error.value = 'Jumlah tidak boleh nol'
     return
   }
 
   try {
-    const amount = form.value.amount;
-    const type = amount < 0 ? 'out' : 'in';
-    const absAmount = Math.abs(amount);
+    const amount = rawAmount.value
+    const type = amount < 0 ? 'out' : 'in'
+    const absAmount = Math.abs(amount)
 
     const res = await axios.post(API_ENDPOINTS.adjust.create, {
       username: form.value.username.trim(),
-      amount: absAmount,
+      amount: absAmount,             // angka murni
       category: form.value.category,
       type: type,
       remarks: form.value.remarks,
     })
 
     message.value = res.data.message || 'Adjust berhasil!'
-    form.value = { username: '', category: 'saldo', type: 'in', amount: 0, remarks: '' }
+    form.value = { username: '', category: 'saldo', type: 'in', remarks: '' }
+    rawAmount.value = 0
+    formattedAmount.value = ''
 
     if (isSearched.value) {
       await handleFilter()

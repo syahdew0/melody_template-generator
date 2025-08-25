@@ -73,16 +73,22 @@
           <td class="border px-2 py-1">{{ h.username }}</td>
           <!-- <td class="border px-2 py-1">{{ h.walletId }}</td> -->
           <!-- <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td> -->
-          <td class="border px-3 py-2">{{ formatType(h.transaction_type, h.status) }}</td>
+         <td class="border px-3 py-2">
+  {{ formatType(h.transaction_type || h.transaction_type_id, h.status, h.wallet_type, h.amount) }}
+</td>
+
           <td class="border px-2 py-1">{{ formatAmount(h.balance_before, h.wallet_type) }}</td>
-          <td
-            class="border px-3 py-2 text-center font-semibold"
-            :class="{
-              'text-green-600': h.amount > 0 && h.status !== 'failed',
-              'text-red-600': h.amount < 0 || h.status === 'failed'
-            }">
-            {{ h.amount < 0 ? '-' : '+' }} {{ formatAmount(Math.abs(h.amount), h.wallet_type) }}
-          </td>
+         <td
+  class="border px-3 py-2 text-center font-semibold"
+  :class="{
+    'text-green-600': (h.amount > 0) || (isWithdrawFailed(h)),
+    'text-red-600': h.amount < 0 && !isWithdrawFailed(h)
+  }"
+>
+  {{ (h.amount < 0 && !isWithdrawFailed(h)) ? '-' : '+' }}
+  {{ formatAmount(Math.abs(h.amount), h.wallet_type) }}
+</td>
+
           <td class="border px-2 py-1">{{ formatAmount(h.balance_after, h.wallet_type) }}</td>
           <td class="border px-2 py-1">{{ h.remarks || '-' }}</td>
         </tr>
@@ -191,42 +197,59 @@ const formatDate = (val) => {
 
 const formatAmount = (val, walletType) => {
   if (walletType === 'point' || walletType === 'stamp') {
-    return val ?? 0; // tampilkan angka saja
+    return val ?? 0 // point & stamp cukup angka
   }
-  return 'Rp' + (val != null ? Number(val).toLocaleString('id-ID') : 0);
+  return 'Rp' + (val != null ? Number(val).toLocaleString('id-ID') : 0) // saldo pakai Rp
+}
+
+const formatType = (val, status, walletType, amount) => {
+  // --- point ---
+  if (walletType === 'point') {
+    if (amount > 0) return 'Point Masuk'
+    if (amount < 0) return 'Point Keluar'
+    return '-'
+  }
+
+  // --- stamp ---
+  if (walletType === 'stamp') {
+    if (amount > 0) return 'Stamp Masuk'
+    if (amount < 0) return 'Stamp Keluar'
+    return '-'
+  }
+
+  // --- saldo biasa ---
+  const typeMap = {
+    1: 'topup',
+    2: 'withdraw',
+    3: 'adjust_plus',
+    4: 'adjust_minus'
+  }
+
+  const type = typeof val === 'number' ? typeMap[val] : val
+
+  if (type === 'withdraw') {
+  if (status === 'success') return 'Withdraw disetujui'
+  if (status === 'failed') return 'Withdraw dikembalikan' 
+  return 'Withdraw'
 }
 
 
-// const formatType = (val) => {
-//   switch (val) {
-//     case 'topup': return 'Topup'
-//     case 'withdraw': return 'Withdraw'
-//     case 'adjust_plus': return 'Adjust Masuk'
-//     case 'adjust_minus': return 'Adjust Keluar'
-//     default: return val
-//   }
-// }
-const formatType = (val, status) => {
-  if (val === 'withdraw') {
-    if (status === 'success') return 'Withdraw disetujui'
-    if (status === 'failed') return 'Withdraw ditolak'
-    return 'Withdraw'
-  }
-
-  if (val === 'topup') {
+  if (type === 'topup') {
     if (status === 'success') return 'Topup berhasil'
     if (status === 'failed') return 'Topup ditolak'
     return 'Topup'
   }
 
-  switch (val) {
-    case 'adjust_plus':
-      return 'Adjust Masuk'
-    case 'adjust_minus':
-      return 'Adjust Keluar'
-    default:
-      return val
+  switch (type) {
+    case 'adjust_plus': return 'Adjust Masuk'
+    case 'adjust_minus': return 'Adjust Keluar'
+    default: return type || '-'
   }
+}
+const isWithdrawFailed = (h) => {
+  // Pastikan h.transaction_type_id atau h.transaction_type sesuai data backend
+  const type = h.transaction_type || h.transaction_type_id
+  return (type === 2 && h.status === 'failed')
 }
 
 </script>

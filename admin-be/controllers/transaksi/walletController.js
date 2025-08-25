@@ -1,4 +1,4 @@
-const {Withdraw, Customer, Wallet, Adjust, WalletSummary, WalletHistory, Topup,sequelize, } = require('../../models');
+const {Withdraw, Customer, Wallet, Adjust, WalletSummary, WalletHistory, Topup, TransactionType, sequelize, } = require('../../models');
 const { Op } = require('sequelize');
 
 exports.getMyWallet = async (req, res) => {
@@ -171,61 +171,58 @@ exports.getWalletDetailsByType = async (req, res) => {
 };
 
 exports.getMyWalletHistory = async (req, res) => {
- try {
+  try {
     const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
 
     const where = {};
-
-    if (wallet_id) {
-      where.walletId = wallet_id;
-    }
-
-    if (username) {
-      where.username = username;
-    }
-
-    if (transaction_type) {
-      where.transaction_type = transaction_type;
-    }
+    if (wallet_id) where.walletId = wallet_id;
+    if (username) where.username = username;
+    if (transaction_type) where.transaction_type_id = transaction_type;
 
     if (fromDate && toDate) {
       const start = new Date(fromDate + 'T00:00:00');
       const end = new Date(toDate + 'T23:59:59');
-      where.created_at = {
-        [Op.between]: [start, end],
-      };
+      where.created_at = { [Op.between]: [start, end] };
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // const result = await WalletHistory.findAndCountAll({
-    //   where,
-    //   order: [['created_at', 'DESC']],
-    //   offset,
-    //   limit: parseInt(limit),
-    //   raw: true,
-      
-    // });
-const result = await WalletHistory.findAndCountAll({
-    where,
-    attributes: [
-    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
-    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
-  ],
-    order: [['created_at', 'DESC']],
-    offset,
-    limit: parseInt(limit),
-  });
+    const result = await WalletHistory.findAndCountAll({
+      where,
+      include: [
+        {
+          model: TransactionType,
+          as: 'transaction_type_data', // harus sama seperti di model
+          attributes: ['id', 'name']
+        }
+      ],
+      attributes: [
+        'id', 'walletId', 'username', 'reference_id', 'wallet_type',
+        'transaction_type_id', 'status',
+        'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
+      ],
+      order: [['created_at', 'DESC']],
+      offset,
+      limit: parseInt(limit),
+    });
+
+    // Format supaya frontend mudah pakai
+    const rows = result.rows.map(r => ({
+      ...r.toJSON(),
+      transaction_type_name: r.transaction_type_data?.name || null
+    }));
+
     res.json({
       count: result.count,
-      rows: result.rows
+      rows
     });
 
   } catch (err) {
-    console.error('Admin Wallet History Error:', err);
+    console.error('My Wallet History Error:', err);
     res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
   }
 };
+
 
 exports.getAdminWalletHistory = async (req, res) => {
   try {
@@ -233,46 +230,37 @@ exports.getAdminWalletHistory = async (req, res) => {
 
     const where = {};
 
-    if (wallet_id) {
-      where.walletId = wallet_id;
-    }
-
-    if (username) {
-      where.username = username;
-    }
-
-    if (transaction_type) {
-      where.transaction_type = transaction_type;
-    }
+    if (wallet_id) where.walletId = wallet_id;
+    if (username) where.username = username;
+    if (transaction_type) where.transaction_type_id = transaction_type;
 
     if (fromDate && toDate) {
       const start = new Date(fromDate + 'T00:00:00');
       const end = new Date(toDate + 'T23:59:59');
-      where.created_at = {
-        [Op.between]: [start, end],
-      };
+      where.created_at = { [Op.between]: [start, end] };
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // const result = await WalletHistory.findAndCountAll({
-    //   where,
-    //   order: [['created_at', 'DESC']],
-    //   offset,
-    //   limit: parseInt(limit),
-    //   raw: true,
-      
-    // });
-const result = await WalletHistory.findAndCountAll({
-    where,
-    attributes: [
-    'id', 'walletId', 'username', 'reference_id', 'wallet_type', 'transaction_type', 'status',
-    'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
-  ],
-    order: [['created_at', 'DESC']],
-    offset,
-    limit: parseInt(limit),
-  });
+    const result = await WalletHistory.findAndCountAll({
+      where,
+      include: [
+        {
+          model: TransactionType,
+          as: 'transaction_type_data', // HARUS SAMA dengan di model
+          attributes: ['id', 'name']
+        }
+      ],
+      attributes: [
+        'id', 'walletId', 'username', 'reference_id', 'wallet_type',
+        'transaction_type_id', 'status',
+        'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
+      ],
+      order: [['created_at', 'DESC']],
+      offset,
+      limit: parseInt(limit),
+    });
+
     res.json({
       count: result.count,
       rows: result.rows
@@ -283,6 +271,7 @@ const result = await WalletHistory.findAndCountAll({
     res.status(500).json({ message: 'Gagal mengambil riwayat wallet' });
   }
 };
+
 
 // belum digunakan ygy
 exports.getMyDailyWallets = async (req, res) => {
