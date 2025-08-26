@@ -219,10 +219,16 @@ const formatType = (val, status, walletType, amount) => {
 
   // --- saldo biasa ---
   const typeMap = {
-    1: 'topup',
-    2: 'withdraw',
-    3: 'adjust_plus',
-    4: 'adjust_minus'
+   1: 'topup',
+      2: 'withdraw',
+      3: 'withdraw_dibatalkan',
+      4: 'witdraw_ditolak',
+      5: 'adjust_plus',
+      6: 'adjust_minus',
+      7: 'point_plus',
+      8: 'point_minus',
+      9: 'stamp_plus',
+      10: 'stamp_minus'
   }
 
   const type = typeof val === 'number' ? typeMap[val] : val

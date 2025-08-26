@@ -5,6 +5,7 @@ const cron = require('node-cron');
 exports.index = async (req, res) => {
   try {
     const posts = await Post.findAll({
+       where: { status: 'published' }, 
       include: [
         { model: ProductDetail, as: 'product_detail' },
         { model: Category, as: 'categories' }
@@ -162,7 +163,11 @@ exports.getAll = async (req, res) => {
     const slug = req.query.slug || null;
     const type = req.query.type || null;
 
-    const where = {};
+    const where = {
+      status: {
+        [Op.in]: ['published',]
+      }
+    };
     if (type) where.type = type;
     if (slug) where.slug = slug;
 
@@ -202,7 +207,7 @@ exports.getAll = async (req, res) => {
     ];
 
     const { count, rows } = await Post.findAndCountAll({
-      where, offset, limit, order: [['createdAt', 'DESC']], include,
+      where, offset, limit, order: [['created_at', 'DESC']], include,
      distinct: true
     });
 
@@ -319,7 +324,7 @@ exports.getTestimonials = async (req, res) => {
         type: 'testimonial',
         status: 'published'
       },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       include: [
         { model: PostMeta, as: 'meta' },
         { model: Category, as: 'categories', through: { attributes: [] } }
@@ -348,7 +353,7 @@ exports.getBySlug = async (req, res) => {
         slug,
         type,
         status: {
-          [Op.in]: ['published', 'draft']
+          [Op.in]: ['published',]
         }
       },
       include: [
@@ -446,7 +451,7 @@ exports.getPostsByCategory = async (req, res) => {
 
     // Ambil semua postingan berdasarkan category_id
     const posts = await Post.findAll({
-      where: { category_id: category.id },
+       where: { category_id: category.id, status: 'published' },
       order: [['created_at', 'DESC']],
     })
 

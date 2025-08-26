@@ -16,7 +16,7 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       status: {
-        type: Sequelize.ENUM('pending', 'success', 'failed'),
+        type: Sequelize.ENUM('pending', 'success', 'failed','canceled',),
         defaultValue: 'pending',
         allowNull: false
       },

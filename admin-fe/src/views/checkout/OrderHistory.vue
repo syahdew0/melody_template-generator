@@ -53,12 +53,13 @@
             <!-- Produk -->
             <td class="px-4 py-2 border">
               <ul>
-                <li v-for="d in o.details" :key="d.id">
-                  {{ d.product_name }} (x{{ d.qty }})
-                  <span class="text-gray-500 text-xs">
-                    Rp {{ formatCurrency(d.price) }}
-                  </span>
-                </li>
+<li v-for="d in o.details" :key="d.id">
+  {{ d.product_name }} (x{{ d.qty }})
+  <span class="text-gray-500 text-xs">
+    Rp {{ formatCurrency(d.price) }}
+  </span>
+</li>
+
               </ul>
             </td>
 

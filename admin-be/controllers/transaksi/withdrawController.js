@@ -211,13 +211,13 @@ async create(req, res) {
 
     if (status === 'success') {
      // Sukses
+     latestHistory.transaction_type_id = 2;
 latestHistory.transaction_type = 'withdraw'; // tetap ENUM valid
 latestHistory.remarks = 'Withdraw berhasil'; // tulis detail disetujui di sini
 latestHistory.status = 'success';
 await latestHistory.save({ transaction: t });
 
     }
-
 if (status === 'failed') {
   const latestBalanceAfter = parseFloat(latestHistory.balance_after) || 0;
   const withdrawAmount = parseFloat(data.amount) || 0;
@@ -226,26 +226,32 @@ if (status === 'failed') {
   wallet.balance = latestBalanceAfter + withdrawAmount;
   await wallet.save({ transaction: t });
 
-  // buat history baru
+  // Update history lama → tandai gagal (tapi jangan ubah amount jadi merah lagi)
+  latestHistory.transaction_type_id = 4;
+  latestHistory.transaction_type = 'withdraw_ditolak';
+  latestHistory.status = 'failed';
+  latestHistory.remarks = 'Withdraw ditolak oleh admin';
+  await latestHistory.save({ transaction: t });
+
+  // Tambahkan history saldo masuk (hijau)
   await WalletHistory.create({
     walletId: wallet.id,
     username: data.username,
-    type: 'in',                    // saldo masuk
-    transaction_type_id: 2,
-    transaction_type: 'withdraw',  // tetap ENUM valid
-    amount: -withdrawAmount,        // positif
+    type: 'in',
+    transaction_type_id: 3,
+    transaction_type: 'withdraw_dibatalkan',
+    amount: withdrawAmount,  // hijau
     source_type: 'withdraw',
     source_id: data.id,
     reference_id: data.id,
     balance_before: latestBalanceAfter,
     balance_after: wallet.balance,
-    remarks: 'Withdraw ditolak oleh admin',
-    status: 'failed',
+    remarks: 'Saldo dikembalikan karena withdraw ditolak',
+    status: 'canceled',
     wallet_type: 'saldo',
     created_at: new Date()
   }, { transaction: t });
 }
-
 
     // Update status withdraw
     data.status = status;

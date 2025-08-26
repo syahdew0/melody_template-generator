@@ -27,12 +27,14 @@ module.exports = {
     await queryInterface.bulkInsert('transaction_types', [
       { id: 1, name: 'topup', created_at: new Date() },
       { id: 2, name: 'withdraw', created_at: new Date() },
-      { id: 3, name: 'adjust_plus', created_at: new Date() },
-      { id: 4, name: 'adjust_minus', created_at: new Date() },
-      { id: 5, name: 'point_plus', created_at: new Date() },
-      { id: 6, name: 'point_minus', created_at: new Date() },
-      { id: 7, name: 'stamp_plus', created_at: new Date() },
-      { id: 8, name: 'stamp_minus', created_at: new Date() },
+      { id: 3, name: 'withdraw_dibatalkan', created_at: new Date() },
+      { id: 4, name: 'withdraw_ditolak', created_at: new Date() },
+      { id: 5, name: 'adjust_plus', created_at: new Date() },
+      { id: 6, name: 'adjust_minus', created_at: new Date() },
+      { id: 7, name: 'point_plus', created_at: new Date() },
+      { id: 8, name: 'point_minus', created_at: new Date() },
+      { id: 9, name: 'stamp_plus', created_at: new Date() },
+      { id: 10, name: 'stamp_minus', created_at: new Date() },
     ]);
   },
 

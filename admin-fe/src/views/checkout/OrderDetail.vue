@@ -5,7 +5,6 @@
       <button @click="$router.back()" class="flex items-center text-blue-600 hover:underline">
         ← Kembali
       </button>
-      <!-- <button @click="fetchOrder" class="px-4 py-2 border rounded hover:bg-gray-50">Refresh</button> -->
     </div>
 
     <!-- Loading / Error -->
@@ -22,7 +21,6 @@
         </span>
       </div>
 
-     
       <!-- Info Ringkas & Update Status -->
       <div class="grid md:grid-cols-2 gap-4">
         <!-- Informasi Order -->
@@ -30,22 +28,26 @@
           <h2 class="font-semibold mb-3">Informasi Order</h2>
           <p><strong>Customer:</strong> {{ order.customer?.name || order.customer_id }}</p>
           <p><strong>Tanggal:</strong> {{ formatDate(order.order_date) }}</p>
-          <p><strong>Total:</strong> Rp {{ formatCurrency(order.total_amount) }}</p>
+          <p><strong>Total Produk:</strong> Rp {{ formatCurrency(totalProducts) }}</p>
+          <p><strong>Ongkos Kirim:</strong> Rp {{ formatCurrency(order.shipping_cost || 0) }}</p>
+         <p><strong>Grand Total:</strong> Rp {{ formatCurrency((order.total_amount || 0) + (order.shipping_cost || 0)) }}</p>
+
+
           <p><strong>Metode Pembayaran:</strong> {{ order.payment_method || '-' }}</p>
           <p><strong>Catatan Customer:</strong> {{ order.notes || '-' }}</p>
 
           <!-- Alamat -->
-        <div v-if="order.shipping_address" class="mt-3">
-          <h3 class="font-semibold">Alamat Pengiriman</h3>
-          <p>{{ order.shipping_address.recipient_name }} — {{ order.shipping_address.phone }}</p>
-          <p>{{ order.shipping_address.address }}</p>
-          <p>
-            {{ order.shipping_address.district_name }},
-            {{ order.shipping_address.city_name }},
-            {{ order.shipping_address.province_name }}
-            {{ order.shipping_address.postal_code }}
-          </p>
-        </div>
+          <div v-if="order.shipping_address" class="mt-3">
+            <h3 class="font-semibold">Alamat Pengiriman</h3>
+            <p>{{ order.shipping_address.recipient_name }} — {{ order.shipping_address.phone }}</p>
+            <p>{{ order.shipping_address.address }}</p>
+            <p>
+              {{ order.shipping_address.district_name }},
+              {{ order.shipping_address.city_name }},
+              {{ order.shipping_address.province_name }}
+              {{ order.shipping_address.postal_code }}
+            </p>
+          </div>
         </div>
 
         <!-- Form Update Status -->
@@ -78,59 +80,61 @@
         </div>
       </div>
 
-       <!-- RESIII -->
-<div class="flex justify-end mb-4">
-  <button
-    @click="printReceipt"
-    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-  >
-    Cetak Resi
-  </button>
-</div>
-
- <!-- Div Resi -->
-    <div id="receipt" class="hidden">
-      <div style="max-width:400px; margin:auto; font-family:Arial, sans-serif; font-size:14px; padding:10px; border:1px solid #000;">
-        <h2 style="text-align:center; margin-bottom:10px;">RESI PEMESANAN</h2>
-        <p><strong>Order #:</strong> {{ order.id }}</p>
-        <p><strong>Customer:</strong> {{ order.customer?.name || order.customer_id }}</p>
-        <p><strong>Tanggal:</strong> {{ formatDate(order.order_date) }}</p>
-        <p><strong>Status:</strong> {{ order.status || 'Unpaid' }}</p>
-        <p><strong>Total:</strong> Rp {{ formatCurrency(order.total_amount) }}</p>
-        <hr style="margin:10px 0;">
-        <h3>Produk</h3>
-        <table style="width:100%; border-collapse: collapse; margin-bottom:10px;">
-          <thead>
-            <tr>
-              <th style="border-bottom:1px solid #000; text-align:left;">Produk</th>
-              <th style="border-bottom:1px solid #000;">Qty</th>
-              <th style="border-bottom:1px solid #000;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(d, i) in order.details || []" :key="i">
-              <td>{{ d.product_name }}</td>
-              <td style="text-align:center;">{{ d.qty }}</td>
-              <td style="text-align:right;">Rp {{ formatCurrency(d.subtotal) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <hr style="margin:10px 0;">
-        <div v-if="order.shipping_address">
-          <h3>Alamat Pengiriman</h3>
-          <p>{{ order.shipping_address.recipient_name }} — {{ order.shipping_address.phone }}</p>
-          <p>{{ order.shipping_address.address }}</p>
-          <p>
-            {{ order.shipping_address.district_name }},
-            {{ order.shipping_address.city_name }},
-            {{ order.shipping_address.province_name }}
-            {{ order.shipping_address.postal_code }}
-          </p>
-        </div>
-        <hr style="margin:10px 0;">
-        <p style="text-align:center;">Terima kasih atas pesanan Anda!</p>
+      <!-- Cetak Resi -->
+      <div class="flex justify-end mb-4">
+        <button
+          @click="printReceipt"
+          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Cetak Resi
+        </button>
       </div>
-    </div>
+
+      <!-- Div Resi -->
+      <div id="receipt" class="hidden">
+        <div style="max-width:400px; margin:auto; font-family:Arial, sans-serif; font-size:14px; padding:10px; border:1px solid #000;">
+          <h2 style="text-align:center; margin-bottom:10px;">RESI PEMESANAN</h2>
+          <p><strong>Order #:</strong> {{ order.id }}</p>
+          <p><strong>Customer:</strong> {{ order.customer?.name || order.customer_id }}</p>
+          <p><strong>Tanggal:</strong> {{ formatDate(order.order_date) }}</p>
+          <p><strong>Status:</strong> {{ order.status || 'Unpaid' }}</p>
+          <p><strong>Total Produk:</strong> Rp {{ formatCurrency(order.total_amount) }}</p>
+          <p><strong>Ongkos Kirim:</strong> Rp {{ formatCurrency(order.shipping_cost || 0) }}</p>
+          <p><strong>Grand Total:</strong> Rp {{ formatCurrency((order.total_amount || 0) + (order.shipping_cost || 0)) }}</p>
+          <hr style="margin:10px 0;">
+          <h3>Produk</h3>
+          <table style="width:100%; border-collapse: collapse; margin-bottom:10px;">
+            <thead>
+              <tr>
+                <th style="border-bottom:1px solid #000; text-align:left;">Produk</th>
+                <th style="border-bottom:1px solid #000;">Qty</th>
+                <th style="border-bottom:1px solid #000;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(d, i) in order.details || []" :key="i">
+                <td>{{ d.product_name }}</td>
+                <td style="text-align:center;">{{ d.qty }}</td>
+                <td style="text-align:right;">Rp {{ formatCurrency(d.subtotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <hr style="margin:10px 0;">
+          <div v-if="order.shipping_address">
+            <h3>Alamat Pengiriman</h3>
+            <p>{{ order.shipping_address.recipient_name }} — {{ order.shipping_address.phone }}</p>
+            <p>{{ order.shipping_address.address }}</p>
+            <p>
+              {{ order.shipping_address.district_name }},
+              {{ order.shipping_address.city_name }},
+              {{ order.shipping_address.province_name }}
+              {{ order.shipping_address.postal_code }}
+            </p>
+          </div>
+          <hr style="margin:10px 0;">
+          <p style="text-align:center;">Terima kasih atas pesanan Anda!</p>
+        </div>
+      </div>
 
       <!-- Detail Produk -->
       <div class="border rounded p-4">
@@ -151,6 +155,15 @@
               <td class="px-4 py-2 border">Rp {{ formatCurrency(d.price) }}</td>
               <td class="px-4 py-2 border">Rp {{ formatCurrency(d.subtotal) }}</td>
             </tr>
+            <!-- Ongkir & Grand Total -->
+            <tr>
+              <td colspan="3" class="px-4 py-2 border font-semibold text-right">Ongkos Kirim</td>
+              <td class="px-4 py-2 border font-semibold">Rp {{ formatCurrency(order.shipping_cost || 0) }}</td>
+            </tr>
+            <tr>
+              <td colspan="3" class="px-4 py-2 border font-bold text-right">Grand Total</td>
+              <td class="px-4 py-2 border font-bold">Rp {{ formatCurrency((order.total_amount || 0) + (order.shipping_cost || 0)) }}</td>
+            </tr>
           </tbody>
         </table>
         <div v-if="!order.details || order.details.length===0" class="text-gray-500 py-3">Tidak ada item.</div>
@@ -169,16 +182,12 @@
       </div>
     </div>
 
-    
-
     <div v-else class="text-gray-500">Data tidak ditemukan.</div>
   </div>
-
-  
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { API_ENDPOINTS, api } from '@/config/api'
 
@@ -192,6 +201,14 @@ const statusForm = ref({ status: 'Unpaid', remarks: '' })
 const saving = ref(false)
 const saveError = ref('')
 const saveSuccess = ref('')
+
+// Hitung total produk & grand total dari order.details
+const totalProducts = computed(() =>
+  order.value?.details?.reduce((sum, d) => sum + (d.subtotal ?? d.price * d.qty), 0) || 0
+)
+// const grandTotal = computed(() =>
+//   totalProducts.value + (order.value?.shipping_cost || 0)
+// )
 
 const fetchOrder = async () => {
   loading.value = true
@@ -228,26 +245,12 @@ const submitStatus = async () => {
     saving.value = false
   }
 }
-const printReceipt = () => {
-  const receiptContent = document.getElementById('receipt').innerHTML
-  const printWindow = window.open('', '', 'width=800,height=600')
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Resi Order #${order.value?.id}</title>
-      </head>
-      <body>
-        ${receiptContent}
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
-  printWindow.focus()
-  printWindow.print()
-  printWindow.close()
+
+const formatCurrency = (val) => {
+  const rounded = Math.round(val || 0); // bulatkan ke integer terdekat
+  return new Intl.NumberFormat('id-ID').format(rounded)
 }
 
-const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0)
 const formatDate = (d) => (d ? new Date(d).toLocaleString('id-ID') : '-')
 const badgeClass = (status) => {
   const s = status || 'Unpaid'

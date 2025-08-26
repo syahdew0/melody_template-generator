@@ -2,6 +2,7 @@ const {
   Order, Customer, CustomerAddress, OrderDetail, ProductDetail, HistoryOrderStatus, Post 
 } = require('../../models');
 const { sequelize } = require('../../models');
+const { Op } = require('sequelize');
 
 module.exports = {
   // List semua order (untuk admin)
@@ -10,41 +11,65 @@ module.exports = {
       const orders = await Order.findAll({ order: [['id', 'DESC']] });
       const orderIds = orders.map(o => o.id);
       const customerIds = orders.map(o => o.customer_id);
-      const addressIds = orders.map(o => o.shipping_address_id);
+      const addressIds = orders.map(o => o.shipping_address_id).filter(Boolean);
 
+      // Ambil data terkait
       const [customers, addresses, orderDetails, history] = await Promise.all([
-        Customer.findAll({ where: { id: customerIds } }),
-        CustomerAddress.findAll({ where: { id: addressIds } }),
-        OrderDetail.findAll({ where: { order_id: orderIds } }),
-        HistoryOrderStatus.findAll({ where: { order_id: orderIds }, order: [['created_at', 'DESC']] }),
+        Customer.findAll({ where: { id: { [Op.in]: customerIds } } }),
+        CustomerAddress.findAll({ where: { id: { [Op.in]: addressIds } } }),
+        OrderDetail.findAll({ where: { order_id: { [Op.in]: orderIds } } }),
+        HistoryOrderStatus.findAll({ where: { order_id: { [Op.in]: orderIds } }, order: [['created_at', 'DESC']] }),
       ]);
 
-      // Mapping cepat
       const customerMap = Object.fromEntries(customers.map(c => [c.id, c.toJSON()]));
       const addressMap = Object.fromEntries(addresses.map(a => [a.id, a.toJSON()]));
 
       // Ambil semua productDetail + post
-      const productDetailIds = orderDetails.map(d => d.product_detail_id);
-      const productDetails = await ProductDetail.findAll({ where: { id: productDetailIds } });
-      const postIds = productDetails.map(pd => pd.post_id);
-      const posts = await Post.findAll({ where: { id: postIds } });
+      const productDetailIds = [...new Set(orderDetails.map(d => d.product_detail_id))];
+      const productDetails = await ProductDetail.findAll({ where: { id: { [Op.in]: productDetailIds } } });
+      const postIds = productDetails.map(pd => pd.post_id).filter(Boolean);
+      const posts = await Post.findAll({ where: { id: { [Op.in]: postIds } } });
 
       const productDetailMap = Object.fromEntries(productDetails.map(pd => [pd.id, pd.toJSON()]));
       const postMap = Object.fromEntries(posts.map(p => [p.id, p.toJSON()]));
 
-      // Mapping detail
+      // Mapping detail dengan nama produk
       const orderDetailMap = {};
-      orderDetails.forEach(d => {
-        if (!orderDetailMap[d.order_id]) orderDetailMap[d.order_id] = [];
-        const pd = productDetailMap[d.product_detail_id];
-        const post = pd ? postMap[pd.post_id] : null;
-        orderDetailMap[d.order_id].push({
-          product_name: d.product_name || (post ? post.title : `Product ${d.product_detail_id}`),
-          qty: d.qty,
-          price: d.price,
-          subtotal: d.subtotal,
-        });
-      });
+     orderDetails.forEach(d => {
+  if (!orderDetailMap[d.order_id]) orderDetailMap[d.order_id] = [];
+
+  const pd = productDetailMap[d.product_detail_id] || null;
+  const post = pd?.post_id ? postMap[pd.post_id] : null;
+
+  let productName;
+
+  // Prioritas utama: Post.title
+  if (post?.title) {
+    productName = post.title;
+  }
+  // Kedua: ProductDetail.name
+  else if (pd?.name) {
+    productName = pd.name;
+  }
+  // Ketiga: OrderDetail.product_name
+  else if (d.product_name && !/^\d+$/.test(d.product_name)) {
+    productName = d.product_name;
+  }
+  // fallback
+  else {
+    productName = `Product ${d.product_detail_id}`;
+  }
+
+  orderDetailMap[d.order_id].push({
+    product_name: productName,
+    qty: d.qty,
+    price: d.price,
+    subtotal: d.subtotal,
+  });
+
+  // debug
+  console.log(d.order_id, d.product_detail_id, pd?.name, post?.title, d.product_name, '=>', productName);
+});
 
       // Mapping history per order
       const historyMap = {};
@@ -60,9 +85,19 @@ module.exports = {
       // Hasil akhir
       const results = orders.map(order => {
         const address = addressMap[order.shipping_address_id] || null;
+        const customer = customerMap[order.customer_id] || null;
+
         return {
           ...order.toJSON(),
-          customer: customerMap[order.customer_id] || null,
+          shipping_cost: order.shipping_cost,
+          customer: customer
+            ? {
+                name: customer.name || customer.username || '-',
+                username: customer.username || '-',
+                email: customer.email || '-',
+                phone: customer.phone || '-',
+              }
+            : { name: '-', username: '-', email: '-', phone: '-' },
           shipping_address: address
             ? {
                 recipient_name: address.recipient_name,
@@ -81,91 +116,111 @@ module.exports = {
       });
 
       res.json(results);
-
     } catch (err) {
       console.error('listOrders error:', err);
       res.status(500).json({ error: 'Internal Server Error', detail: err.message });
     }
   },
 
-  // Detail order berdasarkan ID
-async orderDetail(req, res) {
-  try {
-    const { id } = req.params;
-    const order = await Order.findByPk(id);
-    if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
+  // Detail order admin
+  async orderDetail(req, res) {
+    try {
+      const { id } = req.params;
+      const order = await Order.findByPk(id);
+      if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
 
-    // Ambil customer
-    const customer = await Customer.findByPk(order.customer_id);
+      const customer = await Customer.findByPk(order.customer_id);
 
-    // Ambil alamat: prioritas shipping_address_id, kalau null ambil default customer
-    let address = null;
-    if (order.shipping_address_id) {
-      address = await CustomerAddress.findByPk(order.shipping_address_id);
-    } else if (customer) {
-      address = await CustomerAddress.findOne({
-        where: { customer_id: customer.id, is_default: true }
+      let address = null;
+      if (order.shipping_address_id) {
+        address = await CustomerAddress.findByPk(order.shipping_address_id);
+      } else if (customer) {
+        address = await CustomerAddress.findOne({
+          where: { customer_id: customer.id, is_default: true }
+        });
+      }
+
+      const details = await OrderDetail.findAll({ where: { order_id: id } });
+      const productDetailIds = [...new Set(details.map(d => d.product_detail_id))];
+      const productDetails = await ProductDetail.findAll({ where: { id: { [Op.in]: productDetailIds } } });
+      const postIds = productDetails.map(pd => pd.post_id).filter(Boolean);
+      const posts = await Post.findAll({ where: { id: { [Op.in]: postIds } } });
+
+      const productDetailMap = Object.fromEntries(productDetails.map(pd => [pd.id, pd.toJSON()]));
+      const postMap = Object.fromEntries(posts.map(p => [p.id, p.toJSON()]));
+
+      const detailData = details.map(d => {
+        const pd = productDetailMap[d.product_detail_id];
+        const post = pd ? postMap[pd.post_id] : null;
+
+        let productName;
+        if (post?.title) {
+          productName = post.title;
+        } else if (pd?.name) {
+          productName = pd.name;
+        } else if (d.product_name && !/^\d+$/.test(d.product_name)) {
+          productName = d.product_name;
+        } else {
+          productName = `Product ${d.product_detail_id}`;
+        }
+
+        return {
+          product_name: productName,
+          qty: d.qty || 0,
+          price: d.price || 0,
+          subtotal: d.subtotal || (d.price * d.qty) || 0,
+        };
       });
+
+      const history = await HistoryOrderStatus.findAll({
+        where: { order_id: id },
+        order: [['created_at', 'DESC']]
+      });
+
+      res.json({
+        ...order.toJSON(),
+        shipping_cost: order.shipping_cost || 30000,
+        customer: customer
+          ? {
+              name: customer.name || customer.username || '-',
+              username: customer.username || '-',
+              email: customer.email || '-',
+              phone: customer.phone || '-',
+            }
+          : { name: '-', username: '-', email: '-', phone: '-' },
+        shipping_address: address
+          ? {
+              recipient_name: address.recipient_name || '-',
+              phone: address.phone || '-',
+              address: address.address || '-',
+              district_name: address.district_name || address.district || '-',
+              city_name: address.city_name || address.city || '-',
+              province_name: address.province_name || address.province || '-',
+              postal_code: address.postal_code || '-',
+            }
+          : {
+              recipient_name: '-',
+              phone: '-',
+              address: '-',
+              district_name: '-',
+              city_name: '-',
+              province_name: '-',
+              postal_code: '-',
+            },
+        details: detailData,
+        statusHistory: history.map(h => ({
+          status: h.status,
+          remarks: h.remarks || '-',
+          created_at: h.created_at
+        })),
+        remarks: history.length ? history[0].remarks || '-' : order.notes || '-',
+        payment_method: order.payment_method || '-',
+      });
+    } catch (err) {
+      console.error('orderDetail error:', err);
+      res.status(500).json({ message: 'Gagal ambil detail order', error: err.message });
     }
-
-    // Ambil detail order
-    const details = await OrderDetail.findAll({ where: { order_id: id } });
-
-    // Ambil produk + post
-    const productDetailIds = details.map(d => d.product_detail_id);
-    const productDetails = await ProductDetail.findAll({ where: { id: productDetailIds } });
-    const postIds = productDetails.map(pd => pd.post_id);
-    const posts = await Post.findAll({ where: { id: postIds } });
-
-    const productDetailMap = Object.fromEntries(productDetails.map(pd => [pd.id, pd.toJSON()]));
-    const postMap = Object.fromEntries(posts.map(p => [p.id, p.toJSON()]));
-
-    const detailData = details.map(d => {
-      const pd = productDetailMap[d.product_detail_id];
-      const post = pd ? postMap[pd.post_id] : null;
-      return {
-        product_name: d.product_name || (post ? post.title : `Product ${d.product_detail_id}`),
-        qty: d.qty,
-        price: d.price,
-        subtotal: d.subtotal,
-      };
-    });
-
-    // Ambil history status
-    const history = await HistoryOrderStatus.findAll({
-      where: { order_id: id },
-      order: [['created_at', 'DESC']]
-    });
-
-    res.json({
-      ...order.toJSON(),
-      customer: customer ? customer.toJSON() : null,
-      shipping_address: address
-        ? {
-            recipient_name: address.recipient_name,
-            phone: address.phone,
-            address: address.address,
-            district_name: address.district_name || address.district,
-            city_name: address.city_name || address.city,
-            province_name: address.province_name || address.province,
-            postal_code: address.postal_code,
-          }
-        : null,
-      details: detailData,
-      statusHistory: history.map(h => ({
-        status: h.status,
-        remarks: h.remarks || '-',
-        created_at: h.created_at
-      })),
-      remarks: history.length ? history[0].remarks || '-' : order.notes || '-',
-    });
-
-  } catch (err) {
-    console.error('orderDetail error:', err);
-    res.status(500).json({ message: 'Gagal ambil detail order', error: err.message });
-  }
-}
-,
+  },
 
   // Update status order
   async updateStatus(req, res) {

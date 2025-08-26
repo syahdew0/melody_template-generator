@@ -3,12 +3,12 @@ const { Op } = require('sequelize');
 
 // Mapping transaction_type_id
 const TRANSACTION_TYPE_IDS = {
-  adjust_plus: 3,
-  adjust_minus: 4,
-  point_plus: 5,
-  point_minus: 6,
-  stamp_plus: 7,
-  stamp_minus: 8,
+  adjust_plus: 5,
+  adjust_minus: 6,
+  point_plus: 7,
+  point_minus: 8,
+  stamp_plus: 9,
+  stamp_minus: 10,
 };
 
 module.exports = {

@@ -8,4 +8,8 @@ router.post('/', authenticateCustomer, customerAddressController.create);
 router.put('/:id', authenticateCustomer, customerAddressController.update);
 router.delete('/:id', authenticateCustomer, customerAddressController.delete);
 
+router.get('/provinces', authenticateCustomer, customerAddressController.provinces);
+router.get('/regencies', authenticateCustomer, customerAddressController.regencies);
+router.get('/districts', authenticateCustomer, customerAddressController.districts);
+
 module.exports = router;

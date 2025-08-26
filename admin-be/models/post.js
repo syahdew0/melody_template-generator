@@ -1,26 +1,30 @@
 module.exports = (sequelize, DataTypes) => {
     const Post = sequelize.define('Post', {
-      website_id: DataTypes.INTEGER,
-      user_id: DataTypes.INTEGER,
-      id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        primaryKey: true,
-        autoIncrement: true
-      },      
-      title: DataTypes.STRING,
-      slug: DataTypes.STRING,
-      content: DataTypes.TEXT,
-      excerpt: DataTypes.TEXT,
-      thumbnail_url: DataTypes.STRING,
-      type: DataTypes.ENUM('post', 'page', 'product', 'testimonial'),
-      status: DataTypes.ENUM('draft', 'published', 'trash'),
-      template: DataTypes.STRING,
-      parent_id: DataTypes.INTEGER,
-      published_at: DataTypes.DATE
-    }, {
-      tableName: 'posts',
-      underscored: true
-    });
+  website_id: DataTypes.INTEGER,
+  user_id: DataTypes.INTEGER,
+  id: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    primaryKey: true,
+    autoIncrement: true
+  },      
+  title: DataTypes.STRING,
+  slug: DataTypes.STRING,
+  content: DataTypes.TEXT,
+  excerpt: DataTypes.TEXT,
+  thumbnail_url: DataTypes.STRING,
+  type: DataTypes.ENUM('post', 'page', 'product', 'testimonial'),
+  status: DataTypes.ENUM('draft', 'published', 'trash'),
+  template: DataTypes.STRING,
+  parent_id: DataTypes.INTEGER,
+  published_at: DataTypes.DATE
+}, {
+  tableName: 'posts',
+  timestamps: true,          
+  createdAt: 'created_at',   
+  updatedAt: 'updated_at',   
+  underscored: true
+});
+
   
     Post.associate = function(models) {
       Post.belongsTo(models.User, { foreignKey: 'user_id' });
