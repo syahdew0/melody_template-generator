@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     wallet_type: {
-      type: DataTypes.ENUM('saldo', 'poin', 'stamp'),
+      type: DataTypes.ENUM('saldo', 'point', 'stamp'),
       allowNull: false,
       defaultValue: 'saldo'
     },

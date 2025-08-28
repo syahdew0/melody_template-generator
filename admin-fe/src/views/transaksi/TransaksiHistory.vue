@@ -69,32 +69,33 @@
       </thead>
       <tbody>
         <tr v-for="h in histories" :key="h.id">
-          <td class="border px-2 py-1">{{ formatDate(h.created_at) }}</td>
-          <td class="border px-2 py-1">{{ h.username }}</td>
-          <!-- <td class="border px-2 py-1">{{ h.walletId }}</td> -->
-          <!-- <td class="border px-2 py-1">{{ formatType(h.transaction_type) }}</td> -->
-         <td class="border px-3 py-2">
-  {{ formatType(h.transaction_type || h.transaction_type_id, h.status, h.wallet_type, h.amount) }}
-</td>
+  <td class="border px-2 py-1">{{ formatDate(h.created_at) }}</td>
+  <td class="border px-2 py-1">{{ h.username }}</td>
+  <td class="border px-3 py-2">
+    {{ formatType(h.transaction_type || h.transaction_type_id, h.status, h.wallet_type, h.amount) }}
+  </td>
+  
+  <!-- Saldo Sebelum -->
+  <td class="border px-2 py-1">{{ formatAmount(h.balance_before, h.wallet_type) }}</td>
+  
+  <!-- Jumlah -->
+  <td
+    class="border px-3 py-2 text-center font-semibold"
+    :class="{
+      'text-red-600': isOutgoing(h),
+      'text-green-600': !isOutgoing(h)
+    }"
+  >
+    {{ isOutgoing(h) ? '-' : '+' }} {{ formatAmount(Math.abs(h.amount), h.wallet_type) }}
+  </td>
+  
+  <!-- Saldo Sesudah -->
+  <td class="border px-2 py-1">{{ formatAmount(h.balance_after, h.wallet_type) }}</td>
+  
+  <!-- Keterangan -->
+  <td class="border px-2 py-1">{{ h.remarks || '-' }}</td>
+</tr>
 
-          <td class="border px-2 py-1">{{ formatAmount(h.balance_before, h.wallet_type) }}</td>
-         <td
-  class="border px-3 py-2 text-center font-semibold"
-  :class="{
-    'text-green-600': (h.amount > 0) || (isWithdrawFailed(h)),
-    'text-red-600': h.amount < 0 && !isWithdrawFailed(h)
-  }"
->
-  {{ (h.amount < 0 && !isWithdrawFailed(h)) ? '-' : '+' }}
-  {{ formatAmount(Math.abs(h.amount), h.wallet_type) }}
-</td>
-
-          <td class="border px-2 py-1">{{ formatAmount(h.balance_after, h.wallet_type) }}</td>
-          <td class="border px-2 py-1">{{ h.remarks || '-' }}</td>
-        </tr>
-        <tr v-if="histories.length === 0">
-          <td colspan="6" class="text-center py-4">Tidak ada data</td>
-        </tr>
       </tbody>
     </table>
 
@@ -118,7 +119,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
@@ -141,6 +141,23 @@ const pagination = ref({
 })
 const isSearched = ref(false)
 
+// Mapping transaction_type_id ke string
+const typeMap = {
+  1: 'topup',
+  2: 'withdraw',
+  3: 'withdraw_dibatalkan',
+  4: 'withdraw_ditolak',
+  5: 'adjust_plus',
+  6: 'adjust_minus',
+  7: 'point_plus',
+  8: 'point_minus',
+  9: 'stamp_plus',
+  10: 'stamp_minus',
+  11: 'order',
+  12: 'order_ditolak',
+  13: 'order_dibatalkan'
+}
+
 const fetchHistories = async () => {
   try {
     const token = localStorage.getItem('token')
@@ -158,9 +175,13 @@ const fetchHistories = async () => {
       },
     })
 
-    histories.value = res.data.rows || []
-    pagination.value.totalPages = Math.ceil((res.data.count || 0) / pagination.value.limit)
+    // Mapping transaction_type
+    histories.value = (res.data.rows || []).map(h => ({
+      ...h,
+      transaction_type: typeMap[h.transaction_type_id] || h.transaction_type || 'unknown'
+    }))
 
+    pagination.value.totalPages = Math.ceil((res.data.count || 0) / pagination.value.limit)
   } catch (error) {
     console.error('Gagal mengambil data:', error)
   }
@@ -186,76 +207,55 @@ onMounted(() => {
   if (usernameQuery) {
     filters.value.username = usernameQuery
   }
-
-  // Jangan fetch otomatis supaya data tidak muncul saat load halaman
 })
 
+// Format tanggal
 const formatDate = (val) => {
   if (!val) return '-'
   return new Date(val).toLocaleString('id-ID')
 }
 
+// Format nominal
 const formatAmount = (val, walletType) => {
   if (walletType === 'point' || walletType === 'stamp') {
-    return val ?? 0 // point & stamp cukup angka
+    return val ?? 0
   }
-  return 'Rp' + (val != null ? Number(val).toLocaleString('id-ID') : 0) // saldo pakai Rp
+  return 'Rp' + (val != null ? Number(val).toLocaleString('id-ID') : 0)
 }
 
+// Format tipe transaksi
 const formatType = (val, status, walletType, amount) => {
-  // --- point ---
   if (walletType === 'point') {
     if (amount > 0) return 'Point Masuk'
     if (amount < 0) return 'Point Keluar'
     return '-'
   }
-
-  // --- stamp ---
   if (walletType === 'stamp') {
     if (amount > 0) return 'Stamp Masuk'
     if (amount < 0) return 'Stamp Keluar'
     return '-'
   }
 
-  // --- saldo biasa ---
-  const typeMap = {
-   1: 'topup',
-      2: 'withdraw',
-      3: 'withdraw_dibatalkan',
-      4: 'witdraw_ditolak',
-      5: 'adjust_plus',
-      6: 'adjust_minus',
-      7: 'point_plus',
-      8: 'point_minus',
-      9: 'stamp_plus',
-      10: 'stamp_minus'
-  }
-
-  const type = typeof val === 'number' ? typeMap[val] : val
-
-  if (type === 'withdraw') {
-  if (status === 'success') return 'Withdraw disetujui'
-  if (status === 'failed') return 'Withdraw dikembalikan' 
-  return 'Withdraw'
-}
-
-
-  if (type === 'topup') {
-    if (status === 'success') return 'Topup berhasil'
-    if (status === 'failed') return 'Topup ditolak'
-    return 'Topup'
-  }
-
-  switch (type) {
+  switch (val) {
+    case 'withdraw':
+      if (status === 'success') return 'Withdraw disetujui'
+      if (status === 'failed') return 'Withdraw dikembalikan'
+      return 'Withdraw'
+    case 'topup':
+      if (status === 'success') return 'Topup berhasil'
+      if (status === 'failed') return 'Topup ditolak'
+      return 'Topup'
+    case 'order': return 'Order'
+    case 'order_ditolak': return 'Order Ditolak'
+    case 'order_dibatalkan': return 'Order Dibatalkan'
     case 'adjust_plus': return 'Adjust Masuk'
     case 'adjust_minus': return 'Adjust Keluar'
-    default: return type || '-'
+    default: return val || '-'
   }
 }
-const isWithdrawFailed = (h) => {
-  // Pastikan h.transaction_type_id atau h.transaction_type sesuai data backend
-  const type = h.transaction_type || h.transaction_type_id
-  return (type === 2 && h.status === 'failed')
-}
 
+// Cek apakah saldo keluar (warna merah)
+const isOutgoing = (h) => {
+  return ['withdraw', 'adjust_minus', 'order', 'order_ditolak', 'order_dibatalkan', 'point_minus', 'stamp_minus'].includes(h.transaction_type)
+}
 </script>

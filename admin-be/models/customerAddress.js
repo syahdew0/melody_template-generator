@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       CustomerAddress.belongsTo(models.Customer, { foreignKey: 'customer_id' });
     }
   }
+
   CustomerAddress.init({
     customer_id: DataTypes.INTEGER,
     recipient_name: DataTypes.STRING,
@@ -19,6 +20,15 @@ module.exports = (sequelize, DataTypes) => {
     latitude: DataTypes.STRING,
     longitude: DataTypes.STRING,
     is_default: DataTypes.BOOLEAN,
-  }, { sequelize, modelName: 'CustomerAddress', tableName: 'customer_addresses' });
+    province_id: DataTypes.INTEGER,
+    regency_id: DataTypes.INTEGER,
+    district_id: DataTypes.INTEGER,
+    village_id: DataTypes.INTEGER,
+  }, {
+    sequelize,
+    modelName: 'CustomerAddress',
+    tableName: 'customer_addresses',
+  });
+
   return CustomerAddress;
 };

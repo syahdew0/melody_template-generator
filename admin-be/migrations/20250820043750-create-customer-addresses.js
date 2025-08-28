@@ -17,6 +17,10 @@ module.exports = {
       latitude: { type: Sequelize.STRING, allowNull: true },
       longitude: { type: Sequelize.STRING, allowNull: true },
       is_default: { type: Sequelize.BOOLEAN, defaultValue: false },
+      province_id: { type: Sequelize.INTEGER, allowNull: true },
+      regency_id: { type: Sequelize.INTEGER, allowNull: true },
+      district_id: { type: Sequelize.INTEGER, allowNull: true },
+      village_id: { type: Sequelize.INTEGER, allowNull: true },
       createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
     });

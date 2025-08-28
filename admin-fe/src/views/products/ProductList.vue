@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Products</h1>
       <router-link :to="{ name: 'ProductCreate' }" class="btn-primary">Add New</router-link>
-    </div>
+      </div>
 
       <!-- Search and filter-->
       <div class="flex flex-wrap gap-4 items-center">
@@ -48,7 +48,7 @@
             </td>
             <td class="px-4 py-2">{{ item.title }}</td>
             <td class="px-4 py-2">{{ item.status }}</td>
-            <td class="px-4 py-2">Rp {{ item.product_detail?.price?.toLocaleString() || '-' }}</td>
+            <td class="px-4 py-2">{{ formatCurrency(item.product_detail?.price) }}</td>
             <td class="px-4 py-2">{{ item.product_detail?.stock ?? '-' }}</td>
             <td class="px-4 py-2 text-right space-x-2">
               <router-link :to="{ name: 'ProductEdit', params: { id: item.id } }" class="text-blue-600 hover:underline">Edit</router-link>
@@ -82,6 +82,11 @@ const selectedIds = ref([])
 const sort = ref('title')
 const sortDir = ref('asc')
 const hasNextPage = ref(false)
+
+const formatCurrency = (value) => {
+  if (!value) return '-'
+  return 'Rp ' + Number(value).toLocaleString('id-ID')
+}
 
 const fetchData = async () => {
   try {

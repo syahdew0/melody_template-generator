@@ -1,126 +1,154 @@
 const { sequelize, Order, OrderDetail, HistoryOrderStatus, ProductDetail, Wallet, OrderPayment, WalletHistory, Post } = require('../../models');
 
 module.exports = {
-  async checkout(req, res) {
-    const t = await sequelize.transaction();
-    try {
-      const { items, shipping_address_id, recipient_name, recipient_phone, use_balance, remarks } = req.body;
-      const customer = req.customer;
-      if (!items || !items.length) return res.status(400).json({ message: 'Tidak ada item valid' });
+async checkout(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { items, shipping_address_id, recipient_name, recipient_phone, use_balance, remarks } = req.body;
+    const customer = req.customer;
 
-      const shipping_cost = 30000;
+    if (!items || !items.length) return res.status(400).json({ message: 'Tidak ada item valid' });
 
-      const productIds = items.map(i => i.product_id);
-      const dbProducts = await ProductDetail.findAll({
-        where: { id: productIds }
+    const shipping_cost = 30000;
+
+    // Ambil produk dari DB
+    const productIds = items.map(i => i.product_id);
+    const dbProducts = await ProductDetail.findAll({ where: { id: productIds } });
+    const productMap = Object.fromEntries(dbProducts.map(p => [p.id, p]));
+
+    // Ambil post title
+    const postIds = dbProducts.map(p => p.post_id);
+    const posts = await Post.findAll({ where: { id: postIds } });
+    const postMap = Object.fromEntries(posts.map(p => [p.id, p.title]));
+
+    const details = [];
+    let total_amount = 0;
+    for (const item of items) {
+      const prod = productMap[item.product_id];
+      if (!prod) continue;
+
+      const qty = item.qty > 0 ? item.qty : 1;
+      if (prod.stock_integrated === 0 && prod.stock < qty)
+        return res.status(400).json({ message: `Stock tidak cukup untuk product ${prod.id}` });
+
+const price = (prod.discount_price && prod.discount_until && new Date(prod.discount_until) > new Date())
+    ? prod.discount_price  // pakai harga diskon langsung
+    : prod.price;
+
+      const subtotal = qty * price;
+      total_amount += subtotal;
+
+      details.push({
+        product_id: prod.id,
+        product_name: prod.post_id ? postMap[prod.post_id] : `Product ${prod.id}`,
+        qty,
+        price,
+        subtotal
       });
-      const productMap = Object.fromEntries(dbProducts.map(p => [p.id, p]));
+    }
 
-      // Ambil post title
-      const postIds = dbProducts.map(p => p.post_id);
-      const posts = await Post.findAll({ where: { id: postIds } });
-      const postMap = Object.fromEntries(posts.map(p => [p.id, p.title]));
+    total_amount += shipping_cost;
 
-      const details = [];
-      let total_amount = 0;
-      for (const item of items) {
-        const prod = productMap[item.product_id];
-        if (!prod) continue;
+    // Ambil atau buat wallet
+    let wallet = await Wallet.findOne({ where: { customer_id: customer.id } });
 
-        const qty = item.qty > 0 ? item.qty : 1;
-        if (prod.stock_integrated === 0 && prod.stock < qty) return res.status(400).json({ message: `Stock tidak cukup untuk product ${prod.id}` });
+if (!wallet) {
+  wallet = await Wallet.create({ customer_id: customer.id, balance: 0 }, { transaction: t });
+} else {
+  // Ambil saldo terakhir dari WalletHistory
+  const lastHistory = await WalletHistory.findOne({
+    where: { walletId: wallet.id, status: 'success' },
+    order: [['created_at', 'DESC']],
+    transaction: t
+  });
+  if (lastHistory) {
+    wallet.balance = lastHistory.balance_after;
+  }
+}
+    // Pastikan balance selalu number
+    wallet.balance = wallet.balance || 0;
 
-        const price = prod.discount_price && prod.discount_until && new Date(prod.discount_until) > new Date()
-          ? prod.price - prod.discount_price
-          : prod.price;
+    let orderStatus = 'Unpaid';
 
-        const subtotal = qty * price;
-        total_amount += subtotal;
+    // Buat Order dulu
+    const order = await Order.create({
+      customer_id: customer.id,
+      order_date: new Date(),
+      total_amount,
+      shipping_cost,
+      status: orderStatus,
+      shipping_address_id,
+      recipient_name,
+      recipient_phone,
+      notes: remarks || null,
+    }, { transaction: t });
 
-        details.push({
-          product_id: prod.id,
-          product_name: prod.post_id ? postMap[prod.post_id] : `Product ${prod.id}`,
-          qty,
-          price,
-          subtotal
-        });
-      }
+    // Bayar pakai saldo
+    if (use_balance) {
+      if (wallet.balance < total_amount) return res.status(400).json({ message: 'Saldo tidak mencukupi' });
 
-      total_amount += shipping_cost;
+      const balanceBefore = wallet.balance;
+      wallet.balance -= total_amount;
+      await wallet.save({ transaction: t });
 
-      let wallet = await Wallet.findOne({ where: { customer_id: customer.id } });
-      if (!wallet) wallet = await Wallet.create({ customer_id: customer.id, balance: 0 }, { transaction: t });
+      orderStatus = 'Paid';
 
-      let orderStatus = 'Unpaid';
-      if (use_balance) {
-        if (wallet.balance < total_amount) return res.status(400).json({ message: 'Saldo tidak mencukupi' });
-        wallet.balance -= total_amount;
-        await wallet.save({ transaction: t });
-        orderStatus = 'Paid';
-      }
-
-      const order = await Order.create({
-        customer_id: customer.id,
-        order_date: new Date(),
-        total_amount,
-        shipping_cost,
-        status: orderStatus,
-        shipping_address_id,
-        recipient_name,
-        recipient_phone,
-        notes: remarks || null,
-      }, { transaction: t });
-
-      details.forEach(d => d.order_id = order.id);
-      await OrderDetail.bulkCreate(details, { transaction: t });
-
-      if (orderStatus === 'Paid') {
-        for (const d of details) {
-          const prod = await ProductDetail.findByPk(d.product_id, { transaction: t });
-          if (prod.stock_integrated === 0) {
-            prod.stock -= d.qty;
-            await prod.save({ transaction: t });
-          }
-        }
-
-        await OrderPayment.create({
-          order_id: order.id,
-          amount: total_amount,
-          method: 'wallet',
-          payment_date: new Date(),
-          status: 'Success'
-        }, { transaction: t });
-
-        await WalletHistory.create({
-          walletId: wallet.id,
-          username: customer.username,
-          transaction_type: 'adjust_minus',
-          wallet_type: 'saldo',
-          balance_before: wallet.balance + total_amount,
-          amount: total_amount,
-          balance_after: wallet.balance,
-          remarks: `Pembayaran order #${order.id}`,
-          status: 'success',
-          created_at: new Date()
-        }, { transaction: t });
-      }
-
-      await HistoryOrderStatus.create({
-        order_id: order.id,
-        status: orderStatus,
-        remarks: remarks || null,
+      // Simpan WalletHistory
+      await WalletHistory.create({
+        walletId: wallet.id,
+        username: customer.username,
+        transaction_type_id: 11, // order
+        wallet_type: 'saldo',
+        reference_id: order.id,
+        balance_before: balanceBefore,
+        amount: -total_amount,
+        balance_after: wallet.balance,
+        remarks: `Pembayaran order #${order.id}`,
+        status: 'success',
         created_at: new Date()
       }, { transaction: t });
 
-      await t.commit();
-      return res.status(201).json({ message: 'Checkout berhasil', order, used_balance: use_balance ? total_amount : 0 });
+      // Kurangi stock
+      for (const d of details) {
+        const prod = await ProductDetail.findByPk(d.product_id, { transaction: t });
+        if (prod.stock_integrated === 0) {
+          prod.stock -= d.qty;
+          await prod.save({ transaction: t });
+        }
+      }
 
-    } catch (err) {
-      await t.rollback();
-      console.error('Checkout error:', err);
-      return res.status(500).json({ message: 'Checkout gagal', error: err.message });
+      // Buat OrderPayment
+      await OrderPayment.create({
+        order_id: order.id,
+        amount: total_amount,
+        method: 'wallet',
+        payment_date: new Date(),
+        status: 'Success'
+      }, { transaction: t });
     }
-  },
+
+    // Buat OrderDetail
+    details.forEach(d => d.order_id = order.id);
+    await OrderDetail.bulkCreate(details, { transaction: t });
+
+    // Update status order & HistoryOrderStatus
+    await Order.update({ status: orderStatus }, { where: { id: order.id }, transaction: t });
+    await HistoryOrderStatus.create({
+      order_id: order.id,
+      status: orderStatus,
+      remarks: remarks || null,
+      created_at: new Date()
+    }, { transaction: t });
+
+    await t.commit();
+    return res.status(201).json({ message: 'Checkout berhasil', order, used_balance: use_balance ? total_amount : 0 });
+
+  } catch (err) {
+    await t.rollback();
+    console.error('Checkout error:', err);
+    return res.status(500).json({ message: 'Checkout gagal', error: err.message });
+  }
+},
 
   async myOrders(req, res) {
     try {
@@ -161,138 +189,149 @@ module.exports = {
       res.status(500).json({ message: 'Gagal ambil order', error: err.message });
     }
   },
-  async pay(req, res) {
-    const t = await sequelize.transaction();
-    try {
-      const { order_id, payment_method } = req.body;
-      const customer = req.customer;
+async pay(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { order_id, payment_method, use_balance } = req.body;
+    const customer = req.customer;
 
-      const order = await Order.findOne({ where: { id: order_id, customer_id: customer.id }, transaction: t });
-      if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
-      if (order.status !== 'Unpaid') return res.status(400).json({ message: 'Order tidak valid untuk dibayar' });
+    const order = await Order.findOne({ where: { id: order_id, customer_id: customer.id }, transaction: t });
+    if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
+    if (order.status !== 'Unpaid') return res.status(400).json({ message: 'Order tidak valid untuk dibayar' });
 
-      // Ambil detail order
-      const orderDetails = await OrderDetail.findAll({ where: { order_id }, transaction: t });
+    // Ambil detail order
+    const orderDetails = await OrderDetail.findAll({ where: { order_id }, transaction: t });
 
-      // Cek stock sebelum bayar
-      for (const d of orderDetails) {
-        const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
-        if (product.stock_integrated === 0 && product.stock < d.qty) {
+    // Cek stock sebelum bayar
+    for (const d of orderDetails) {
+      const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
+      if (product.stock_integrated === 0 && product.stock < d.qty) {
+        return res.status(400).json({ message: `Stock tidak cukup untuk product ${product.id}` });
+      }
+    }
+
+    // Kurangi stock
+    for (const d of orderDetails) {
+      const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
+      if (product.stock_integrated === 0) {
+        product.stock -= d.qty;
+        if (product.stock < 0) {
+          await t.rollback();
           return res.status(400).json({ message: `Stock tidak cukup untuk product ${product.id}` });
         }
+        await product.save({ transaction: t });
+      }
+    }
+
+    // Jika pakai saldo wallet
+    if (use_balance) {
+      let wallet = await Wallet.findOne({ where: { customer_id: customer.id }, transaction: t });
+      if (!wallet) return res.status(404).json({ message: "Wallet tidak ditemukan" });
+      wallet.balance = Number(wallet.balance) || 0;
+
+      if (wallet.balance < order.total_amount) {
+        return res.status(400).json({ message: "Saldo tidak mencukupi" });
       }
 
-      // Kurangi stock saat bayar (dari Unpaid ke Paid)
-      for (const d of orderDetails) {
-        const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
-        if (product.stock_integrated === 0) {
-          product.stock -= d.qty;
-          if (product.stock < 0) {
-            await t.rollback();
-            return res.status(400).json({ message: `Stock tidak cukup untuk product ${product.id}` });
-          }
-          await product.save({ transaction: t });
-        }
-}
+      const balanceBefore = wallet.balance;
+      wallet.balance -= order.total_amount;
+      await wallet.save({ transaction: t });
 
-      // Buat OrderPayment
-      await OrderPayment.create({
-        order_id,
-        amount: order.total_amount,
-        payment_method,
-        payment_date: new Date()
-      }, { transaction: t });
-
-      // Update status order
-      await Order.update({ status: 'Paid' }, { where: { id: order_id }, transaction: t });
-
-      // Buat HistoryOrderStatus
-      await HistoryOrderStatus.create({
-        order_id,
-        status: 'Paid',
+      // Catat WalletHistory negatif
+      await WalletHistory.create({
+        walletId: wallet.id,
+        username: customer.username,
+        transaction_type_id: 11, // order
+        wallet_type: 'saldo',
+        reference_id: order.id,
+        balance_before: balanceBefore,
+        amount: -order.total_amount,
+        balance_after: wallet.balance,
+        remarks: `Pembayaran order #${order.id}`,
+        status: 'success',
         created_at: new Date()
       }, { transaction: t });
-
-      await t.commit();
-      res.status(201).json({ message: 'Pembayaran berhasil' });
-
-    } catch (err) {
-      await t.rollback();
-      console.error('Pay error:', err);
-      res.status(500).json({ message: 'Gagal membayar', error: err.message });
     }
-  },
 
-  // async pay(req, res) {
-  //   const t = await sequelize.transaction();
-  //   try {
-  //     const { order_id, payment_method } = req.body;
-  //     const customer = req.customer;
+    // Buat OrderPayment
+    await OrderPayment.create({
+      order_id,
+      amount: order.total_amount,
+      payment_method,
+      payment_date: new Date(),
+      status: 'Success'
+    }, { transaction: t });
 
-  //     const order = await Order.findOne({ where: { id: order_id, customer_id: customer.id }, transaction: t });
-  //     if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
-  //     if (order.status !== 'Unpaid') return res.status(400).json({ message: 'Order tidak valid untuk dibayar' });
+    // Update status order
+    await Order.update({ status: 'Paid' }, { where: { id: order_id }, transaction: t });
 
-  //     // Ambil detail order
-  //     const orderDetails = await OrderDetail.findAll({ where: { order_id }, transaction: t });
+    // Buat HistoryOrderStatus
+    await HistoryOrderStatus.create({
+      order_id,
+      status: 'Paid',
+      created_at: new Date()
+    }, { transaction: t });
 
-  //     // Cek stock sebelum bayar
-  //     for (const d of orderDetails) {
-  //       const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
-  //       if (product.stock_integrated === 0 && product.stock < d.qty) {
-  //         return res.status(400).json({ message: `Stock tidak cukup untuk product ${product.id}` });
-  //       }
-  //     }
+    await t.commit();
+    res.status(201).json({ message: 'Pembayaran berhasil', used_balance: use_balance ? order.total_amount : 0 });
 
-  //     // Kurangi stock saat bayar
-  //     for (const d of orderDetails) {
-  //       const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
-  //       if (product.stock_integrated === 0) {
-  //         product.stock -= d.qty;
-  //         await product.save({ transaction: t });
-  //       }
-  //     }
+  } catch (err) {
+    await t.rollback();
+    console.error('Pay error:', err);
+    res.status(500).json({ message: 'Gagal membayar', error: err.message });
+  }
+},
 
-  //     // Buat OrderPayment
-  //     await OrderPayment.create({
-  //       order_id,
-  //       amount: order.total_amount,
-  //       payment_method,
-  //       payment_date: new Date()
-  //     }, { transaction: t });
+async checkoutWithSaldo(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { customerId, orderId, orderTotal } = req.body;
 
-  //     // Update status order
-  //     await Order.update({ status: 'Paid' }, { where: { id: order_id }, transaction: t });
+    // 1. Ambil wallet customer
+    let wallet = await Wallet.findOne({ where: { customer_id: customerId }, transaction: t });
+    if (!wallet) return res.status(404).json({ message: "Wallet tidak ditemukan" });
 
-  //     // Buat HistoryOrderStatus
-  //     await HistoryOrderStatus.create({
-  //       order_id,
-  //       status: 'Paid',
-  //       created_at: new Date()
-  //     }, { transaction: t });
+    wallet.balance = Number(wallet.balance) || 0;
 
-  //     await t.commit();
-  //     res.status(201).json({ message: 'Pembayaran berhasil' });
+    // 2. Cek saldo cukup
+    if (wallet.balance < orderTotal) {
+      return res.status(400).json({ message: "Saldo tidak mencukupi" });
+    }
 
-  //   } catch (err) {
-  //     await t.rollback();
-  //     console.error('Pay error:', err);
-  //     res.status(500).json({ message: 'Gagal membayar', error: err.message });
-  //   }
-  // },
+    // 3. Hitung saldo baru
+    const balanceBefore = wallet.balance;
+    const balanceAfter = balanceBefore - orderTotal;
 
-  // async myOrders(req, res) {
-  //   try {
-  //     const customer = req.customer;
-  //     const orders = await Order.findAll({
-  //       where: { customer_id: customer.id },
-  //       include: [OrderDetail, OrderPayment, HistoryOrderStatus],
-  //       order: [['order_date', 'DESC']]
-  //     });
-  //     res.json(orders);
-  //   } catch (err) {
-  //     console.error('MyOrders error:', err);
-  //     res.status(500).json({ message: 'Gagal ambil order', error: err.message });
-  //   }
-  // }
+    // 4. Update wallet
+    wallet.balance = balanceAfter;
+    await wallet.save({ transaction: t });
+
+    // 5. Update status order
+    await Order.update({ status: 'Paid' }, { where: { id: orderId }, transaction: t });
+
+    // 6. Simpan wallet history (amount negatif)
+    await WalletHistory.create({
+      walletId: wallet.id,
+      username: wallet.username || 'unknown',
+      transaction_type_id: 11, // order
+      wallet_type: 'saldo',
+      reference_id: orderId,
+      balance_before: balanceBefore,
+      amount: -orderTotal, // negative karena pengurangan
+      balance_after: balanceAfter,
+      remarks: `Pembayaran order #${orderId}`,
+      status: 'success',
+      created_at: new Date()
+    }, { transaction: t });
+
+    await t.commit();
+    return res.json({ message: "Checkout sukses dengan saldo", balance: wallet.balance });
+
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
+}
+  
 };

@@ -11,5 +11,6 @@ router.delete('/:id', authenticateCustomer, customerAddressController.delete);
 router.get('/provinces', authenticateCustomer, customerAddressController.provinces);
 router.get('/regencies', authenticateCustomer, customerAddressController.regencies);
 router.get('/districts', authenticateCustomer, customerAddressController.districts);
+router.get('/villages', authenticateCustomer, customerAddressController.villages)
 
 module.exports = router;

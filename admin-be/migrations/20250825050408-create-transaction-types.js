@@ -35,6 +35,9 @@ module.exports = {
       { id: 8, name: 'point_minus', created_at: new Date() },
       { id: 9, name: 'stamp_plus', created_at: new Date() },
       { id: 10, name: 'stamp_minus', created_at: new Date() },
+      { id: 11, name: 'order', created_at: new Date() },
+      { id: 12, name: 'order_ditolak', created_at: new Date() },
+      { id: 13, name: 'order_dibatalkan', created_at: new Date() },
     ]);
   },
 

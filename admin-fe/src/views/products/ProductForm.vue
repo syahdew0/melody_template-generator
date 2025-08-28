@@ -17,11 +17,12 @@
 
         <div>
           <label class="block mb-1 font-medium">Content</label>
-          <quill-editor
-            v-model="form.content"
-            :style="{ minHeight: '200px' }"
-            class="bg-white"
-          />
+<quill-editor
+  v-if="isEditorReady"
+  v-model="form.content"
+  :style="{ minHeight: '200px' }"
+  class="bg-white"
+/>
         </div>
 
         <div>
@@ -48,15 +49,30 @@
           <h3 class="font-semibold mb-2">Product Details</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label>Price</label>
-              <input v-model.number="form.product_detail.price" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Discount Price</label>
-              <input v-model.number="form.product_detail.discount_price" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
+  <label>Price</label>
+  <input
+    type="text"
+    class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1"
+    :value="formattedPrice"
+    @input="onPriceInput($event.target.value)"
+  />
+</div>
+
+
+<!-- <div>
+  <label>Discount %</label>
+  <input v-model.number="form.product_detail.discount_percentage" type="number" min="0" max="100"
+    class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
+</div> -->
+<div>
+  <label>Price After Discount</label>
+  <input
+    type="text"
+    :value="formattedDiscountPrice"
+    @input="onDiscountPriceInput($event.target.value)"
+    class="input border border-gray-400 rounded w-full px-2 py-1"
+  />
+</div>
             <div>
               <label>Discount Until</label>
               <input v-model="form.product_detail.discount_until" type="datetime-local"
@@ -163,11 +179,13 @@
             </button>
           </div>
 
-          <MediaPickerModal
-            :show="showMediaPicker"
-            @close="showMediaPicker = false"
-            @select="selectImage"
-          />
+
+<MediaPickerModal
+  v-if="isMediaPickerReady && showMediaPicker"
+  :show="showMediaPicker"
+  @close="showMediaPicker = false"
+  @select="selectImage"
+/>
         </div>
 
         <!-- Category -->
@@ -194,7 +212,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref,computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { QuillEditor } from '@vueup/vue-quill'
@@ -206,6 +224,8 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const isEdit = !!route.params.id
+const isEditorReady = ref(false)
+const isMediaPickerReady = ref(false)
 
 const form = ref({
   website_id: 1,
@@ -222,7 +242,8 @@ const form = ref({
   category_ids: [],
   product_detail: {
     price: 0,
-    discount_price: null,
+    discount_percentage: 0,
+    discount_price: 0,
     discount_until: null,
     weight: 0,
     unit_name: '',
@@ -257,6 +278,27 @@ const generateSlug = () => {
     .replace(/ +/g, '-')
 }
 
+const formatNumber = (num) => {
+  if (!num) return ''
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+const parseNumber = (str) => {
+  if (!str) return 0
+  return Number(str.toString().replace(/\./g, '')) || 0
+}
+
+const formattedPrice = computed(() => formatNumber(form.value.product_detail.price))
+
+const onPriceInput = (val) => {
+  form.value.product_detail.price = parseNumber(val)
+}
+const formattedDiscountPrice = computed(() => {
+  return formatNumber(form.value.product_detail.discount_price)
+})
+const onDiscountPriceInput = (val) => {
+  // ubah input jadi number tanpa titik
+  form.value.product_detail.discount_price = parseNumber(val)
+}
 const getImageUrl = (path) => path.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`
 
 const selectImage = (url) => {
@@ -352,5 +394,18 @@ const submit = async () => {
 onMounted(async () => {
   await fetchCategories()
   if (isEdit) await fetchProduct()
+    isEditorReady.value = true
+  isMediaPickerReady.value = true
 })
+
+// watch(
+//   () => [form.value.product_detail?.price, form.value.product_detail?.discount_percentage],
+//   ([price, discount]) => {
+//     if (!form.value.product_detail) return
+//     form.value.product_detail.discount_price = price && discount
+//       ? price - (price * discount / 100)
+//       : price
+//   }
+// )
+
 </script>

@@ -39,6 +39,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'order',
       constraints: false
     });
+     OrderDetail.belongsTo(models.ProductDetail, {
+      foreignKey: 'product_id',
+      as: 'ProductDetail',
+      constraints: false
+    });
   };
 
   // Hook untuk create

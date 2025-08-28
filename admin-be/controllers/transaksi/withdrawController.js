@@ -32,7 +32,6 @@ async create(req, res) {
       return res.status(404).json({ message: 'Wallet tidak ditemukan' });
     }
 
-    // ==== CEK PENDING ====
     const pendingWithdraw = await Withdraw.findOne({
       where: {
         username: customer.username,
@@ -103,7 +102,7 @@ async create(req, res) {
 },
     // Admin melihat semua withdraw
     async list(req, res) {
-  try {
+    try {
     const { status, username, page = 1, limit = 10, fromDate, toDate } = req.query;
     const where = {};
 
@@ -212,10 +211,10 @@ async create(req, res) {
     if (status === 'success') {
      // Sukses
      latestHistory.transaction_type_id = 2;
-latestHistory.transaction_type = 'withdraw'; // tetap ENUM valid
-latestHistory.remarks = 'Withdraw berhasil'; // tulis detail disetujui di sini
-latestHistory.status = 'success';
-await latestHistory.save({ transaction: t });
+    latestHistory.transaction_type = 'withdraw'; // tetap ENUM valid
+    latestHistory.remarks = 'Withdraw berhasil'; // tulis detail disetujui di sini
+    latestHistory.status = 'success';
+    await latestHistory.save({ transaction: t });
 
     }
 if (status === 'failed') {
@@ -355,23 +354,6 @@ if (status === 'failed') {
           created_at: new Date()
         }, { transaction: t });
       }
-
-      // if (status === 'failed') {
-      //   await WalletHistory.create({
-      //     walletId: wallet.id,
-      //     username: data.username,
-      //     type: 'out',
-      //     transaction_type: 'withdraw',
-      //     amount: 0,
-      //     source_type: 'withdraw',
-      //     source_id: data.id,
-      //     reference_id: data.id,
-      //     balance_before: previousBalance,
-      //     balance_after: previousBalance,
-      //     remarks: 'Withdraw ditolak oleh admin',
-      //     created_at: new Date()
-      //   }, { transaction: t });
-      // }
       if (status === 'failed') {
       await WalletHistory.create({
         walletId: wallet.id,
