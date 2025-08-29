@@ -57,15 +57,6 @@ async listOrders(req, res) {
           price: d.price,
           subtotal: d.subtotal,
         });
-
-        // Debug log (bisa dihapus)
-        // console.log({
-        //   orderId: d.order_id,
-        //   productId: d.product_id,
-        //   postTitle: post?.title,
-        //   fallbackName: d.product_name,
-        //   finalName: productName
-        // });
       });
 
       // Mapping history per order

@@ -1,23 +1,30 @@
 // routes/public.js
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { Setting, Icon, Theme } = require("../models");
+const { Theme, Website } = require('../models');
 
-router.get("/public/site-info/:websiteId", async (req, res) => {
+router.get('/site-info', async (req, res) => {
   try {
-    const { websiteId } = req.params;
-
-    const title = await Setting.findOne({ where: { key: "site_title", website_id: websiteId } });
-    const favicon = await Icon.findOne({ where: { key: "favicon", website_id: websiteId } });
-    const theme = await Theme.findOne({ where: { website_id: websiteId, is_active: true } });
-
-    res.json({
-      title: title?.value || "Default Title",
-      icon: favicon?.url || "/favicon.png",
-      activeTheme: theme?.slug || "default",
+    const theme = await Theme.findOne({
+      where: { is_active: 1 },
+      include: [
+        { model: Website, as: 'website', attributes: ['site_title', 'title', 'logo'] }
+      ]
     });
+
+    if (!theme) {
+      return res.status(404).json({ success: false, message: 'Theme aktif tidak ditemukan' });
+    }
+
+    const website = theme.website || {};
+    const title = website.site_title || website.title || 'Website';
+    const icon = website.logo || '/favicon.ico';
+    const apiUrl = process.env.API_URL || `${req.protocol}://${req.get('host')}`;
+
+    res.json({ id: theme.id,name: theme.name || 'Default', title, icon, apiUrl });
   } catch (err) {
-    res.status(500).json({ message: "Error get site info", error: err.message });
+    console.error("Error site-info:", err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

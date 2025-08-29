@@ -52,15 +52,14 @@ export default {
   },
 
   methods: {
-    async fetchFavicon() {
-      try {
-        const res = await axios.get(API_ENDPOINTS.favicon)
-        this.form.favicon = res.data?.value || ''
-      } catch (err) {
-        console.warn('Gagal mengambil favicon:', err)
-        this.form.favicon = ''
-      }
-    },
+ async fetchFavicon() {
+  try {
+    const res = await axios.get(API_ENDPOINTS.favicon);
+    this.form.favicon = res.data?.value || '/uploads/default-favicon.ico';
+  } catch (err) {
+    console.warn('Gagal mengambil favicon:', err);
+  }
+},
 
     handleFileChange(event) {
       this.selectedFile = event.target.files[0] || null

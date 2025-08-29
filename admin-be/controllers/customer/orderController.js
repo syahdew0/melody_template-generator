@@ -109,13 +109,18 @@ if (!wallet) {
       }, { transaction: t });
 
       // Kurangi stock
-      for (const d of details) {
-        const prod = await ProductDetail.findByPk(d.product_id, { transaction: t });
-        if (prod.stock_integrated === 0) {
-          prod.stock -= d.qty;
-          await prod.save({ transaction: t });
-        }
-      }
+for (const d of details) {
+  const product = await ProductDetail.findByPk(d.product_id, { transaction: t });
+  if (product.stock_integrated === 0) {
+    if (product.stock < d.qty) {
+      await t.rollback();
+      return res.status(400).json({ message: `Stock tidak cukup untuk product ${product.id}` });
+    }
+    product.stock -= d.qty;
+    await product.save({ transaction: t });
+  }
+}
+
 
       // Buat OrderPayment
       await OrderPayment.create({
@@ -191,6 +196,7 @@ if (!wallet) {
   },
 async pay(req, res) {
   const t = await sequelize.transaction();
+  console.log('Kurangi stock:', product.id, 'sebelum:', product.stock, 'qty:', d.qty);
   try {
     const { order_id, payment_method, use_balance } = req.body;
     const customer = req.customer;

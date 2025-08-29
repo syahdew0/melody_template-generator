@@ -16,6 +16,7 @@ const { requireAuth } = require('./middlewares/authMiddleware');
 const customerAuthRoutes = require('./routes/customerAuthRoutes');
 const changePasswordRoutes = require('./routes/changepasswordRoutes');
 const adminCustomerRoutes = require('./routes/adminCustomerRoutes');
+const publicRoutes = require('./routes/public');
 
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -42,6 +43,7 @@ if (process.env.NODE_ENV === 'production') {
     'http://localhost:8080',
     'http://localhost:8081',
     'http://localhost:8082',
+    'http://localhost:1234',
   );
 }
 
@@ -73,6 +75,7 @@ app.use('/customer/auth', changePasswordRoutes);
 
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/apis/public', publicRoutes);
 app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));

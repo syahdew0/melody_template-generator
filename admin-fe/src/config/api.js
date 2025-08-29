@@ -8,6 +8,7 @@ export const API_URL = process.env.VUE_APP_API_URL;
 
 
 export const API_ENDPOINTS = {
+  //  siteInfo: () => `${API_URL}/apis/public/site-info`,
   mediaList: `${API_URL}/api/media`,
   mediaUpload: `${API_URL}/api/media`,
   mediaDelete: `${API_URL}/api/media`,
@@ -88,9 +89,9 @@ export const API_ENDPOINTS = {
   DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,   
 
   siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
-  favicon: `${API_URL}/api/icons/favicon`,        
-  icons: `${API_URL}/api/icons/upload`,           
-  saveFavicon: `${API_URL}/api/icons/save`,      
+  favicon: `${API_URL}/apis/icons/favicon`,
+  icons: `${API_URL}/apis/icons/upload`,
+  saveFavicon: `${API_URL}/apis/icons/save`,     
 
   // Transaksi
   topup: {

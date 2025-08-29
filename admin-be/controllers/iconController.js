@@ -1,16 +1,19 @@
 const { Icon } = require('../models');
 const path = require('path');
 
+const DEFAULT_FAVICON = '/uploads/default-favicon.ico'; // simpan di public/uploads/
+
 exports.getFavicon = async (req, res) => {
   try {
-    const icon = await Icon.findOne({ where: { key: 'favicon' } })
-    if (!icon) return res.status(404).json({ message: 'Favicon belum diatur.' })
+    const icon = await Icon.findOne({ where: { key: 'favicon' } });
+    if (!icon) return res.json({ value: '/uploads/favicon.ico', apiUrl: `${req.protocol}://${req.get('host')}` });
 
-    res.json({ value: icon.value }) // <-- dikonsumsi di frontend
+    res.json({ value: icon.value, apiUrl: `${req.protocol}://${req.get('host')}` });
   } catch (err) {
-    res.status(500).json({ message: 'Gagal mengambil favicon.', error: err.message })
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil favicon' });
   }
-}
+};
 
 
 exports.setFavicon = async (req, res) => {
@@ -35,17 +38,10 @@ exports.setFavicon = async (req, res) => {
 
 exports.uploadFavicon = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'File tidak ditemukan' });
-    }
+    if (!req.file) return res.status(400).json({ message: 'File tidak ditemukan' });
 
-    let fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
-    if (process.env.NODE_ENV === 'staging') {
-      fileUrl = `${req.protocol}://${req.get('host')}:8443/uploads/${req.file.filename}`;
-    }
-
-    // Simpan atau update favicon di tabel icons
     const [icon, created] = await Icon.findOrCreate({
       where: { key: 'favicon' },
       defaults: { value: fileUrl },
@@ -58,7 +54,6 @@ exports.uploadFavicon = async (req, res) => {
 
     res.status(201).json({
       message: 'Favicon berhasil diupload dan disimpan',
-      url: fileUrl,
       value: fileUrl,
       data: icon
     });

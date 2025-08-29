@@ -1,69 +1,38 @@
-const {Withdraw, Customer, Wallet, Adjust, WalletSummary, WalletHistory, Topup, TransactionType, sequelize, } = require('../../models');
+const { Withdraw, Customer, Wallet, Adjust, WalletHistory, Topup, TransactionType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
+const { getWallet } = require('../../services/walletServices');
 
 exports.getMyWallet = async (req, res) => {
   try {
     const customerId = req.customer.id;
+    const username = req.customer.username;
 
+    // ambil semua wallet user
     const wallets = await Wallet.findAll({
       where: { customer_id: customerId },
       raw: true,
     });
 
-    const walletIds = wallets.map((w) => w.id);
+    // pakai service getWallet untuk setiap walletType
+    const enrichedWallets = await Promise.all(wallets.map(w =>
+      getWallet(customerId, w.wallet_type, username)
+    ));
 
-    const lastHistories = await WalletHistory.findAll({
-      where: {
-        walletId: { [Op.in]: walletIds },
-        status: 'success',
-      },
-      attributes: [
-        'walletId',
-        [sequelize.fn('MAX', sequelize.col('created_at')), 'latest'],
-        'balance_after',
-      ],
-      group: ['walletId', 'balance_after'],
-      raw: true,
-    });
-
-    const balanceMap = {};
-    for (const h of lastHistories) {
-      balanceMap[h.walletId] = h.balance_after;
-    }
-
-    // Ambil balance dari adjusts (untuk kategori tanpa wallet)
+    // tambahkan kategori dari Adjust yang belum ada wallet
     const adjustBalances = await Adjust.findAll({
-      where: { username: req.customer.username },
-      attributes: [
-        'category',
-        [sequelize.fn('SUM', sequelize.col('amount')), 'total']
-      ],
+      where: { username },
+      attributes: ['category', [sequelize.fn('SUM', sequelize.col('amount')), 'total']],
       group: ['category'],
       raw: true
     });
 
-    const adjustMap = {};
     adjustBalances.forEach(a => {
-      adjustMap[a.category] = parseFloat(a.total || 0);
-    });
-
-    // Gabungkan
-    const enrichedWallets = wallets.map((w) => {
-      return {
-        ...w,
-        balance: balanceMap[w.id] || adjustMap[w.wallet_type] || 0,
-        balance_source: balanceMap[w.id] ? 'wallet_history_latest' : 'adjusts',
-      };
-    });
-
-    // Tambahkan kategori dari adjusts yang belum punya wallet
-    ['point', 'stamp'].forEach(cat => {
-      if (!wallets.find(w => w.wallet_type === cat) && adjustMap[cat] !== undefined) {
+      if (!wallets.find(w => w.wallet_type === a.category)) {
         enrichedWallets.push({
           id: null,
           customer_id: customerId,
-          wallet_type: cat,
-          balance: adjustMap[cat],
+          wallet_type: a.category,
+          balance: parseFloat(a.total || 0),
           balance_source: 'adjusts'
         });
       }
@@ -76,97 +45,28 @@ exports.getMyWallet = async (req, res) => {
   }
 };
 
-
 exports.getMyTotalBalance = async (req, res) => {
   try {
     const customerId = req.customer.id;
+    const username = req.customer.username;
 
     const wallets = await Wallet.findAll({
       where: { customer_id: customerId },
-      attributes: ['id'],
+      attributes: ['wallet_type'],
       raw: true,
     });
 
-    const walletIds = wallets.map(w => w.id);
+    let totalBalance = 0;
 
-    if (walletIds.length === 0) {
-      return res.json({ total_balance: 0 });
+    for (const w of wallets) {
+      const wallet = await getWallet(customerId, w.wallet_type, username);
+      totalBalance += wallet.balance;
     }
-
-    // Ambil history terakhir per wallet
-   const latestHistories = await Promise.all(
-  walletIds.map(async (walletId) => {
-    return await WalletHistory.findOne({
-      where: { walletId }, // jangan filter status='success'
-      order: [['created_at', 'DESC']],
-      attributes: ['balance_after'],
-      raw: true,
-    });
-  })
-);
-
-    const totalBalance = latestHistories.reduce((acc, h) => acc + (h?.balance_after || 0), 0);
 
     return res.json({ total_balance: totalBalance });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Gagal mengambil total balance' });
-  }
-};
-
-exports.getWalletDetailsByType = async (req, res) => {
-  try {
-    const { type } = req.params;
-    const customerId = req.customer.id;
-
-    const wallet = await Wallet.findOne({
-      where: { customer_id: customerId, wallet_type: type },
-      raw: true,
-    });
-
-    if (!wallet) {
-      return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-    }
-
-    // Ambil riwayat terakhir
-    const latestHistory = await WalletHistory.findOne({
-      where: { walletId: wallet.id, status: 'success' },
-      order: [['created_at', 'DESC']],
-      raw: true,
-    });
-
-    const latestBalance = latestHistory?.balance_after || 0;
-
-    // Ambil riwayat transaksi
-    const [history, adjusts, topups, withdraws] = await Promise.all([
-      // WalletHistory.findAll({
-      //   where: { walletId: wallet.id },
-      //   order: [['created_at', 'DESC']],
-      // }),
-      WalletHistory.findAll({
-        where: { walletId: wallet.id },
-        order: [['created_at', 'DESC']],
-       attributes: ['id', 'walletId', 'username', 'transaction_type', 'reference_id', 'balance_before', 'amount', 'balance_after', 'remarks', 'status', 'created_at'],
-      }),
-      Adjust.findAll({
-        where: { walletid: wallet.id },
-        order: [['createdon', 'DESC']],
-      }),
-      Topup.findAll({
-        where: { walletid: wallet.id },
-        order: [['createdon', 'DESC']],
-      }),
-      Withdraw.findAll({
-        where: { walletid: wallet.id },
-        order: [['createdon', 'DESC']],
-      }),
-    ]);
-
-    res.json({wallet,latest_balance: latestBalance, history, adjusts, topups, withdraws,});
-    
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Gagal mengambil detail wallet' });
   }
 };
 
@@ -192,7 +92,7 @@ exports.getMyWalletHistory = async (req, res) => {
       include: [
         {
           model: TransactionType,
-          as: 'transaction_type_data', // harus sama seperti di model
+          as: 'transaction_type_data', 
           attributes: ['id', 'name']
         }
       ],
@@ -247,7 +147,7 @@ exports.getAdminWalletHistory = async (req, res) => {
       include: [
         {
           model: TransactionType,
-          as: 'transaction_type_data', // HARUS SAMA dengan di model
+          as: 'transaction_type_data', 
           attributes: ['id', 'name']
         }
       ],
@@ -273,57 +173,7 @@ exports.getAdminWalletHistory = async (req, res) => {
 };
 
 
-// belum digunakan ygy
-exports.getMyDailyWallets = async (req, res) => {
-  try {
-    const customerId = req.customer.id;
-
-    // Ambil semua wallet user
-    const wallets = await Wallet.findAll({
-      where: { customer_id: customerId },
-      attributes: ['id', 'wallet_type'],
-      raw: true,
-    });
-
-    const walletIds = wallets.map(w => w.id);
-    const walletMap = Object.fromEntries(wallets.map(w => [w.id, w.wallet_type]));
-
-    const { fromDate, toDate, walletId } = req.query;
-
-    const where = {
-      username: req.customer.username,
-    };
-
-    if (walletId) {
-      where.wallet_id = walletId;
-    } else if (walletIds.length > 0) {
-      where.wallet_id = { [Op.in]: walletIds };
-    }
-
-    if (fromDate && toDate) {
-      where.daily_date = {
-        [Op.between]: [fromDate, toDate]
-      };
-    }
-
-    const result = await UserDailyWallet.findAll({
-      where,
-      order: [['daily_date', 'DESC']],
-      raw: true,
-    });
-
-    const data = result.map(row => ({
-      ...row,
-      wallet_type: walletMap[row.wallet_id] || null
-    }));
-
-    res.json({ rows: data });
-  } catch (err) {
-    console.error('Error getMyDailyWallets:', err);
-    res.status(500).json({ message: 'Gagal mengambil data saldo harian' });
-  }
-};
-
+// Halaman history pages
 exports.getWalletUsernames = async (req, res) => {
   try {
     const { fromDate, toDate, username } = req.query;
@@ -338,7 +188,7 @@ exports.getWalletUsernames = async (req, res) => {
     }
 
     if (username) {
-      where.username = username; // exact match tanpa LOWER
+      where.username = username; 
     }
 
     const usernames = await WalletHistory.findAll({
@@ -357,4 +207,15 @@ exports.getWalletUsernames = async (req, res) => {
   }
 };
 
+// exports.getDailyBalance = async (req, res) => {
+//   try {
+//     const { fromDate, toDate } = req.query;
+//     const userId = req.customer.id;
 
+//     const balances = await getDailyBalance(userId, fromDate, toDate);
+
+//     res.json(balances);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };

@@ -81,11 +81,23 @@
             <!-- Tanggal -->
             <td class="px-4 py-2 border">{{ formatDate(o.order_date) }}</td>
 
-            <!-- Pembayaran -->
-            <td class="px-4 py-2 border">{{ o.payment_method || '-' }}</td>
+<!-- Pembayaran -->
+<td class="px-4 py-2 border">
+  <span
+    class="px-2 py-1 text-xs rounded"
+    :class="o.payment_method === 'Saldo Customer'
+      ? 'bg-blue-100 text-blue-700'
+      : 'bg-gray-100 text-gray-700'"
+  >
+    {{ o.payment_method || '-' }}
+  </span>
+</td>
 
-            <!-- Total -->
-            <td class="px-4 py-2 border">Rp {{ formatCurrency(o.total_amount) }}</td>
+<!-- Total -->
+<td class="px-4 py-2 border">
+  Rp {{ formatCurrency(o.total_amount) }}
+</td>
+
 
             <!-- Remarks -->
             <td class="px-4 py-2 border text-xs">{{ o.remarks || '-' }}</td>
@@ -136,6 +148,7 @@ const fetchOrders = async () => {
   error.value = ''
   try {
     const { data } = await api.get(API_ENDPOINTS.orders.list)
+    console.log('Orders API:', data)
     orders.value = filters.value.status
       ? data.filter(o => (o.status || 'Unpaid') === filters.value.status)
       : data
@@ -146,6 +159,7 @@ const fetchOrders = async () => {
     loading.value = false
   }
 }
+
 
 // Reset filter
 const resetFilters = () => {
