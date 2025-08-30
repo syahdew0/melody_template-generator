@@ -1,7 +1,6 @@
-const { Adjust, Customer, Wallet, WalletHistory } = require('../../models');
+const { Adjust, Customer, WalletHistory } = require('../../models');
 const { Op } = require('sequelize');
 
-// Mapping transaction_type_id
 const TRANSACTION_TYPE_IDS = {
   adjust_plus: 5,
   adjust_minus: 6,
@@ -10,6 +9,11 @@ const TRANSACTION_TYPE_IDS = {
   stamp_plus: 9,
   stamp_minus: 10,
 };
+const WALLET_TYPE_IDS = {
+  saldo: 1,
+  point: 2,
+  stamp: 3,
+};
 
 module.exports = {
   async create(req, res) {
@@ -17,47 +21,32 @@ module.exports = {
       const { username, amount, category, type, remarks } = req.body;
       const adminUsername = req.user?.username || 'system';
 
-      // Validasi input
-      if (!username || amount === undefined || !category || !type) {
+      if (!username || amount === undefined || !category || !type)
         return res.status(400).json({ message: 'Data tidak lengkap' });
-      }
-
-      if (amount === 0) return res.status(400).json({ message: 'Jumlah tidak boleh nol' });
-      if (!['saldo', 'point', 'stamp'].includes(category)) {
+      if (amount === 0)
+        return res.status(400).json({ message: 'Jumlah tidak boleh nol' });
+      if (!['saldo', 'point', 'stamp'].includes(category))
         return res.status(400).json({ message: 'Category harus salah satu dari saldo, point, atau stamp' });
-      }
-      if (!['in', 'out'].includes(type)) {
+      if (!['in', 'out'].includes(type))
         return res.status(400).json({ message: 'Type harus salah satu dari in atau out' });
-      }
 
-      // Cari customer
       const customer = await Customer.findOne({ where: { username } });
       if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
 
       const adjustedAmount = type === 'out' ? -Math.abs(amount) : Math.abs(amount);
 
-      // Cari atau buat wallet sesuai category
-      let wallet = await Wallet.findOne({ where: { customer_id: customer.id, wallet_type: category } });
-      if (!wallet) {
-        wallet = await Wallet.create({
-          customer_id: customer.id,
-          username: customer.username,
-          wallet_type: category,
-          balance: 0,
-          createdon: new Date(),
-          updatedon: new Date(),
-        });
-      }
-
-      // Ambil saldo terakhir
+      // Ambil saldo terakhir dari WalletHistory
       const lastHistory = await WalletHistory.findOne({
-        where: { walletId: wallet.id },
-        order: [['created_at', 'DESC']],
-      });
-      const balanceBefore = lastHistory?.balance_after || wallet.balance || 0;
+  where: { username, wallet_type_id: WALLET_TYPE_IDS[category] },
+  order: [['created_at', 'DESC']],
+  raw: true
+});
+
+      const balanceBefore = lastHistory?.balance_after || 0;
       const finalBalance = balanceBefore + adjustedAmount;
 
-      if (finalBalance < 0) return res.status(400).json({ message: `${category} tidak cukup` });
+      if (finalBalance < 0)
+        return res.status(400).json({ message: `${category} tidak cukup` });
 
       // Buat record adjust
       const adjust = await Adjust.create({
@@ -65,7 +54,6 @@ module.exports = {
         amount: adjustedAmount,
         type,
         category,
-        walletid: wallet.id,
         remarks,
         createdby: adminUsername,
         createdon: new Date(),
@@ -73,13 +61,15 @@ module.exports = {
 
       // Tentukan transaction_type_id
       let transactionTypeId = null;
-      if (category === 'saldo') transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.adjust_plus : TRANSACTION_TYPE_IDS.adjust_minus;
-      if (category === 'point') transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.point_plus : TRANSACTION_TYPE_IDS.point_minus;
-      if (category === 'stamp') transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.stamp_plus : TRANSACTION_TYPE_IDS.stamp_minus;
+      if (category === 'saldo')
+        transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.adjust_plus : TRANSACTION_TYPE_IDS.adjust_minus;
+      if (category === 'point')
+        transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.point_plus : TRANSACTION_TYPE_IDS.point_minus;
+      if (category === 'stamp')
+        transactionTypeId = adjustedAmount > 0 ? TRANSACTION_TYPE_IDS.stamp_plus : TRANSACTION_TYPE_IDS.stamp_minus;
 
-      // Simpan WalletHistory
+      // Simpan ke WalletHistory
       await WalletHistory.create({
-        walletId: wallet.id,
         username,
         transaction_type_id: transactionTypeId,
         source_type: 'adjust',
@@ -92,13 +82,10 @@ module.exports = {
         status: 'success',
         createdby: adminUsername,
         created_at: new Date(),
-        wallet_type: category,
+        wallet_type_id: WALLET_TYPE_IDS[category],
       });
 
-      // Update balance di Wallet
-      await Wallet.update({ balance: finalBalance, updatedon: new Date() }, { where: { id: wallet.id } });
-
-      // Update point/stamp di Customer jika perlu
+      // Update point/stamp di Customer
       if (category === 'point') await customer.update({ point: finalBalance });
       if (category === 'stamp') await customer.update({ stamp: finalBalance });
 
@@ -115,13 +102,9 @@ module.exports = {
 
       const whereClause = {};
       if (username) whereClause.username = username;
-
       if (fromDate && toDate) {
         whereClause.createdon = {
-          [Op.between]: [
-            new Date(fromDate),
-            new Date(new Date(toDate).setHours(23, 59, 59, 999)),
-          ],
+          [Op.between]: [new Date(fromDate), new Date(new Date(toDate).setHours(23, 59, 59, 999))],
         };
       } else if (fromDate) {
         whereClause.createdon = { [Op.gte]: new Date(fromDate) };
@@ -156,13 +139,9 @@ module.exports = {
 
       const whereClause = {};
       if (username) whereClause.username = username;
-
       if (fromDate && toDate) {
         whereClause.createdon = {
-          [Op.between]: [
-            new Date(fromDate),
-            new Date(new Date(toDate).setHours(23, 59, 59, 999)),
-          ],
+          [Op.between]: [new Date(fromDate), new Date(new Date(toDate).setHours(23, 59, 59, 999))],
         };
       } else if (fromDate) {
         whereClause.createdon = { [Op.gte]: new Date(fromDate) };

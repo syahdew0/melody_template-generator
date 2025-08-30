@@ -1,24 +1,35 @@
-const { Withdraw, Customer, Wallet, Adjust, WalletHistory, Topup, TransactionType, sequelize } = require('../../models');
+const { Withdraw, Customer, Wallet, Adjust, WalletHistory, Topup, TransactionType, WalletType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const { getWallet } = require('../../services/walletServices');
 
 exports.getMyWallet = async (req, res) => {
   try {
-    const customerId = req.customer.id;
     const username = req.customer.username;
 
-    // ambil semua wallet user
-    const wallets = await Wallet.findAll({
-      where: { customer_id: customerId },
+    // ambil semua wallet_type_id yg pernah dipakai user dari history
+    const walletTypes = await WalletHistory.findAll({
+      where: { username },
+      attributes: [
+        'wallet_type_id',
+        [sequelize.fn('MAX', sequelize.col('id')), 'last_id'] // ambil transaksi terakhir per wallet_type_id
+      ],
+      group: ['wallet_type_id'],
       raw: true,
     });
 
-    // pakai service getWallet untuk setiap walletType
-    const enrichedWallets = await Promise.all(wallets.map(w =>
-      getWallet(customerId, w.wallet_type, username)
-    ));
+    // ambil saldo per wallet_type_id
+    const enrichedWallets = [];
+    for (const w of walletTypes) {
+      const balance = await getWallet(username, w.wallet_type_id);
+      enrichedWallets.push({
+        customer_id: req.customer.id,
+        wallet_type_id: w.wallet_type_id,
+        balance,
+        balance_source: 'wallet_histories'
+      });
+    }
 
-    // tambahkan kategori dari Adjust yang belum ada wallet
+    // tambahkan kategori Adjust yg belum ada wallet_type_id
     const adjustBalances = await Adjust.findAll({
       where: { username },
       attributes: ['category', [sequelize.fn('SUM', sequelize.col('amount')), 'total']],
@@ -26,47 +37,71 @@ exports.getMyWallet = async (req, res) => {
       raw: true
     });
 
-    adjustBalances.forEach(a => {
-      if (!wallets.find(w => w.wallet_type === a.category)) {
+    for (const a of adjustBalances) {
+      let walletType = await WalletType.findOne({ where: { name: a.category } });
+      if (!walletType) continue;
+
+      if (!walletTypes.find(w => w.wallet_type_id === walletType.id)) {
         enrichedWallets.push({
-          id: null,
-          customer_id: customerId,
-          wallet_type: a.category,
+          customer_id: req.customer.id,
+          wallet_type_id: walletType.id,
           balance: parseFloat(a.total || 0),
           balance_source: 'adjusts'
         });
       }
-    });
+    }
 
     res.json({ wallets: enrichedWallets });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Gagal mengambil data wallet' });
+    res.status(500).json({ message: 'Gagal mengambil data wallet', error: err.message });
   }
 };
-
 exports.getMyTotalBalance = async (req, res) => {
   try {
-    const customerId = req.customer.id;
     const username = req.customer.username;
 
-    const wallets = await Wallet.findAll({
-      where: { customer_id: customerId },
-      attributes: ['wallet_type'],
+    // 1. Ambil semua wallet_type_id unik user dari WalletHistory
+    const walletTypes = await WalletHistory.findAll({
+      where: { username },
+      attributes: [
+        [sequelize.fn('DISTINCT', sequelize.col('wallet_type_id')), 'wallet_type_id'],
+      ],
       raw: true,
     });
 
     let totalBalance = 0;
 
-    for (const w of wallets) {
-      const wallet = await getWallet(customerId, w.wallet_type, username);
-      totalBalance += wallet.balance;
+    // 2. Ambil saldo terakhir per wallet_type_id
+    for (const w of walletTypes) {
+      const walletData = await getWallet(username, w.wallet_type_id);
+      totalBalance += walletData.balance || 0; // ambil properti balance saja
+    }
+
+    // 3. Tambahkan kategori Adjust yang belum ada di walletTypes
+    const adjustBalances = await Adjust.findAll({
+      where: { username },
+      attributes: ['category', [sequelize.fn('SUM', sequelize.col('amount')), 'total']],
+      group: ['category'],
+      raw: true
+    });
+
+    for (const a of adjustBalances) {
+      // Ambil wallet_type_id dari Adjust category
+      const walletType = await WalletType.findOne({ where: { name: a.category } });
+      if (!walletType) continue;
+
+      // Cek apakah wallet_type_id sudah ada di WalletHistory
+      if (!walletTypes.find(w => w.wallet_type_id === walletType.id)) {
+        totalBalance += parseFloat(a.total || 0);
+      }
     }
 
     return res.json({ total_balance: totalBalance });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Gagal mengambil total balance' });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Gagal mengambil total balance', error: err.message });
   }
 };
 
@@ -75,7 +110,6 @@ exports.getMyWalletHistory = async (req, res) => {
     const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
 
     const where = {};
-    if (wallet_id) where.walletId = wallet_id;
     if (username) where.username = username;
     if (transaction_type) where.transaction_type_id = transaction_type;
 
@@ -92,12 +126,12 @@ exports.getMyWalletHistory = async (req, res) => {
       include: [
         {
           model: TransactionType,
-          as: 'transaction_type_data', 
+          as: 'transaction_type_data',
           attributes: ['id', 'name']
         }
       ],
       attributes: [
-        'id', 'walletId', 'username', 'reference_id', 'wallet_type',
+        'id', 'username', 'reference_id', 'wallet_type_id',
         'transaction_type_id', 'status',
         'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
       ],
@@ -106,11 +140,34 @@ exports.getMyWalletHistory = async (req, res) => {
       limit: parseInt(limit),
     });
 
-    // Format supaya frontend mudah pakai
-    const rows = result.rows.map(r => ({
-      ...r.toJSON(),
-      transaction_type_name: r.transaction_type_data?.name || null
-    }));
+    const typeMap = {
+      1: 'topup',
+      2: 'withdraw',
+      3: 'withdraw_dibatalkan',
+      4: 'withdraw_ditolak',
+      5: 'adjust_plus',
+      6: 'adjust_minus',
+      7: 'point_plus',
+      8: 'point_minus',
+      9: 'stamp_plus',
+      10: 'stamp_minus',
+      11: 'order',
+      12: 'order_ditolak',
+      13: 'order_dibatalkan'
+    };
+
+    const rows = result.rows.map(r => {
+      const wallet_type_id = r.wallet_type_id ?? (
+        r.transaction_type_id === 7 || r.transaction_type_id === 8 ? 2 :
+        r.transaction_type_id === 9 || r.transaction_type_id === 10 ? 3 : 1
+      );
+
+      return {
+        ...r.toJSON(),
+        transaction_type: typeMap[r.transaction_type_id] || '-',
+        wallet_type_id
+      };
+    });
 
     res.json({
       count: result.count,
@@ -129,8 +186,6 @@ exports.getAdminWalletHistory = async (req, res) => {
     const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
 
     const where = {};
-
-    if (wallet_id) where.walletId = wallet_id;
     if (username) where.username = username;
     if (transaction_type) where.transaction_type_id = transaction_type;
 
@@ -147,12 +202,12 @@ exports.getAdminWalletHistory = async (req, res) => {
       include: [
         {
           model: TransactionType,
-          as: 'transaction_type_data', 
+          as: 'transaction_type_data',
           attributes: ['id', 'name']
         }
       ],
       attributes: [
-        'id', 'walletId', 'username', 'reference_id', 'wallet_type',
+        'id',  'username', 'reference_id', 'wallet_type_id',
         'transaction_type_id', 'status',
         'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
       ],
@@ -172,8 +227,6 @@ exports.getAdminWalletHistory = async (req, res) => {
   }
 };
 
-
-// Halaman history pages
 exports.getWalletUsernames = async (req, res) => {
   try {
     const { fromDate, toDate, username } = req.query;
@@ -188,7 +241,7 @@ exports.getWalletUsernames = async (req, res) => {
     }
 
     if (username) {
-      where.username = username; 
+      where.username = username;
     }
 
     const usernames = await WalletHistory.findAll({
@@ -206,6 +259,7 @@ exports.getWalletUsernames = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil username' });
   }
 };
+
 
 // exports.getDailyBalance = async (req, res) => {
 //   try {

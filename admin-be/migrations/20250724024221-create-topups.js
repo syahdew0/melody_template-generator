@@ -28,11 +28,11 @@ module.exports = {
         type: Sequelize.DECIMAL(15, 2),
         allowNull: false
       },
-      walletId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        field: 'walletid' 
-      },
+      // walletId: {
+      //   type: Sequelize.INTEGER,
+      //   allowNull: false,
+      //   field: 'walletid' 
+      // },
       reference_id: {
         type: Sequelize.STRING,
         allowNull: true

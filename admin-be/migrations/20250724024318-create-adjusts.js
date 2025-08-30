@@ -26,10 +26,10 @@ module.exports = {
         type: Sequelize.ENUM('saldo', 'point', 'stamp'),
         allowNull: false,
       },
-      walletid: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
+      // walletid: {
+      //   type: Sequelize.STRING,
+      //   allowNull: true,
+      // },
       reference_id: {
         type: Sequelize.STRING,
         allowNull: true,

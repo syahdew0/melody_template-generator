@@ -1,4 +1,4 @@
-const { Topup, Customer, Wallet, Adjust, WalletSummary, WalletHistory,CompanyBank, TransactionType, sequelize } = require('../../models');
+const { Topup, Customer, Adjust, WalletSummary, WalletHistory,CompanyBank, TransactionType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -12,51 +12,34 @@ async create(req, res) {
       return res.status(400).json({ message: 'Nominal harus lebih dari 0' });
     }
 
-      if (remarks && remarks.length > 255) {
+    if (remarks && remarks.length > 255) {
       return res.status(400).json({ message: 'Keterangan terlalu panjang (maks 255 karakter)' });
     }
+
+    // cek pending
     const pending = await Topup.findOne({
       where: { username: userId, status: 'pending' }
     });
-
     if (pending) {
       return res.status(400).json({ message: 'Masih ada topup pending' });
     }
 
-    const wallet = await Wallet.findOne({
-      where: {
-        customer_id: customer.id,
-        wallet_type: 'saldo' 
-      }
-    });
-
-    if (!wallet) {
-      return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-    }
-
+    // langsung buat topup (tidak perlu Wallet)
     const data = await Topup.create({
       username: userId,
       amount: nominal,
       status: 'pending',
-      walletid: wallet.id,
       createdby: userId,
       createdon: new Date(),
       date: new Date(),
       customer_id: customer.id,
       remarks: remarks || '',
-      bank_id: bank_id
-      // bank_name: bank.bank_name, 
-      // account_number: bank.account_number,
-      // account_name: bank.account_name 
+      bank_id
     });
 
     res.json({ message: 'Topup diajukan', data });
   } catch (error) {
     console.error('Topup create error:', error);
-    if (error.name === 'SequelizeValidationError') {
-      console.error('Validation Errors:', error.errors);
-    }
-
     res.status(500).json({ message: 'Gagal membuat topup', error });
   }
 },
@@ -130,29 +113,29 @@ async updateStatus(req, res) {
       return res.status(400).json({ message: 'Status tidak valid' });
     }
 
-    // Jika status jadi success
+    // Ambil wallet_type_id saldo dari DB
+    const walletType = await sequelize.models.WalletType.findOne({ where: { name: 'saldo' } });
+    if (!walletType) throw new Error('Wallet type saldo tidak ditemukan');
+    const walletTypeId = walletType.id;
+
+    // Ambil saldo terakhir berdasarkan username
+    const latestHistory = await WalletHistory.findOne({
+      where: { username: data.username, wallet_type_id: walletTypeId },
+      order: [['created_at', 'DESC']],
+      transaction: t,
+    });
+
+    const previousBalance = latestHistory?.balance_after || 0;
+    let newBalance = previousBalance;
+
     if (status === 'success' && data.status !== 'success') {
-      const wallet = await Wallet.findByPk(data.walletid, { transaction: t });
-      if (!wallet) {
-        await t.rollback();
-        return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-      }
-
-      const latestHistory = await WalletHistory.findOne({
-        where: { walletid: wallet.id },
-        order: [['created_at', 'DESC']],
-        transaction: t,
-      });
-
-      const previousBalance = latestHistory?.balance_after || 0;
-      const newBalance = previousBalance + parseFloat(data.amount);
+      newBalance += parseFloat(data.amount);
 
       await WalletHistory.create({
-        walletId: wallet.id,
         username: data.username,
+        wallet_type_id: walletTypeId,
         type: 'in',
-      transaction_type_id: 1,
-        // transaction_type: 'topup',
+        transaction_type_id: 1, // topup
         amount: data.amount,
         reference_id: data.id,
         source_type: 'topup',
@@ -160,58 +143,39 @@ async updateStatus(req, res) {
         balance_before: previousBalance,
         balance_after: newBalance,
         remarks: 'Topup berhasil',
+        status: 'success',
         created_at: new Date(),
       }, { transaction: t });
 
-      await Wallet.update(
-        { balance: newBalance },
-        { where: { id: wallet.id }, transaction: t }
-      );
+     await WalletSummary.create({
+  summary_date: new Date(),
+  username: data.username,
+  transaction_type_id: 1,
+  amount: data.amount
+}, { transaction: t });
 
-      await WalletSummary.create({
-        summary_date: new Date(),
-        wallet_id: data.walletid,
-        username: data.username,
-        transaction_type_id: 1,
-        amount: data.amount
-      }, { transaction: t });
     }
 
-    // Jika status jadi failed
-  if (status === 'failed' && data.status !== 'failed') {
-  const wallet = await Wallet.findByPk(data.walletid, { transaction: t });
-  if (!wallet) {
-    await t.rollback();
-    return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-  }
-
-  const latestHistory = await WalletHistory.findOne({
-    where: { walletid: wallet.id },
-    order: [['created_at', 'DESC']],
-    transaction: t,
-  });
-
-  const previousBalance = latestHistory?.balance_after || 0;
-
+if (status === 'failed' && data.status !== 'failed') {
   await WalletHistory.create({
-    walletId: wallet.id,
     username: data.username,
-    type: 'out', // keluar supaya mudah dibedakan
-    transaction_type_id: 1,
-    transaction_type: 'topup',
-    amount: -Math.abs(data.amount), // NEGATIF agar di frontend otomatis merah & minus
+    wallet_type_id: walletTypeId,
+    type: 'out',               // keluar saldo
+    transaction_type_id: 1,    // topup
+    amount: -parseFloat(data.amount), // catat nominal sebagai minus
     reference_id: data.id,
     source_type: 'topup',
     source_id: data.id,
     balance_before: previousBalance,
-    balance_after: previousBalance,
-    status: 'failed', // penting supaya frontend bisa baca
+    balance_after: previousBalance,  // saldo tidak berubah
     remarks: 'Topup gagal',
+    status: 'failed',
     created_at: new Date(),
   }, { transaction: t });
 }
 
 
+    // Update status topup
     data.status = status;
     data.updatedon = new Date();
     data.updatedby = req.user?.username || 'admin';
@@ -219,12 +183,14 @@ async updateStatus(req, res) {
 
     await t.commit();
     res.json({ message: 'Status topup berhasil diperbarui', data });
+
   } catch (error) {
     await t.rollback();
     console.error('Topup update error:', error);
     res.status(500).json({ message: 'Gagal update status topup', error });
   }
 },
+
 async getTopupList(req, res) {
   try {
     const { fromDate, toDate, status } = req.query;
@@ -315,9 +281,14 @@ async bulkUpdateStatus(req, res) {
       return res.status(400).json({ message: 'Status tidak valid' });
     }
 
-    // Ambil semua topup yang diminta dalam transaction
+    // Ambil wallet_type_id saldo dari DB
+    const walletType = await sequelize.models.WalletType.findOne({ where: { name: 'saldo' } });
+    if (!walletType) throw new Error('Wallet type saldo tidak ditemukan');
+    const walletTypeId = walletType.id;
+
+    // Ambil semua topup pending
     const topups = await Topup.findAll({
-      where: { id: ids, status: 'pending' }, // update hanya yg pending
+      where: { id: ids, status: 'pending' },
       transaction: t
     });
 
@@ -326,59 +297,43 @@ async bulkUpdateStatus(req, res) {
       return res.status(404).json({ message: 'Tidak ada topup pending ditemukan untuk ID tersebut' });
     }
 
-    // Loop update tiap topup
     for (const topup of topups) {
+      const latestHistory = await WalletHistory.findOne({
+        where: { customer_id: topup.customer_id, wallet_type_id: walletTypeId },
+        order: [['created_at', 'DESC']],
+        transaction: t,
+      });
+
+      const previousBalance = latestHistory?.balance_after || 0;
+      const newBalance = status === 'success' ? previousBalance + parseFloat(topup.amount) : previousBalance;
+
+      await WalletHistory.create({
+        customer_id: topup.customer_id,
+        username: topup.username,
+        wallet_type_id: walletTypeId,
+        type: status === 'success' ? 'in' : 'out',
+        transaction_type_id: 1,
+        amount: status === 'success' ? topup.amount : 0,
+        reference_id: topup.id,
+        source_type: 'topup',
+        source_id: topup.id,
+        balance_before: previousBalance,
+        balance_after: newBalance,
+        remarks: status === 'success' ? 'Topup berhasil' : 'Topup gagal',
+        status,
+        created_at: new Date(),
+      }, { transaction: t });
+
       if (status === 'success') {
-        const wallet = await Wallet.findByPk(topup.walletid, { transaction: t });
-        if (!wallet) {
-          await t.rollback();
-          return res.status(404).json({ message: 'Wallet tidak ditemukan' });
-        }
-
-        // Ambil saldo terakhir dari WalletHistory
-        const latestHistory = await WalletHistory.findOne({
-          where: { walletid: wallet.id },
-          order: [['created_at', 'DESC']],
-          transaction: t,
-        });
-
-        const previousBalance = latestHistory?.balance_after || 0;
-        const newBalance = previousBalance + parseFloat(topup.amount);
-
-        // Buat WalletHistory baru
-        await WalletHistory.create({
-          walletId: wallet.id,
-          username: topup.username,
-          type: 'in',
-         transaction_type_id: 1,
-          transaction_type: 'topup',
-          amount: topup.amount,
-          reference_id: topup.id,
-          source_type: 'topup',
-          source_id: topup.id,
-          balance_before: previousBalance,
-          balance_after: newBalance,
-          remarks: 'Topup berhasil',
-          created_at: new Date(),
-        }, { transaction: t });
-
-        // Update balance wallet
-        await Wallet.update(
-          { balance: newBalance },
-          { where: { id: wallet.id }, transaction: t }
-        );
-
-        // Insert ke WalletSummary
         await WalletSummary.create({
           summary_date: new Date(),
-          wallet_id: topup.walletid,
+          customer_id: topup.customer_id,
           username: topup.username,
           transaction_type_id: 1,
           amount: topup.amount
         }, { transaction: t });
       }
 
-      // Update status topup
       topup.status = status;
       topup.updatedon = new Date();
       topup.updatedby = req.user?.username || 'admin';
@@ -387,11 +342,13 @@ async bulkUpdateStatus(req, res) {
 
     await t.commit();
     res.json({ message: `Status topup berhasil diperbarui menjadi ${status}` });
+
   } catch (error) {
     await t.rollback();
     console.error('Bulk update status topup error:', error);
     res.status(500).json({ message: 'Gagal update status topup massal', error });
   }
 }
+
 
 };

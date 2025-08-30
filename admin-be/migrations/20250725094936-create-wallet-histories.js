@@ -8,10 +8,10 @@ module.exports = {
         autoIncrement: true,
         primaryKey: true,
       },
-      walletId: {
-        type: Sequelize.INTEGER.UNSIGNED,
-        allowNull: false,
-      },
+      // walletId: {
+      //   type: Sequelize.INTEGER.UNSIGNED,
+      //   allowNull: false,
+      // },
       username: {
         type: Sequelize.STRING(50),
         allowNull: false,
@@ -20,10 +20,9 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      wallet_type: {
-        type: Sequelize.ENUM('saldo', 'point', 'stamp'),
+      wallet_type_id: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 'saldo',
       },
       reference_id: {
         type: Sequelize.INTEGER,

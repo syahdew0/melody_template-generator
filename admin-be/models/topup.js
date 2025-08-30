@@ -19,10 +19,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false
     },
-    walletid: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
+    // walletid: {
+    //   type: DataTypes.INTEGER,
+    //   allowNull: false
+    // },
     reference_id: {
       type: DataTypes.STRING,
       allowNull: true

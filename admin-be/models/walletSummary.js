@@ -5,10 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    wallet_id: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-    },
+    // wallet_id: {
+    //   type: DataTypes.BIGINT,
+    //   allowNull: false,
+    // },
     username: {
       type: DataTypes.STRING(50),
       allowNull: false,

@@ -1,68 +1,112 @@
-// services/walletService.js
-const { Wallet, WalletHistory, Adjust, sequelize } = require('../models');
+const { WalletHistory, StartingBalance, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
+//Ambil saldo berdasarkan username & wallet_type_id
+async function getWallet(username, walletTypeId) {
+  const totalSuccess = await WalletHistory.sum('amount', {
+    where: {
+      username,
+      wallet_type_id: walletTypeId,
+      status: 'success',
+    },
+  }) || 0;
 
-async function getWallet(customerId, walletType, username = null) {
-  // cari wallet utama
-  const wallet = await Wallet.findOne({
-    where: { customer_id: customerId, wallet_type: walletType },
-  });
-
-  // hitung total dari history sukses 
-const totalHistory = await WalletHistory.sum('amount', {
-  where: {
-    walletId: wallet?.id,
-    [Op.or]: [
-      { status: 'success' }, // semua transaksi sukses
-      { status: 'pending', transaction_type_id: 2 } // hanya pending withdraw 
-    ]
-  }
-}) || 0;
+  const totalPendingWithdraw = await WalletHistory.sum('amount', {
+    where: {
+      username,
+      wallet_type_id: walletTypeId,
+      status: 'pending',
+      amount: { [Op.lt]: 0 },
+    },
+  }) || 0;
 
   return {
-    id: wallet?.id || null,
-    customer_id: customerId,
-    wallet_type: walletType,
-    balance: totalHistory,
-    balance_source: 'history_sum'
+    username,
+    wallet_type_id: walletTypeId,
+    balance: Number(totalSuccess + totalPendingWithdraw),
+    balance_source: 'wallet_histories'
   };
 }
 
-//  Update saldo user dan catat ke WalletHistory
-async function updateWalletBalance({ customerId, walletType, username, amount, transactionTypeId, referenceId, remarks, status = 'success' }) {
-  // cari atau buat wallet
-  let wallet = await Wallet.findOne({ where: { customer_id: customerId, wallet_type: walletType } });
-  if (!wallet) {
-    wallet = await Wallet.create({ customer_id: customerId, wallet_type: walletType, balance: 0, username });
-  }
+//Tambah / kurangi saldo user
+async function updateWalletBalance({
+  username,
+  walletTypeId,
+  amount,
+  transactionTypeId,
+  referenceId = null,
+  remarks = null,
+  status = 'success',
+  createdBy = null
+}) {
+  const lastHistory = await WalletHistory.findOne({
+    where: { username, wallet_type_id: walletTypeId },
+    order: [['created_at', 'DESC']],
+    raw: true
+  });
 
-  const balanceBefore = wallet.balance;
-let balanceAfter = balanceBefore + amount;
-if (balanceAfter < 0) throw new Error('Saldo tidak cukup');
+  const balanceBefore = lastHistory?.balance_after || 0;
+  const balanceAfter = balanceBefore + amount;
 
-// update saldo walaupun status pending
-wallet.balance = balanceAfter;
+  if (balanceAfter < 0) throw new Error('Saldo tidak cukup');
 
-await sequelize.transaction(async (t) => {
-  await wallet.save({ transaction: t });
-
-  await WalletHistory.create({
-    walletId: wallet.id,
+  const history = await WalletHistory.create({
     username,
-    wallet_type: wallet.wallet_type,
+    wallet_type_id: walletTypeId,
     transaction_type_id: transactionTypeId,
     reference_id: referenceId,
     balance_before: balanceBefore,
     amount,
     balance_after: balanceAfter,
     remarks,
-    status
-  }, { transaction: t });
-});
+    status,
+    createdby: createdBy,
+    created_at: new Date()
+  });
 
-  return wallet;
+  return history;
+}
+
+async function startingBalance(username, walletTypeId) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  // Ambil saldo terakhir dari WalletHistory
+  const lastHistory = await WalletHistory.findOne({
+    where: { username, wallet_type_id: walletTypeId },
+    order: [['created_at', 'DESC']],
+    raw: true
+  });
+
+  const balance = lastHistory?.balance_after || 0;
+
+  // Cek dulu apakah sudah ada starting balance hari ini
+  const [starting, created] = await StartingBalance.findOrCreate({
+    where: {
+      username,
+      wallet_type_id: walletTypeId,
+      date: {
+        [Op.between]: [todayStart, todayEnd]
+      }
+    },
+    defaults: {
+      balance,
+      date: new Date()
+    }
+  });
+
+  // kalo udah ada, update balance
+  if (!created) {
+    starting.balance = balance;
+    starting.date = new Date();
+    await starting.save();
+  }
+
+  return starting;
 }
 
 
-module.exports = { getWallet, updateWalletBalance };
+module.exports = { getWallet, updateWalletBalance, startingBalance };

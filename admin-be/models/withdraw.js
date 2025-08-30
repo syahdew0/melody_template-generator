@@ -18,10 +18,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false
     },
-   walletid: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
+  //  walletid: {
+  //     type: DataTypes.INTEGER,
+  //     allowNull: false
+  //   },
     reference_id: {
       type: DataTypes.STRING,
       allowNull: true
@@ -51,18 +51,19 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
-    Withdraw.associate = function (models) {
-    Withdraw.belongsTo(models.Customer, {
-      foreignKey: 'username',
-      targetKey: 'username',
-      as: 'customer'
-    });
+  Withdraw.associate = function (models) {
+  Withdraw.belongsTo(models.Customer, {
+    foreignKey: 'username',
+    targetKey: 'username',
+    as: 'customer'
+  });
 
-    Withdraw.belongsTo(models.WalletHistory, {
-      foreignKey: 'walletid',
-      as: 'wallethistory'
-    });
-  };
+  Withdraw.hasMany(models.WalletHistory, {
+    foreignKey: 'reference_id', // ini menunjuk ke id withdraw
+    sourceKey: 'id',
+    as: 'wallethistories'
+  });
+};
 
 
   return Withdraw;
