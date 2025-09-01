@@ -462,6 +462,14 @@
         Daftar Customer
       </router-link>
 
+        <router-link
+        to="/admin/komentar/komentarlist"
+        class="block py-2 px-3 rounded hover:bg-gray-700"
+        active-class="bg-gray-700 font-semibold"
+      >
+        Komentar
+      </router-link>
+
       </ul>
     </nav>
 

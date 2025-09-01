@@ -6,104 +6,68 @@ exports.getMyWallet = async (req, res) => {
   try {
     const username = req.customer.username;
 
-    // ambil semua wallet_type_id yg pernah dipakai user dari history
+    // Ambil semua wallet_type_id unik user dari WalletHistory
     const walletTypes = await WalletHistory.findAll({
       where: { username },
-      attributes: [
-        'wallet_type_id',
-        [sequelize.fn('MAX', sequelize.col('id')), 'last_id'] // ambil transaksi terakhir per wallet_type_id
-      ],
-      group: ['wallet_type_id'],
-      raw: true,
-    });
-
-    // ambil saldo per wallet_type_id
-    const enrichedWallets = [];
-    for (const w of walletTypes) {
-      const balance = await getWallet(username, w.wallet_type_id);
-      enrichedWallets.push({
-        customer_id: req.customer.id,
-        wallet_type_id: w.wallet_type_id,
-        balance,
-        balance_source: 'wallet_histories'
-      });
-    }
-
-    // tambahkan kategori Adjust yg belum ada wallet_type_id
-    const adjustBalances = await Adjust.findAll({
-      where: { username },
-      attributes: ['category', [sequelize.fn('SUM', sequelize.col('amount')), 'total']],
-      group: ['category'],
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('wallet_type_id')), 'wallet_type_id']],
       raw: true
     });
 
-    for (const a of adjustBalances) {
-      let walletType = await WalletType.findOne({ where: { name: a.category } });
-      if (!walletType) continue;
-
-      if (!walletTypes.find(w => w.wallet_type_id === walletType.id)) {
-        enrichedWallets.push({
-          customer_id: req.customer.id,
-          wallet_type_id: walletType.id,
-          balance: parseFloat(a.total || 0),
-          balance_source: 'adjusts'
-        });
-      }
+    const wallets = [];
+    for (const w of walletTypes) {
+      const balance = await getWallet(username, w.wallet_type_id);
+      wallets.push({ wallet_type_id: w.wallet_type_id, balance });
     }
 
-    res.json({ wallets: enrichedWallets });
+    res.json({ wallets });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Gagal mengambil data wallet', error: err.message });
+    res.status(500).json({ message: 'Gagal mengambil wallet', error: err.message });
   }
 };
 exports.getMyTotalBalance = async (req, res) => {
   try {
     const username = req.customer.username;
 
-    // 1. Ambil semua wallet_type_id unik user dari WalletHistory
+    // Semua wallet_type user
     const walletTypes = await WalletHistory.findAll({
       where: { username },
-      attributes: [
-        [sequelize.fn('DISTINCT', sequelize.col('wallet_type_id')), 'wallet_type_id'],
-      ],
-      raw: true,
+      attributes: [[ 'wallet_type_id', 'wallet_type_id' ]],
+      group: ['wallet_type_id'],
+      raw: true
     });
 
     let totalBalance = 0;
 
-    // 2. Ambil saldo terakhir per wallet_type_id
     for (const w of walletTypes) {
-      const walletData = await getWallet(username, w.wallet_type_id);
-      totalBalance += walletData.balance || 0; // ambil properti balance saja
+      totalBalance += await getWallet(username, w.wallet_type_id);
     }
 
-    // 3. Tambahkan kategori Adjust yang belum ada di walletTypes
-    const adjustBalances = await Adjust.findAll({
+    // Tambahkan Adjust kategori yang belum ada
+    const adjustTotals = await Adjust.findAll({
       where: { username },
       attributes: ['category', [sequelize.fn('SUM', sequelize.col('amount')), 'total']],
       group: ['category'],
       raw: true
     });
 
-    for (const a of adjustBalances) {
-      // Ambil wallet_type_id dari Adjust category
+    for (const a of adjustTotals) {
       const walletType = await WalletType.findOne({ where: { name: a.category } });
       if (!walletType) continue;
 
-      // Cek apakah wallet_type_id sudah ada di WalletHistory
       if (!walletTypes.find(w => w.wallet_type_id === walletType.id)) {
         totalBalance += parseFloat(a.total || 0);
       }
     }
 
-    return res.json({ total_balance: totalBalance });
-
+    res.json({ total_balance: totalBalance });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: 'Gagal mengambil total balance', error: err.message });
+    res.status(500).json({ message: 'Gagal mengambil total balance', error: err.message });
   }
 };
+
 
 exports.getMyWalletHistory = async (req, res) => {
   try {

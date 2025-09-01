@@ -56,6 +56,10 @@ export const API_ENDPOINTS = {
   UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/apis/admin/posts/slug/${slug}`,
   categories: `${API_URL}/apis/categories`, 
 
+  getAllComments: `${API_URL}/apis/comments`, // list semua komentar, bisa filter type (post/product/blog)
+  getCommentById: (id) => `${API_URL}/apis/comments/${id}`, // detail komentar
+  updateCommentStatus: (id) => `${API_URL}/apis/comments/${id}/status`, // approve/reject komentar
+  commentAutoApprove: `${API_URL}/apis/comments/settings/auto-approve`,
   // posts: `${API_URL}/api/admin/posts`,
   // postBySlug: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
   // UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,

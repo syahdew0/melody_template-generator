@@ -150,6 +150,12 @@ app.use('/customer/orders', require('./routes/customer/orderRoutes'));
 // server.js
 app.use('/api/admin/orders', require('./routes/checkoutadmin/orderRoutes'));
 
+// Customer
+app.use('/apis/comments', require('./routes/customer/commentRoutes'));
+
+// Admin (butuh auth)
+app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
+
 
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));

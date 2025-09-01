@@ -86,6 +86,9 @@ const routes = [
 
     { path: '/admin/orders', name: 'OrderHistory', component: () => import('@/views/checkout/OrderHistory.vue') },
   { path: '/admin/orders/:id', name: 'OrderDetail', component: () => import('@/views/checkout/OrderDetail.vue') },
+
+    { path: '/admin/komentar/komentarlist', name: 'KomentarList', component: () => import('@/views/komentar/KomentarList.vue') }, 
+    { path: '/admin/komentar/:id', name: 'KomentarDetail', component: () => import('@/views/komentar/KomentarDetail.vue') },
   
 ]
 

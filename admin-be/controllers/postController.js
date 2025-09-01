@@ -160,40 +160,37 @@ exports.create = async (req, res) => {
 // GET ALL 
 exports.getAll = async (req, res) => {
   try {
-    const slug = req.query.slug || null;
-    const type = req.query.type || null;
+    const slug = req.query.slug || null
+    const type = req.query.type || null
 
-    const where = {
-      status: {
-        [Op.in]: ['published',]
-      }
-    };
-    if (type) where.type = type;
-    if (slug) where.slug = slug;
+    const where = { status: { [Op.in]: ['published'] } }
+    if (type) where.type = type
+    if (slug) where.slug = slug
 
-    // Jika slug & type ada → return satu data (tanpa pagination)
-    if (slug && type) {
-      const page = await Post.findOne({
-        where,
-        include: [
-          { model: PostMeta, as: 'meta' },
-          {
-            model: PostCategory,
-            as: 'post_categories',
-            include: [{ model: Category, as: 'category' }]
-          },
-          { model: ProductDetail, as: 'product_detail' }
-        ]
-      });
+  // Jika hanya cari 1 data by slug
+if (slug) {
+  const page = await Post.findOne({
+    where,
+    include: [
+      { model: PostMeta, as: 'meta' },
+      {
+        model: PostCategory,
+        as: 'post_categories',
+        include: [{ model: Category, as: 'category' }]
+      },
+      { model: ProductDetail, as: 'product_detail' }
+    ]
+  })
 
-      if (!page) return res.status(404).json({ message: 'Page not found' });
-      return res.json({ data: [page], total: 1 });
-    }
+  if (!page) return res.status(404).json({ message: 'post not found' })
+  return res.json({ data: [page], total: 1 })
+}
 
-    // Pagination default
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const offset = (page - 1) * limit
 
     const include = [
       { model: PostMeta, as: 'meta' },
@@ -204,19 +201,35 @@ exports.getAll = async (req, res) => {
         required: false
       },
       { model: ProductDetail, as: 'product_detail' }
-    ];
+    ]
 
     const { count, rows } = await Post.findAndCountAll({
-      where, offset, limit, order: [['created_at', 'DESC']], include,
-     distinct: true
-    });
+      where,
+      include,
+      offset,
+      limit,
+      distinct: true,
+      order: [['created_at', 'DESC']]
+    })
 
-    return res.json({ data: rows, total: count });
+    let filtered = rows
+
+    // Hanya filter post/blog kalau type bukan "product"
+    if (!type || type === 'post') {
+      filtered = rows.filter(p =>
+        p.type === 'post' ||
+        p.post_categories?.some(pc =>
+          ['post', 'blog'].includes(pc.category?.slug)
+        )
+      )
+    }
+
+    res.json({ data: filtered, total: filtered.length })
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
+    console.error(err)
+    res.status(500).json({ message: err.message })
   }
-};
+}
 
 // GET BY ID
 exports.getById = async (req, res) => {
@@ -346,6 +359,7 @@ exports.getBySlug = async (req, res) => {
   let type = 'post'; // default
   if (req.originalUrl.includes('/page/')) type = 'page';
   if (req.originalUrl.includes('/post/')) type = 'post';
+  if (req.originalUrl.includes('/product')) type = 'product';
 
   try {
     const post = await Post.findOne({
