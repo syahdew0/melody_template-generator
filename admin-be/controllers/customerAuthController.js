@@ -1,4 +1,4 @@
-const { Customer, Wallet } = require('../models');
+const { Customer, WalletHistory} = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
@@ -81,15 +81,9 @@ exports.me = async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.customer.id, {
       attributes: [
-        'id',
-        'username',
-        'email',
-        'no_hp',
-        'bank',
-        'no_rekening',
-        'nama_rekening',
-        'email_verified',
-        'email_pending'
+        'id', 'username', 'email', 'no_hp',
+        'bank', 'no_rekening', 'nama_rekening',
+        'email_verified', 'email_pending'
       ]
     });
 
@@ -97,8 +91,19 @@ exports.me = async (req, res) => {
       return res.status(404).json({ message: 'Customer tidak ditemukan' });
     }
 
-    const wallet = await Wallet.findOne({
-      where: { customer_id: req.customer.id }
+    // Ambil semua wallet histories untuk customer ini
+    const histories = await WalletHistory.findAll({
+      where: { username: customer.username, status: 'success' }
+    });
+
+    // Hitung saldo
+    let balance = 0;
+    histories.forEach(h => {
+      if (h.transaction_type_id === 1 || h.transaction_type_id === 3) { // misal 1=topup,3=adjust_in
+        balance += h.amount;
+      } else if (h.transaction_type_id === 2 || h.transaction_type_id === 4) { // misal 2=withdraw,4=adjust_out
+        balance -= h.amount;
+      }
     });
 
     let statusEmail;
@@ -118,7 +123,7 @@ exports.me = async (req, res) => {
       bank: customer.bank,
       no_rekening: customer.no_rekening,
       nama_rekening: customer.nama_rekening,
-      balance: wallet?.balance || 0,
+      balance, // pakai hasil hitung dari histories
       email_verified: customer.email_verified,
       status_email: statusEmail
     });
@@ -128,7 +133,6 @@ exports.me = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data customer' });
   }
 };
-
 
 exports.updateProfile = async (req, res) => {
   try {

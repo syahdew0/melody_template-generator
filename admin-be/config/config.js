@@ -8,6 +8,11 @@ module.exports = {
     host: process.env.DB_HOST || '127.0.0.1',
     dialect: 'mysql',
     logging: false,
+     timezone: '+07:00', 
+    dialectOptions: {  
+      dateStrings: true, 
+      typeCast: true    
+    }
   },
   test: {
     username: process.env.DB_USER || 'root',
@@ -31,5 +36,5 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: 'mysql',
     logging: false
-  }
+  },
 }; 

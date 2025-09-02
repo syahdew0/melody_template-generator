@@ -3,7 +3,6 @@ const { Op } = require('sequelize');
 
 // Ambil saldo terbaru
 async function getWallet(username, walletTypeId) {
-  // Ambil starting balance terakhir (opsional)
   const starting = await StartingBalance.findOne({
     where: { username, wallet_type_id: walletTypeId },
     order: [['date', 'DESC']],
@@ -13,18 +12,16 @@ async function getWallet(username, walletTypeId) {
   const startingBalance = starting?.balance || 0;
   const startingDate = starting?.date || new Date(0);
 
-  // Sum semua transaksi setelah starting balance terakhir
+  // Sum semua transaksi, termasuk failed/canceled
   const totalUpdate = await WalletHistory.sum('amount', {
     where: {
-      username ,
+      username,
       wallet_type_id: walletTypeId,
       created_at: { [Op.gt]: startingDate } // semua transaksi setelah starting
     }
   }) || 0;
 
-  const finalBalance = parseFloat(startingBalance)  + parseFloat(totalUpdate) ;
-
-  return finalBalance; 
+  return parseFloat(startingBalance) + parseFloat(totalUpdate);
 }
 
 // Update atau buat starting balance 

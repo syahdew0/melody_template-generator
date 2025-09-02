@@ -89,6 +89,10 @@ const routes = [
 
     { path: '/admin/komentar/komentarlist', name: 'KomentarList', component: () => import('@/views/komentar/KomentarList.vue') }, 
     { path: '/admin/komentar/:id', name: 'KomentarDetail', component: () => import('@/views/komentar/KomentarDetail.vue') },
+
+      { path: '/RolePage', name: 'RolePage', component: () => import('@/views/role/RolePage.vue') },
+       { path: '/CreateRolePage', name: 'CreateRolePage', component: () => import('@/views/role/RoleBaru.vue') },
+       { path: '/roles/edit/:id', name: 'EditRole', component: () => import('@/views/role/RoleEdit.vue') },
   
 ]
 

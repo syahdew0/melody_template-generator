@@ -307,6 +307,49 @@
         </transition>
       </li>
 
+      <!-- Role -->
+<li class="relative">
+  <div
+    @click.stop="toggleSubDropdown('role')"
+    class="dropdown-btn flex items-center gap-2"
+    :class="subDropdownOpen === 'role' ? 'text-amber-400 bg-slate-700/50' : ''"
+  >
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2a5 5 0 00-5 5v2H5a1 1 0 000 2h2v2H5a1 1 0 000 2h2v2a5 5 0 005 5 5 5 0 005-5v-2h2a1 1 0 000-2h-2v-2h2a1 1 0 000-2h-2V7a5 5 0 00-5-5z"/>
+    </svg>
+    <span>Role</span>
+    <svg
+      class="w-3 h-3 ml-auto"
+      :class="subDropdownOpen === 'role' ? 'rotate-180' : ''"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path fill-rule="evenodd"
+        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+        clip-rule="evenodd"/>
+    </svg>
+  </div>
+
+  <transition>
+    <ul v-show="subDropdownOpen === 'role'" class="dropdown-submenu">
+      <router-link
+        :to="{ name: 'RolePage' }"
+        class="submenu-link"
+        :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('RolePage') }"
+      >
+        Daftar Role
+      </router-link>
+      <router-link
+        :to="{ name: 'CreateRolePage' }"
+        class="submenu-link"
+        :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CreateRolePage') }"
+      >
+        Role Baru
+      </router-link>
+    </ul>
+  </transition>
+</li>
+
       <!-- <li class="relative">
         <router-link
           :to="{ name: 'SiteSetting' }"

@@ -3,10 +3,10 @@
     <h1 class="text-2xl font-bold mb-4">Daftar Komentar</h1>
 
     <!-- Toggle auto-approve global -->
-    <div class="mb-4 flex items-center gap-4">
+    <!-- <div class="mb-4 flex items-center gap-4">
       <label class="font-medium">Auto Approve Komentar:</label>
       <input type="checkbox" v-model="autoApprove" @change="updateAutoApproveSetting" />
-    </div>
+    </div> -->
 
     <!-- Filter (opsional: post, blog, product) -->
     <div class="mb-4 flex gap-4">
@@ -61,7 +61,6 @@ import { API_ENDPOINTS } from "@/config/api";
 
 const comments = ref([]);
 const filterType = ref("");
-const autoApprove = ref(false);
 
 // Ambil komentar
 async function fetchComments() {
@@ -75,32 +74,7 @@ async function fetchComments() {
   }
 }
 
-// Ambil setting auto-approve
-async function fetchAutoApproveSetting() {
-  try {
-    const res = await axios.get(API_ENDPOINTS.commentAutoApprove);
-    autoApprove.value = res.data.value; // true/false dari backend
-  } catch (err) {
-    console.error("Gagal memuat setting auto-approve:", err);
-  }
-}
-
-
-// Update setting auto-approve
-async function updateAutoApproveSetting() {
-  try {
-    // Kirim nilai checkbox saat ini
-    await axios.patch(API_ENDPOINTS.commentAutoApprove, { value: autoApprove.value });
-    alert("Setting auto-approve berhasil diperbarui.");
-  } catch (err) {
-    console.error("Gagal memperbarui setting auto-approve:", err);
-    alert("Gagal memperbarui setting auto-approve.");
-  }
-}
-
-
 onMounted(() => {
   fetchComments();
-  fetchAutoApproveSetting();
 });
 </script>

@@ -7,6 +7,7 @@ router.post('/register', customerAuthController.register);
 router.post('/login', customerAuthController.login);
 
 router.get('/me', authenticateCustomer, customerAuthController.me);
+
 router.put('/update', authenticateCustomer, customerAuthController.updateProfile);
 // router.put('/change-password', authenticateCustomer, customerAuthController.changePassword);
 // router.post('/password/send-code', authenticateCustomer, customerAuthController.requestPasswordChangeCode);

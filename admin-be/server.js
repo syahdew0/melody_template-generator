@@ -3,6 +3,8 @@
 // require('dotenv').config({
 //   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
 // });
+process.env.TZ = 'Asia/Jakarta';
+
 require('dotenv').config({
   path: '.env'
 });
@@ -20,6 +22,8 @@ const publicRoutes = require('./routes/public');
 
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
+
+console.log("Server timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 // === Middlewares ===
 app.use(express.json());

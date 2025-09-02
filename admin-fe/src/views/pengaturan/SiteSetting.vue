@@ -1,7 +1,14 @@
 <template>
-  <div class="max-w-3xl mx-auto p-6 bg-white rounded shadow">
+  <div class="max-w-full mx-auto p-6 bg-white rounded shadow">
     <h2 class="text-xl font-semibold mb-4">Pengaturan Website</h2>
 
+    <!-- Auto Approve DI LUAR FORM -->
+    <div class="mb-6 flex items-center gap-4">
+      <label class="font-medium">Auto Approve Komentar:</label>
+      <input type="checkbox" v-model="autoApprove" @change="updateAutoApproveSetting" />
+    </div>
+
+    <!-- FORM PENGATURAN WEBSITE -->
     <form @submit.prevent="saveSettings" class="grid grid-cols-1 gap-4">
       <div>
         <label>Judul Website</label>
@@ -23,11 +30,6 @@
         <input v-model="form.admin_email" type="email" class="form-input w-full" />
       </div>
 
-      <!-- <div>
-        <label>Logo URL</label>
-        <input v-model="form.logo" type="text" class="form-input w-full" />
-      </div> -->
-
       <div>
         <label>SEO Keywords</label>
         <textarea v-model="form.seo_keywords" class="form-textarea w-full"></textarea>
@@ -36,11 +38,6 @@
       <div>
         <label>SEO Description</label>
         <textarea v-model="form.seo_description" class="form-textarea w-full"></textarea>
-      </div>
-
-      <div>
-        <label>Rate</label>
-        <input v-model="form.rate" type="number" class="form-input w-full" />
       </div>
 
       <div class="text-right">
@@ -53,39 +50,33 @@
 </template>
 
 <script>
-import axios from 'axios';
-import { API_ENDPOINTS } from '@/config/api';
+import axios from "axios";
+import { API_ENDPOINTS } from "@/config/api";
 
 export default {
-  name: 'SiteSetting',
+  name: "SiteSetting",
   data() {
     return {
-      websiteId: null,
+      websiteId: 1, // sementara hardcode
+      autoApprove: false,
       form: {
-          title: '',
-        site_title: '',
-        site_description: '',
-        admin_email: '',
-        logo: '',
-        seo_keywords: '',
-        seo_description: '',
-        rate: ''
-      }
+        title: "",
+        site_title: "",
+        site_description: "",
+        admin_email: "",
+        logo: "",
+        seo_keywords: "",
+        seo_description: "",
+        rate: "",
+      },
     };
   },
-  
+
   async created() {
-    
-const websiteId = 1 // ← hardcode sementara
+    this.fetchSettings();
+    this.fetchAutoApproveSetting();
+  },
 
-  if (!websiteId) {
-    console.error("Website ID tidak ditemukan dari user login.");
-    return
-  }
-
-  this.websiteId = websiteId
-  this.fetchSettings()
-},
   methods: {
     async fetchSettings() {
       try {
@@ -94,21 +85,46 @@ const websiteId = 1 // ← hardcode sementara
           this.form = { ...this.form, ...res.data.settings };
         }
       } catch (err) {
-        console.error('Gagal mengambil site setting:', err);
+        console.error("Gagal mengambil site setting:", err);
       }
     },
+
     async saveSettings() {
       try {
-        const res = await axios.put(API_ENDPOINTS.siteSettings(this.websiteId), this.form);
+        const res = await axios.put(
+          API_ENDPOINTS.siteSettings(this.websiteId),
+          this.form
+        );
         if (res.data.success) {
-          alert('Pengaturan berhasil disimpan!');
+          alert("Pengaturan berhasil disimpan!");
         }
       } catch (err) {
-        console.error('Gagal menyimpan pengaturan:', err);
-        alert('Terjadi kesalahan saat menyimpan.');
+        console.error("Gagal menyimpan pengaturan:", err);
+        alert("Terjadi kesalahan saat menyimpan.");
       }
-    }
-  }
+    },
+
+    async fetchAutoApproveSetting() {
+      try {
+        const res = await axios.get(API_ENDPOINTS.commentAutoApprove);
+        this.autoApprove = res.data.value; // true / false
+      } catch (err) {
+        console.error("Gagal memuat setting auto-approve:", err);
+      }
+    },
+
+    async updateAutoApproveSetting() {
+      try {
+        await axios.patch(API_ENDPOINTS.commentAutoApprove, {
+          value: this.autoApprove,
+        });
+        alert("Setting auto-approve berhasil diperbarui.");
+      } catch (err) {
+        console.error("Gagal memperbarui setting auto-approve:", err);
+        alert("Gagal memperbarui setting auto-approve.");
+      }
+    },
+  },
 };
 </script>
 
