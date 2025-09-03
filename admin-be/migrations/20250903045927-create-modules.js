@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('Roles', {
+    await queryInterface.createTable('Modules', {
       id: {
         type: Sequelize.BIGINT,
         autoIncrement: true,
@@ -14,24 +14,29 @@ module.exports = {
         allowNull: false,
         unique: true,
       },
+      type: {
+        type: Sequelize.ENUM('main', 'other'), // main = aktif CRUD, other = centang saja
+        defaultValue: 'main',
+        allowNull: false,
+      },
       description: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.TEXT,
+        allowNull: true,
       },
       createdAt: {
-        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
-        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
     });
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('Roles');
+    await queryInterface.dropTable('Modules');
   }
 };
-

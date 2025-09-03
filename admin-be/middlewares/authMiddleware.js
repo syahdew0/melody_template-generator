@@ -36,12 +36,43 @@ exports.requireAdmin = (req, res, next) => {
   next()
 };
 
-exports.requirePermission = (permission) => {
-  return (req, res, next) => {
-    const userPermissions = req.user?.permissions || []; 
-    if (!userPermissions.includes(permission)) {
+// exports.requirePermission = (permission) => {
+//   return (req, res, next) => {
+//     const userPermissions = req.user?.permissions || []; 
+//     if (!userPermissions.includes(permission)) {
+//       return res.status(403).json({ message: 'Tidak memiliki izin' });
+//     }
+//     next();
+//   };
+// };
+
+exports.requireModulePermission = (moduleName, action) => {
+  return async (req, res, next) => {
+    const roleId = req.user.RoleId;
+    const roleModule = await db.RoleActiveModule.findOne({
+      where: { RoleId: roleId },
+      include: [{ model: db.Module, as: 'Module', where: { name: moduleName } }]
+    });
+
+    if (!roleModule || !roleModule[action]) {
       return res.status(403).json({ message: 'Tidak memiliki izin' });
     }
+
+    next();
+  };
+};
+
+exports.requireOtherModule = (moduleName) => {
+  return async (req, res, next) => {
+    const roleId = req.user.RoleId;
+    const hasModule = await db.RoleOtherModule.findOne({
+      where: { RoleId: roleId, ModuleName: moduleName }
+    });
+
+    if (!hasModule) {
+      return res.status(403).json({ message: 'Tidak memiliki izin' });
+    }
+
     next();
   };
 };

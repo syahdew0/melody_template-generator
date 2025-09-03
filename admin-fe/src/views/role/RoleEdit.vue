@@ -130,150 +130,21 @@
   </div>
 </div>
 
-    <!-- Hak Frontend -->
-    <div>
-      <h2 class="text-lg font-semibold mb-3">Hak Frontend</h2>
-
-      <div class="flex gap-4 items-stretch">
-        <!-- Input URL kiri -->
-        <div class="flex-1 flex flex-col">
-          <label class="block mb-2 font-medium">Input URL</label>
-          <textarea 
-            v-model="frontendBlockedUrlsText" 
-            rows="6" 
-            class="flex-1 w-full border border-slate-300 rounded-md px-3 py-2 resize-none"
-            readonly
-          ></textarea>
-        </div>
-
-       <!-- URL yang tidak diizinkan -->
-<div class="flex-1 flex flex-col gap-4">
-  <!-- Label -->
-  <label class="block font-medium">URL yang tidak diizinkan</label>
-
-  <!-- Tombol Tambah URL manual -->
-  <button 
-    @click="addBlockedUrl" 
-    class="px-4 py-2 bg-white rounded border border-black hover:bg-slate-300 w-fit"
-  >
-    Tambah URL
-  </button>
-
-  <!-- Tombol Tambah dari Page / Category -->
-  <div class="flex flex-col gap-2">
-    <button 
-      @click="addFromPage" 
-      class="px-4 py-2 bg-white rounded border border-black hover:bg-slate-300 w-fit"
-    >
-      Tambah dari Halaman
-    </button>
-    <button 
-      @click="addFromCategory" 
-      class="px-4 py-2 bg-white rounded border border-black hover:bg-slate-300 w-fit"
-    >
-      Tambah dari Kategori
-    </button>
-  </div>
-
-  <!-- Tombol Ubah / Hapus -->
-  <div class="flex flex-row gap-2">
-    <button 
-      @click="editFrontend" 
-      class="px-4 py-2 bg-white text-black rounded-md border border-slate-300 text-sm"
-    >
-      Ubah
-    </button>
-    <button 
-      @click="deleteFrontend" 
-      class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500"
-    >
-      Hapus
-    </button>
+<!-- Modul Lainnya -->
+<div>
+  <h2 class="text-lg font-semibold mb-2">Modul Lainnya</h2>
+  <div class="grid grid-cols-2 gap-2">
+    <label v-for="mod in otherModulesList" :key="mod.key" class="flex items-center gap-2">
+      <input 
+        type="checkbox" 
+        v-model="mod.selected" 
+        class="h-4 w-4"
+      />
+      <span>{{ mod.label }}</span>
+    </label>
   </div>
 </div>
 
-      </div>
-    </div>
-
-    <!-- Tambahkan tepat sebelum div tombol Simpan -->
-<div class="flex gap-4 items-stretch">
-  <!-- Kiri: Box textarea -->
-  <div class="flex-1 flex flex-col">
-    <!-- <label class="block mb-2 font-medium">Kategori Terblokir</label> -->
-    <textarea 
-      v-model="blockedCategoriesText"
-      rows="6"
-      class="flex-1 w-full border border-slate-300 rounded-md px-3 py-2 resize-none"
-      readonly
-    ></textarea>
-  </div>
-
-  <!-- Kanan: Label dan tombol hapus -->
-  <div class="flex-1 flex flex-col justify-center">
-    <div>
-      <label class="flex items-center justify-start gap-2 mb-2">Tidak diizinkan melihat detail post dengan kategori berikut</label>
-       <button 
-          @click="addBlockedCategory"
-          class="px-3 py-1 bg-white text-black rounded-md border border-slate-300 text-sm"
-        >
-          Tambah Kategori
-        </button>
-      <ul class="list-disc pl-5 text-sm text-slate-600">
-        <li v-for="cat in blockedCategories" :key="cat">{{ cat }}</li>
-        
-      </ul>
-    
-    <button 
-      @click="clearBlockedCategories"
-      class="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500"
-    >
-      Hapus
-    </button>
-    </div>
-  </div>
-</div>
-
-<!-- Kategori yang tidak ditampilkan -->
-<div class="flex gap-4 items-stretch">
-  <!-- Kiri: Box textarea -->
-  <div class="flex-1 flex flex-col">
-    <textarea 
-      v-model="blockedCategoriesText"
-      rows="6"
-      class="flex-1 w-full border border-slate-300 rounded-md px-3 py-2 resize-none"
-      readonly
-    ></textarea>
-  </div>
-
-  <!-- Kanan: Label dan tombol -->
-<div class="flex-1 flex flex-col justify-center">
-  <div>
-    <!-- Flex row: label + tombol -->
-    <div class="flex items-center justify-start gap-2 mb-2">
-      <label class="font-medium">Kategori yang tidak ditampilkan pada list</label> 
-    </div>
-      <button 
-        @click="addBlockedCategory"
-        class="px-3 py-1 bg-white text-black rounded-md border border-slate-300 text-sm"
-      >
-        Tambah Kategori
-      </button>
-    <!-- Daftar kategori -->
-    <ul class="list-disc pl-5 text-sm text-slate-600">
-      <li v-for="cat in blockedCategories" :key="cat">{{ cat }}</li>
-    </ul>
-
-    <!-- Tombol Hapus -->
-     
-    <button 
-      @click="clearBlockedCategories"
-      class="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500"
-    >
-      Hapus
-    </button>
-  </div>
-</div>
-</div>
 
     <!-- Tombol Simpan -->
     <div class="text-left">
@@ -288,93 +159,177 @@
 </template>
 
 <script>
+import { api, API_ENDPOINTS } from "@/config/api";
+
 export default {
-  props: ['id'], // ambil id dari route
+  props: ["id"], // ambil dari route
   data() {
     return {
-      roleName: '',
+      roleId: this.$route.params.id,
+      roleName: "",
       allCategory: false,
-      master: {    // <-- ini yang kurang
-      create: false,
-      update: false,
-      delete: false,
-      read: false,
-      },
-      modulList: [
-        { id: 1, name: 'Posts', create: true, update: true, delete: true, read: true },
-        { id: 2, name: 'Pages', create: false, update: true, delete: false, read: true },
-        { id: 3, name: 'Products', create: true, update: false, delete: false, read: true },
-        { id: 4, name: 'Categories', create: true, update: true, delete: true, read: true },
-        { id: 5, name: 'Users', create: false, update: false, delete: false, read: true },
-        { id: 6, name: 'Settings', create: false, update: false, delete: false, read: true },
-        { id: 7, name: 'Orders', create: true, update: true, delete: true, read: true },
-        { id: 8, name: 'Comments', create: true, update: true, delete: true, read: true },
-        { id: 9, name: 'Themes', create: false, update: false, delete: false, read: true },
-        { id: 10, name: 'Media', create: false, update: false, delete: false, read: true },
-        { id: 11, name: 'Topup', create: false, update: false, delete: false, read: true },
-        { id: 12, name: 'Withdraw', create: false, update: false, delete: false, read: true },
-        { id: 13, name: 'Wallet History', create: false, update: false, delete: false, read: true },
-        { id: 14, name: 'Adjust', create: false, update: false, delete: false, read: true },
-
-      ],
-      frontendInputUrl: '',
-      frontendBlockedUrls: []
-    }
+      master: { create: false, update: false, delete: false, read: false },
+      modulList: [],          // main modules
+      otherModulesList: [],   // other modules
+      blockedCategories: [],
+    };
   },
   computed: {
-    frontendBlockedUrlsText() {
-      return this.frontendBlockedUrls.join('\n')
+    blockedCategoriesText() {
+      return this.blockedCategories.map(c => c.name).join("\n");
     }
   },
   mounted() {
-    // Ambil data role berdasarkan id
-    const role = this.getRoleById(this.id)
-    if(role) this.roleName = role.name
+    this.fetchModules().then(() => this.fetchRole());
   },
   methods: {
-    getRoleById(id) {
-      const roles = [
-        { id: 1, name: "Administrator" },
-        { id: 2, name: "User" },
-        { id: 3, name: "Not Login" },
-        { id: 4, name: "Order" },
-      ]
-      return roles.find(r => r.id == id)
-    },
-    addBlockedUrl() {
-      const url = this.frontendInputUrl.trim()
-      if(url && !this.frontendBlockedUrls.includes(url)) {
-        this.frontendBlockedUrls.push(url)
+    async fetchModules() {
+      try {
+        const res = await api.get(API_ENDPOINTS.modules.list);
+        const modules = res.data;
+
+        // Pisahkan main dan other modules
+        this.modulList = modules
+          .filter(m => m.type === "main")
+          .map(m => ({
+            id: m.id,
+            name: m.name,
+            create: false,
+            update: false,
+            delete: false,
+            read: false,
+            selected: false,
+          }));
+
+        this.otherModulesList = modules
+          .filter(m => m.type === "other")
+          .map(m => ({
+            id: m.id,
+            label: m.name,
+            selected: false,
+          }));
+      } catch (err) {
+        console.error("Fetch modules error:", err.response?.data || err.message);
       }
-      this.frontendInputUrl = ''
     },
-    toggleAll(field) {
-  this.modulList.forEach(modul => {
-    modul[field] = this.master[field];
-  });
-},
-    toggleRow(modul) {
-    // Jika modul dicentang, centang semua CRUD
-    modul.create = modul.selected;
-    modul.update = modul.selected;
-    modul.delete = modul.selected;
-    modul.read = modul.selected;
-  },
-    addFromPage() { alert('Tambah URL dari halaman') },
-    addFromCategory() { alert('Tambah URL dari kategori') },
-    editFrontend() { alert('Ubah frontend URL') },
-    deleteFrontend() { alert('Hapus frontend URL') },
-    saveRole() {
-      console.log('Nama Role:', this.roleName)
-      console.log('All Category:', this.allCategory)
-      console.log('Modul List:', this.modulList)
-      console.log('Frontend Blocked URLs:', this.frontendBlockedUrls)
-      alert('Role berhasil disimpan!')
-    }
+
+  async fetchRole() {
+  try {
+    const res = await api.get(API_ENDPOINTS.roles.detail(this.roleId));
+    const role = res.data.role;
+
+    this.roleName = role.name;
+
+    // Fetch semua kategori
+    const categoriesRes = await api.get(API_ENDPOINTS.categories.list); // buat endpoint list kategori
+    const allCategories = categoriesRes.data; // [{id, name, slug}, ...]
+
+    // Tandai kategori yang diblokir
+    this.blockedCategories = allCategories.map(c => ({
+      id: c.id,
+      name: c.name,
+      selected: (role.blockedCategories || []).some(bc => bc.name === c.name)
+    }));
+
+    // Jika semua kategori diizinkan, set allCategory
+    this.allCategory = this.blockedCategories.every(c => !c.selected);
+
+    // Sync modul utama
+    this.modulList.forEach(mod => {
+      const active = role.activeModules.find(m => m.ModuleId === mod.id);
+      if (active) {
+        mod.create = active.canAdd;
+        mod.update = active.canEdit;
+        mod.delete = active.canDelete;
+        mod.read = active.canView;
+        mod.selected = true;
+      }
+    });
+
+    // Sync other modules
+    this.otherModulesList.forEach(mod => {
+      mod.selected = role.otherModules.some(om => om.ModuleName === mod.label);
+    });
+
+  } catch (err) {
+    console.error("Fetch role detail error:", err.response?.data || err.message);
   }
 }
-</script>
+,
 
-<style scoped>
-/* flex-1 + items-stretch membuat kiri dan kanan sama tinggi */
-</style>
+    async saveRole() {
+  try {
+    // ===== Payload Main Modules =====
+    const activeModulesPayload = this.modulList.map(m => ({
+      ModuleId: m.id,
+      canAdd: m.create,
+      canEdit: m.update,
+      canDelete: m.delete,
+      canView: m.read,
+    }));
+
+    // ===== Payload Other Modules =====
+    const otherModulesPayload = this.otherModulesList.map(m => ({
+      ModuleName: m.label,
+      selected: m.selected,
+    }));
+
+    // ===== Payload Blocked Categories =====
+    const blockedCategoriesPayload = this.blockedCategories
+    .filter(c => c.selected && c.id)  // pastikan id tidak null
+    .map(c => ({ id: c.id, name: c.name }));
+
+    // Gabungkan semua otherModules + blockedCategories
+    const combinedOtherModules = [
+      ...otherModulesPayload,
+      ...blockedCategoriesPayload.map(c => ({ ModuleName: c.name, selected: c.selected }))
+    ];
+
+    const payload = {
+      name: this.roleName,
+      activeModules: activeModulesPayload,
+      otherModules: combinedOtherModules, 
+      blockedCategories: blockedCategoriesPayload,
+    };
+
+    // PUT request ke backend
+    await api.put(API_ENDPOINTS.roles.update(this.roleId), payload);
+
+    alert("Role berhasil disimpan!");
+  } catch (err) {
+    console.error("Update role error:", err.response?.data || err.message);
+    alert(err.response?.data?.message || "Gagal menyimpan role");
+  }
+},
+
+    toggleAll(field) {
+      this.modulList.forEach(modul => {
+        modul[field] = this.master[field];
+      });
+    },
+
+    toggleRow(modul) {
+      modul.create = modul.selected;
+      modul.update = modul.selected;
+      modul.delete = modul.selected;
+      modul.read = modul.selected;
+    },
+
+    addBlockedCategory() {
+      const name = prompt("Nama kategori?");
+      if (name) {
+        this.blockedCategories.push({ id: null, name, selected: true });
+      }
+    },
+
+    removeCategory(index) {
+      this.blockedCategories.splice(index, 1);
+    },
+
+    clearBlockedCategories() {
+      this.blockedCategories = [];
+      this.allCategory = true;
+    },
+  }
+};
+</script>

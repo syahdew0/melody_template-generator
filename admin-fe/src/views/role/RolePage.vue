@@ -93,16 +93,13 @@
 </template>
 
 <script>
+import { api, API_ENDPOINTS } from "@/config/api";
+
 export default {
   name: "RolePage",
   data() {
     return {
-      roles: [
-        { id: 1, name: "Administrator", membership: "Set Membership" },
-        { id: 2, name: "User", membership: "Set Membership" },
-        { id: 3, name: "Not Login", membership: "Set Membership" },
-        { id: 4, name: "Order", membership: "Set Membership" },
-      ],
+      roles: [],
       perPage: 10,
       currentPage: 1,
       search: "",
@@ -138,25 +135,43 @@ export default {
     },
   },
   methods: {
+    async fetchRoles() {
+      try {
+        const res = await api.get(API_ENDPOINTS.roles.list);
+        this.roles = res.data; // pastikan backend return array [{id, name, ...}]
+      } catch (err) {
+        console.error("Fetch roles error:", err.response?.data || err.message);
+      }
+    },
     goToEditRole(role) {
-  this.$router.push({ name: 'EditRole', params: { id: role.id } })
-},
+      this.$router.push({ name: "EditRole", params: { id: role.id } });
+    },
     editRole(role, field) {
       alert(`Edit Role ${field}: ${role[field]}`);
     },
-    deleteSelected() {
+    async deleteSelected() {
       if (confirm(`Delete ${this.selectedRoles.length} selected role(s)?`)) {
-        this.roles = this.roles.filter((r) => !this.selectedRoles.includes(r.id));
-        this.selectedRoles = [];
+        try {
+          await Promise.all(
+            this.selectedRoles.map((id) => api.delete(API_ENDPOINTS.roles.delete(id)))
+          );
+          this.roles = this.roles.filter((r) => !this.selectedRoles.includes(r.id));
+          this.selectedRoles = [];
+        } catch (err) {
+          console.error("Delete error:", err.response?.data || err.message);
+        }
       }
     },
     toggleAll() {
       if (this.allSelected) {
-        this.selectedRoles = this.paginatedData.map(r => r.id);
+        this.selectedRoles = this.paginatedData.map((r) => r.id);
       } else {
         this.selectedRoles = [];
       }
     },
+  },
+  mounted() {
+    this.fetchRoles();
   },
 };
 </script>

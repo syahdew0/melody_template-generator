@@ -22,7 +22,7 @@
           type="submit"
           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
-          Selanjutnya
+          Simpan
         </button>
       </div>
     </form>
@@ -30,6 +30,8 @@
 </template>
 
 <script>
+import { api, API_ENDPOINTS } from "@/config/api";
+
 export default {
   name: "CreateRolePage",
   data() {
@@ -38,20 +40,29 @@ export default {
     };
   },
   methods: {
-    nextStep() {
-      // bisa diganti untuk API call atau navigasi ke step berikutnya
-      if (this.roleName.trim() === "") {
+    async nextStep() {
+      if (!this.roleName.trim()) {
         alert("Nama Role tidak boleh kosong");
         return;
       }
-      alert(`Role baru: ${this.roleName}`);
-      // contoh: redirect ke halaman role list atau ke langkah berikutnya
-      // this.$router.push('/roles'); 
+
+      try {
+        const res = await api.post(API_ENDPOINTS.roles.create, {
+          name: this.roleName,
+          activeModules: [],
+          otherModules: [],
+        });
+
+        if (res.data && res.data.role?.id) {
+          alert(`Role ${res.data.role.name} berhasil dibuat!`);
+
+          this.roleName = "";
+        }
+      } catch (err) {
+        console.error("Role create error:", err.response?.data || err.message);
+        alert(err.response?.data?.message || "Gagal membuat role");
+      }
     },
   },
 };
 </script>
-
-<style scoped>
-/* opsional styling tambahan */
-</style>

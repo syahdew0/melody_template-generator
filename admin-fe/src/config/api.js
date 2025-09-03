@@ -138,6 +138,23 @@ export const API_ENDPOINTS = {
     detail: (id) => `${API_URL}/api/admin/orders/${id}`,
     updateStatus: (id) => `${API_URL}/api/admin/orders/${id}/status`
   },
+
+  roles: {
+    list: `${API_URL}/api/admin/roles`, // GET semua role
+    create: `${API_URL}/api/admin/roles`, // POST buat role baru
+    detail: (id) => `${API_URL}/api/admin/roles/${id}`, // GET detail role
+    update: (id) => `${API_URL}/api/admin/roles/${id}`, // PUT/PATCH update role
+    delete: (id) => `${API_URL}/api/admin/roles/${id}`, // DELETE role
+  },
+
+  modules: {
+    list: `${API_URL}/api/admin/modules`,
+    create: `${API_URL}/api/admin/modules`,
+    detail: (id) => `${API_URL}/api/admin/modules/${id}`,
+    update: (id) => `${API_URL}/api/admin/modules/${id}`,
+    delete: (id) => `${API_URL}/api/admin/modules/${id}`,
+  },
+
 }
 
 
