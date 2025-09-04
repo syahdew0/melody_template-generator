@@ -12,10 +12,7 @@ router.get('/:id', requireAuth, commentController.getDetail);
 // Update status approve/reject
 router.patch('/:id/status', requireAuth, commentController.updateStatus);
 
-/**
- * ROUTE SETTING GLOBAL AUTO APPROVE
- */
-
+//global
 // Ambil status auto-approve
 router.get('/settings/auto-approve', requireAuth, commentController.getAutoApproveSetting);
 

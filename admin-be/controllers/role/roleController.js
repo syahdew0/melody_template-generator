@@ -3,7 +3,7 @@ const Role = db.Role;
 const RoleActiveModule = db.RoleActiveModule;
 const RoleOtherModule = db.RoleOtherModule;
 const Module = db.Module;
-const BlockedCategory = db.RoleBlockedCategory;
+const RoleCategory = db.RoleCategory;
 const Category = db.Category;
 
 // Create a new role
@@ -73,7 +73,7 @@ exports.getRoles = async (req, res) => {
 // Update role by ID
 exports.updateRole = async (req, res) => {
   const { id } = req.params;
-  const { name, activeModules, otherModules, blockedCategories } = req.body; // tambahkan blockedCategories
+  const { name, activeModules, otherModules, roleCategories } = req.body; // tambahkan roleCategories
 
   try {
     // ===== Update role name =====
@@ -126,22 +126,20 @@ exports.updateRole = async (req, res) => {
         }
       }
     }
+    // hapus dulu semua yg lama
+    await RoleCategory.destroy({ where: { RoleId: id } });
 
-    // ===== Blocked Categories =====
-    // Hapus semua yang lama
-    await BlockedCategory.destroy({ where: { RoleId: id } });
-
-    // Simpan yang baru
-    if (Array.isArray(blockedCategories)) {
-      await Promise.all(
-    blockedCategoriesPayload.map(c =>
-        BlockedCategory.create({
+    // simpan yg baru
+   if (Array.isArray(roleCategories)) {
+  await Promise.all(
+    roleCategories.map(c =>
+      RoleCategory.create({
         RoleId: id,
         CategoryId: c.id
-        })
+      })
     )
-    );
-    }
+  );
+}
 
     res.json({ message: "Role berhasil diperbarui" });
   } catch (err) {
@@ -176,19 +174,20 @@ exports.getRoleDetail = async (req, res) => {
     const allOtherModules = await Module.findAll({ where: { type: "other" } });
 
     // Ambil kategori blocked untuk role ini
-    const blockedCategories = await BlockedCategory.findAll({
-      where: { RoleId: id },       // pakai RoleId
-      include: [{ model: Category, as: 'category' }] // pakai alias 'category'
+    const roleCategories = await RoleCategory.findAll({
+      where: { RoleId: id },
+      include: [{ model: Category, as: 'category' }]
     });
 
     res.json({
       role,
       allOtherModules,
-      blockedCategories: blockedCategories.map(bc => ({
+      roleCategories: roleCategories.map(bc => ({
         id: bc.category.id,
         name: bc.category.name,
       })),
     });
+
   } catch (err) {
     console.error("Get role detail error:", err);
     res.status(500).json({ message: "Gagal mengambil detail role", error: err.message });

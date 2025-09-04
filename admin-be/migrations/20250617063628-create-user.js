@@ -32,6 +32,17 @@ module.exports = {
         allowNull: false,
         defaultValue: 'user'
       },
+       RoleId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Roles', 
+          key: 'id',
+        },
+        onUpdate: 'NO ACTION',
+        onDelete: 'SET NULL',
+      },
+    
       avatar: {
         type: Sequelize.STRING,
         allowNull: false,

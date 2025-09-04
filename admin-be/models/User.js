@@ -23,6 +23,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'user',
     },
+      RoleId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Roles',
+        key: 'id',
+      },
+    },
+
     isSuperAdmin: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -34,6 +43,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'https://i.pravatar.cc/100',
     },
   });
+
+  User.associate = function (models) {
+    User.belongsTo(models.Role, { foreignKey: 'RoleId', as: 'Role' });
+  };
 
   return User;
 };

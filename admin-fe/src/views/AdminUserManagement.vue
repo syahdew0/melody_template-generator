@@ -36,15 +36,6 @@
           </td>
           <td class="border px-2 py-1 space-x-2">
             <button
-              v-if="user.role !== 'admin'"
-              @click="promoteToAdmin(user.id)"
-              class="bg-blue-600 text-white px-2 py-1 rounded"
-            >
-              Jadikan Admin
-            </button>
-            <span v-else class="text-green-600 font-semibold">Admin</span>
-
-            <button
               @click="openModal('edit', user)"
               class="bg-yellow-500 text-white px-2 py-1 rounded"
             >
@@ -99,10 +90,15 @@
             :placeholder="modalType === 'add' ? 'Password' : 'Password (opsional)'"
             :required="modalType === 'add'"
           />
-          <select v-model="form.role" class="border w-full mb-4 px-2 py-1">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+
+          <!-- Dropdown Role -->
+          <label for="role" class="block mb-1">Pilih Role</label>
+          <select v-model="selectedRoleId" id="role" class="border rounded w-full px-2 py-1 mb-4">
+            <option v-for="role in roles" :key="role.id" :value="role.id">
+              {{ role.name }}
+            </option>
           </select>
+
           <div class="flex justify-end space-x-2">
             <button
               @click="closeModal"
@@ -134,11 +130,14 @@ import { API_ENDPOINTS } from '@/config/api';
 const router = useRouter();
 const users = ref([]);
 const currentUserId = ref(null);
+const selectedRoleId = ref(null);
+const roles = ref([]);
 
 const showModal = ref(false);
-const modalType = ref('add'); // 'add' atau 'edit'
+const modalType = ref('add');
 const form = ref({ id: null, username: '', email: '', password: '', role: 'user' });
 
+// Fetch users
 const fetchUsers = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -149,27 +148,45 @@ const fetchUsers = async () => {
   }
 };
 
+// Fetch roles
+const fetchRoles = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const { data } = await axios.get(API_ENDPOINTS.roles.list, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    roles.value = data;
+  } catch (err) {
+    console.error('Gagal mengambil data roles:', err);
+  }
+};
+
 // Open modal Add/Edit
 const openModal = (type, user = null) => {
   modalType.value = type;
   if (type === 'edit' && user) {
     form.value = { id: user.id, username: user.username, email: user.email, password: '', role: user.role };
+    selectedRoleId.value = user.RoleId || null;
   } else {
     form.value = { id: null, username: '', email: '', password: '', role: 'user' };
+    selectedRoleId.value = null;
   }
   showModal.value = true;
 };
 
+// Close modal
 const closeModal = () => {
   showModal.value = false;
   form.value = { id: null, username: '', email: '', password: '', role: 'user' };
+  selectedRoleId.value = null;
 };
 
-// Tambah user
+// Add user
 const addUser = async () => {
   try {
     const token = localStorage.getItem('token');
-    await axios.post(API_ENDPOINTS.users, form.value, { headers: { Authorization: `Bearer ${token}` } });
+    const payload = { ...form.value, RoleId: selectedRoleId.value };
+    await axios.post(API_ENDPOINTS.users, payload, { headers: { Authorization: `Bearer ${token}` } });
     fetchUsers();
     closeModal();
   } catch (err) {
@@ -181,7 +198,7 @@ const addUser = async () => {
 const updateUser = async () => {
   try {
     const token = localStorage.getItem('token');
-    const payload = { ...form.value };
+    const payload = { ...form.value, RoleId: selectedRoleId.value };
     if (!payload.password) delete payload.password;
     await axios.put(API_ENDPOINTS.userById(payload.id), payload, { headers: { Authorization: `Bearer ${token}` } });
     fetchUsers();
@@ -191,7 +208,7 @@ const updateUser = async () => {
   }
 };
 
-// Hapus user
+// Delete user
 const deleteUser = async (id) => {
   if (!confirm('Yakin ingin menghapus user ini?')) return;
   try {
@@ -203,24 +220,13 @@ const deleteUser = async (id) => {
   }
 };
 
-// Promote user
-const promoteToAdmin = async (id) => {
-  if (!confirm('Jadikan user ini admin?')) return;
-  try {
-    const token = localStorage.getItem('token');
-    await axios.put(API_ENDPOINTS.makeAdmin(id), {}, { headers: { Authorization: `Bearer ${token}` } });
-    fetchUsers();
-  } catch (err) {
-    alert('Gagal menjadikan admin: ' + (err.response?.data?.message || err.message));
-  }
-};
-
 onMounted(() => {
   const user = JSON.parse(localStorage.getItem('user'));
   if (!user || user.role !== 'admin') router.push('/');
   else {
     currentUserId.value = String(user.id);
     fetchUsers();
+    fetchRoles();
   }
 });
 </script>

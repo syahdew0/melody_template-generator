@@ -35,44 +35,89 @@ exports.requireAdmin = (req, res, next) => {
   }
   next()
 };
-
-// exports.requirePermission = (permission) => {
-//   return (req, res, next) => {
-//     const userPermissions = req.user?.permissions || []; 
-//     if (!userPermissions.includes(permission)) {
-//       return res.status(403).json({ message: 'Tidak memiliki izin' });
-//     }
-//     next();
-//   };
-// };
-
 exports.requireModulePermission = (moduleName, action) => {
   return async (req, res, next) => {
-    const roleId = req.user.RoleId;
-    const roleModule = await db.RoleActiveModule.findOne({
-      where: { RoleId: roleId },
-      include: [{ model: db.Module, as: 'Module', where: { name: moduleName } }]
-    });
+    try {
+      const roleId = req.user?.RoleId;
+      if (!roleId) return res.status(403).json({ message: "Role tidak ditemukan" });
 
-    if (!roleModule || !roleModule[action]) {
-      return res.status(403).json({ message: 'Tidak memiliki izin' });
+      // Admin otomatis bisa akses
+      if (req.user.role === 'admin') return next();
+
+      const roleModule = await RoleActiveModule.findOne({
+        where: { RoleId: roleId },
+        include: [
+          {
+            model: Module,
+            as: "Module",
+            where: { name: moduleName },
+          },
+        ],
+      });
+
+      if (!roleModule || !roleModule[action]) {
+        return res.status(403).json({ message: "Tidak memiliki izin" });
+      }
+
+      next();
+    } catch (err) {
+      console.error("requireModulePermission error:", err);
+      res.status(500).json({ message: "Server error" });
     }
-
-    next();
   };
 };
 
+
+// Middleware cek modul lainnya (other)
 exports.requireOtherModule = (moduleName) => {
   return async (req, res, next) => {
-    const roleId = req.user.RoleId;
-    const hasModule = await db.RoleOtherModule.findOne({
-      where: { RoleId: roleId, ModuleName: moduleName }
-    });
+    try {
+      const roleId = req.user?.RoleId;
+      if (!roleId) return res.status(403).json({ message: "Role tidak ditemukan" });
 
-    if (!hasModule) {
-      return res.status(403).json({ message: 'Tidak memiliki izin' });
+      const hasModule = await RoleOtherModule.findOne({
+        where: { RoleId: roleId, ModuleName: moduleName },
+      });
+
+      if (!hasModule) {
+        return res.status(403).json({ message: "Tidak memiliki izin" });
+      }
+
+      next();
+    } catch (err) {
+      console.error("requireOtherModule error:", err);
+      res.status(500).json({ message: "Server error" });
     }
+  };
+};
 
-    next();
+exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
+  return async (req, res, next) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+      const categoryId = req.params[categoryIdParam] || req.body[categoryIdParam];
+      if (!categoryId) return res.status(400).json({ message: "Category ID dibutuhkan" });
+
+      // Cek role blocked categories
+      const rolecategory = await RoleCategory.findOne({
+  where: {
+    RoleId: user.RoleId,
+    CategoryId: categoryId,
+  },
+});
+
+// Kalau tidak ditemukan, berarti role **tidak punya akses** ke kategori
+if (!rolecategory) {
+  return res.status(403).json({ message: "Kategori ini diblokir untuk role Anda" });
+}
+
+next();
+
+    } catch (err) {
+      console.error("requireCategoryAccess error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
   };
 };
