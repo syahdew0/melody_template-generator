@@ -357,7 +357,7 @@ exports.getBySlug = async (req, res) => {
 
   // Tentukan type berdasarkan route yang digunakan
   let type = 'post'; // default
-  if (req.originalUrl.includes('/page/')) type = 'page';
+ if (req.path.startsWith('/page') || req.path.startsWith('/pages')) type = 'page';
   if (req.originalUrl.includes('/post/')) type = 'post';
   if (req.originalUrl.includes('/product')) type = 'product';
 
@@ -455,24 +455,34 @@ exports.updateBySlug = async (req, res) => {
 
 exports.getPostsByCategory = async (req, res) => {
   try {
-    const { slug } = req.params
+    const { slug } = req.params;
 
     // Cari kategori berdasarkan slug
-    const category = await Category.findOne({ where: { slug } })
+    const category = await Category.findOne({ where: { slug } });
     if (!category) {
-      return res.status(404).json({ message: 'Kategori tidak ditemukan' })
+      return res.status(404).json({ message: 'Kategori tidak ditemukan' });
     }
 
-    // Ambil semua postingan berdasarkan category_id
+    // Ambil semua post published yang termasuk kategori ini
     const posts = await Post.findAll({
-       where: { category_id: category.id, status: 'published' },
+      where: { status: 'published' },
+      include: [
+        {
+          model: PostCategory,
+          as: 'post_categories',
+          required: true, // hanya ambil post yang ada di kategori ini
+          where: { category_id: category.id },
+          include: [{ model: Category, as: 'category' }],
+        },
+        { model: ProductDetail, as: 'product_detail' },
+        { model: PostMeta, as: 'meta' },
+      ],
       order: [['created_at', 'DESC']],
-    })
+    });
 
-    return res.json({ category, posts })
+    return res.json({ category, posts });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Gagal mengambil postingan' })
+    console.error('Error getPostsByCategory:', error);
+    res.status(500).json({ message: 'Gagal mengambil postingan' });
   }
-}
-
+};

@@ -1,3 +1,35 @@
+// const express = require('express');
+// const router = express.Router();
+
+// const topupController = require('../controllers/transaksi/topupController');
+// const adjustController = require('../controllers/transaksi/adjustController');
+// const withdrawController = require('../controllers/transaksi/withdrawController');
+// const walletController = require('../controllers/transaksi/walletController');
+
+// const { requireAuth, requireAdmin } = require('../middlewares/authMiddleware');
+
+// // Admin - Topup
+// router.get('/topup', requireAuth, requireAdmin, topupController.list);
+// router.put('/topup/:id/status', requireAuth, requireAdmin, topupController.updateStatus);
+// router.get('/topup-summary', requireAuth, requireAdmin, topupController.getTopupSummary);
+// router.put('/topup/bulk-update-status', requireAuth, requireAdmin, topupController.bulkUpdateStatus);
+
+// // Admin - Adjust
+// router.post('/adjust', requireAuth, requireAdmin, adjustController.create);
+// router.get('/adjust', requireAuth, requireAdmin, adjustController.list);
+// router.get('/adjust-summary', requireAuth, requireAdmin, adjustController.getAdjustSummary);
+
+// // Admin - Withdraw
+// router.get('/withdraw', requireAuth, requireAdmin, withdrawController.list);
+// router.put('/withdraw/:id/status', requireAuth, requireAdmin, withdrawController.updateStatus);
+// router.put('/withdraw/bulk-update-status', requireAuth, requireAdmin, withdrawController.bulkUpdateStatus);
+
+// // Admin Wallet
+// router.get('/wallet-histories', requireAuth, requireAdmin, walletController.getAdminWalletHistory);
+// router.get('/wallet-histories/usernames', requireAuth, requireAdmin, walletController.getWalletUsernames);
+
+// module.exports = router;
+
 const express = require('express');
 const router = express.Router();
 
@@ -6,26 +38,30 @@ const adjustController = require('../controllers/transaksi/adjustController');
 const withdrawController = require('../controllers/transaksi/withdrawController');
 const walletController = require('../controllers/transaksi/walletController');
 
-const { requireAuth, requireAdmin } = require('../middlewares/authMiddleware');
+const { requireAuth, requireOtherModule } = require('../middlewares/authMiddleware');
 
-// Admin - Topup
-router.get('/topup', requireAuth, requireAdmin, topupController.list);
-router.put('/topup/:id/status', requireAuth, requireAdmin, topupController.updateStatus);
-router.get('/topup-summary', requireAuth, requireAdmin, topupController.getTopupSummary);
-router.put('/topup/bulk-update-status', requireAuth, requireAdmin, topupController.bulkUpdateStatus);
+// ======================================================
+// Admin - Topups (cek module 'Topups')
+router.get('/topup', requireAuth, requireOtherModule('Topups'), topupController.list);
+router.put('/topup/:id/status', requireAuth, requireOtherModule('Topups'), topupController.updateStatus);
+router.get('/topup-summary', requireAuth, requireOtherModule('Topups'), topupController.getTopupSummary);
+router.put('/topup/bulk-update-status', requireAuth, requireOtherModule('Topups'), topupController.bulkUpdateStatus);
 
-// Admin - Adjust
-router.post('/adjust', requireAuth, requireAdmin, adjustController.create);
-router.get('/adjust', requireAuth, requireAdmin, adjustController.list);
-router.get('/adjust-summary', requireAuth, requireAdmin, adjustController.getAdjustSummary);
+// ======================================================
+// Admin - Withdraw (cek module 'Withdraw')
+router.get('/withdraw', requireAuth, requireOtherModule('Withdraw'), withdrawController.list);
+router.put('/withdraw/:id/status', requireAuth, requireOtherModule('Withdraw'), withdrawController.updateStatus);
+router.put('/withdraw/bulk-update-status', requireAuth, requireOtherModule('Withdraw'), withdrawController.bulkUpdateStatus);
 
-// Admin - Withdraw
-router.get('/withdraw', requireAuth, requireAdmin, withdrawController.list);
-router.put('/withdraw/:id/status', requireAuth, requireAdmin, withdrawController.updateStatus);
-router.put('/withdraw/bulk-update-status', requireAuth, requireAdmin, withdrawController.bulkUpdateStatus);
+// ======================================================
+// Admin - Adjust (cek module 'Adjust')
+router.post('/adjust', requireAuth, requireOtherModule('Adjust'), adjustController.create);
+router.get('/adjust', requireAuth, requireOtherModule('Adjust'), adjustController.list);
+router.get('/adjust-summary', requireAuth, requireOtherModule('Adjust'), adjustController.getAdjustSummary);
 
-// Admin Wallet
-router.get('/wallet-histories', requireAuth, requireAdmin, walletController.getAdminWalletHistory);
-router.get('/wallet-histories/usernames', requireAuth, requireAdmin, walletController.getWalletUsernames);
+// ======================================================
+// Admin Wallet (misal module 'Wallet' kalau ada)
+router.get('/wallet-histories', requireAuth, requireOtherModule('Wallet'), walletController.getAdminWalletHistory);
+router.get('/wallet-histories/usernames', requireAuth, requireOtherModule('Wallet'), walletController.getWalletUsernames);
 
 module.exports = router;

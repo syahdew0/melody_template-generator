@@ -222,7 +222,9 @@ const deleteUser = async (id) => {
 
 onMounted(() => {
   const user = JSON.parse(localStorage.getItem('user'));
-  if (!user || user.role !== 'admin') router.push('/');
+  if (!user || user.role.toLowerCase() !== 'admin') {
+  router.push('/');
+}
   else {
     currentUserId.value = String(user.id);
     fetchUsers();

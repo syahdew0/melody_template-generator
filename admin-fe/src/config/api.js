@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
   
   posts: `${API_URL}/apis/admin/posts`,
   postBySlug: (slug) => `${API_URL}/apis/admin/posts/slug/${slug}`,
-  UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/apis/admin/posts/slug/${slug}`,
+  UPDATE_POST_BY_SLUG: (slug) => `${API_URL}/api/admin/posts/slug/${slug}`,
   categories: `${API_URL}/apis/categories`, 
 
   getAllComments: `${API_URL}/apis/comments`, // list semua komentar, bisa filter type (post/product/blog)
@@ -66,7 +66,7 @@ export const API_ENDPOINTS = {
   // categories: `${API_URL}/api/admin/categories`,
 
   pages: `${API_URL}/api/admin/posts`,
-  pageBySlug: (slug) => `${API_URL}/api/admin/posts/page/${slug}`,
+  pageBySlug: (slug) => `${API_URL}/api/admin/pages/slug/${slug}`,
   customPages: `${API_URL}/api/admin/custom-pages`,
 
   activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,

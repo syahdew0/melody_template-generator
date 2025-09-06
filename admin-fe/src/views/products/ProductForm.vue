@@ -361,6 +361,7 @@ const submit = async () => {
   try {
     const payload = {
       ...form.value,
+      categoryId: form.value.category_ids,
       product_detail: {
         ...form.value.product_detail,
         discount_until: form.value.product_detail.discount_until

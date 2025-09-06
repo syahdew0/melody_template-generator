@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { RoleActiveModule, RoleOtherModule, RoleCategory, Module } = require('../models');
 
 exports.requireAuth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -10,17 +11,19 @@ exports.requireAuth = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'SECRET_KEY');
     req.user = decoded;
 
-    const newToken = jwt.sign(
-      {
-        UserId: decoded.UserId,
-        RoleId: decoded.RoleId,
-        OwnerId: decoded.OwnerId,
-        role: decoded.role,
-      },
-      process.env.JWT_SECRET || 'SECRET_KEY',
-      { expiresIn: '2h' }
-    );
-    res.setHeader('x-refreshed-token', newToken);
+const newToken = jwt.sign(
+  {
+    id: decoded.id,
+    RoleId: decoded.RoleId,
+    OwnerId: decoded.OwnerId,
+    role: decoded.role,
+    email: decoded.email
+  },
+  process.env.JWT_SECRET || "SECRET_KEY",
+  { expiresIn: "2h" }
+);
+res.setHeader("x-refreshed-token", newToken);
+
 
     next();
   } catch (err) {
@@ -28,13 +31,14 @@ exports.requireAuth = (req, res, next) => {
   }
 };
 
-
 exports.requireAdmin = (req, res, next) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ message: 'Hanya admin yang dapat mengakses' })
+  const role = (req.user?.role || "").toLowerCase();
+  if (role !== "admin") {
+    return res.status(403).json({ message: "Hanya admin yang dapat mengakses" });
   }
-  next()
+  next();
 };
+
 exports.requireModulePermission = (moduleName, action) => {
   return async (req, res, next) => {
     try {
@@ -42,7 +46,7 @@ exports.requireModulePermission = (moduleName, action) => {
       if (!roleId) return res.status(403).json({ message: "Role tidak ditemukan" });
 
       // Admin otomatis bisa akses
-      if (req.user.role === 'admin') return next();
+      if (req.user.role === 'Admin') return next();
 
       const roleModule = await RoleActiveModule.findOne({
         where: { RoleId: roleId },
@@ -80,7 +84,7 @@ exports.requireOtherModule = (moduleName) => {
       });
 
       if (!hasModule) {
-        return res.status(403).json({ message: "Tidak memiliki izin" });
+        return res.status(403).json({ message: `Tidak memiliki izin untuk module: ${moduleName}` });
       }
 
       next();
@@ -90,7 +94,6 @@ exports.requireOtherModule = (moduleName) => {
     }
   };
 };
-
 exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
   return async (req, res, next) => {
     try {

@@ -1,136 +1,127 @@
 <template>
   <div class="flex flex-col lg:flex-row gap-6 p-6">
-    <!-- Main Content Area -->
+    <!-- Main Content -->
     <div class="flex-1 space-y-4">
-      <label class="block font-semibold text-gray-700 ">Title</label>
-      <input
-        v-model="form.title"
-        @input="generateSlug"
-        placeholder="Add Title"
-        class="w-full text-4xl font-bold focus:outline-none border-none"
-      />
+      <label>Title</label>
+      <input v-model="form.title" @input="generateSlug" class="w-full text-4xl font-bold" />
 
-      <!-- Quill Editor -->
-      <label class="block font-semibold text-gray-700 ">Content</label>
-      <quill-editor
-        v-model:content="form.content"
-        contentType="html"
-        class="h-[400px] bg-white border rounded"
-      />
-      <label class="block font-semibold text-gray-700 ">Excerpt</label>
-      <textarea
-        v-model="form.excerpt"
-        placeholder="Write an excerpt (optional)"
-        class="w-full mt-4 p-3 border rounded bg-gray-50"
-        rows="3"
-      ></textarea>
+      <label>Content</label>
+      <quill-editor v-model="form.content" class="h-[400px] bg-white border rounded" />
+
+      <label>Excerpt</label>
+      <textarea v-model="form.excerpt" rows="3" class="w-full p-3 border rounded bg-gray-50"></textarea>
     </div>
 
-    <!-- Sidebar Settings -->
+    <!-- Sidebar -->
     <div class="w-full lg:w-1/3 space-y-4">
-      <!-- Publish Box -->
-      <div class="border rounded bg-white shadow">
-        <div class="p-4 font-semibold border-b">Publish</div>
-        <div class="p-4 space-y-3">
-          <select v-model="form.status" class="w-full border p-2 rounded">
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-          <button
-            @click="savePage"
-            class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            {{ isEdit ? 'Update' : 'Publish' }}
-          </button>
+      <!-- Publish -->
+      <div class="border rounded bg-white shadow p-4 space-y-3">
+        <select v-model="form.status" class="w-full border p-2 rounded">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+        <button @click="savePage" class="w-full bg-blue-600 text-white p-2 rounded">
+          {{ isEdit ? 'Update' : 'Publish' }}
+        </button>
+      </div>
+
+      <!-- Category -->
+      <div class="border rounded bg-white shadow p-4">
+        <label>Category</label>
+        <div v-for="cat in categories" :key="cat.id" class="flex items-center space-x-2 mt-1">
+          <input type="checkbox" :value="cat.id" v-model="form.category_ids" />
+          <span>{{ cat.name }}</span>
         </div>
       </div>
 
       <!-- Slug -->
-      <div class="border rounded bg-white shadow">
-        <div class="p-4 font-semibold border-b">Permalink</div>
-        <div class="p-4">
-          <input
-            v-model="form.slug"
-            class="w-full border p-2 rounded"
-            placeholder="Slug"
-          />
-        </div>
+      <div class="border rounded bg-white shadow p-4">
+        <label>Permalink</label>
+        <input v-model="form.slug" class="w-full border p-2 rounded" />
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { QuillEditor } from '@vueup/vue-quill'
 import { API_ENDPOINTS } from '@/config/api'
 
+const route = useRoute()
+const router = useRouter()
 
-export default {
-  components: {
-    QuillEditor
-  },
-  data() {
-    return {
-      form: {
-        title: '',
-        slug: '',
-        excerpt: '',
-        content: '',
-        status: 'draft',
-        type: 'page',
-        website_id: 1,
-        user_id: 1
-      },
-      isEdit: false,
-      originalSlug: null
-    }
-  },
-  methods: {
-    generateSlug() {
-      this.form.slug = this.form.title
-        .toLowerCase()
-        .replace(/ /g, '-')
-        .replace(/[^\w-]+/g, '')
-    },
-async fetchPageBySlug(slug) {
+const isEdit = !!route.params.slug
+const form = ref({
+  title: '',
+  slug: '',
+  excerpt: '',
+  content: '',
+  status: 'draft',
+  type: 'page',
+  website_id: 1,
+  user_id: 1,
+  category_ids: []
+})
+const categories = ref([])
+
+// Slug generator
+const generateSlug = () => {
+  form.value.slug = form.value.title
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-')
+}
+
+// Fetch page data if edit
+const fetchPageBySlug = async () => {
   try {
-    const res = await axios.get(API_ENDPOINTS.pageBySlug(slug));
-    this.form = {
-      ...res.data,
-      type: 'page'
-    };
-    this.originalSlug = res.data.slug; // 👈 simpan slug awal
-    this.isEdit = true;
+    const res = await axios.get(API_ENDPOINTS.pageBySlug(route.params.slug))
+    form.value = { ...form.value, ...res.data }
   } catch (err) {
-    console.error('Failed to fetch page by slug:', err);
+    console.error(err)
   }
 }
-,
- async savePage() {
+
+// Fetch categories
+const fetchCategories = async () => {
   try {
-    if (this.isEdit) {
-      const slugToUse = this.originalSlug || this.form.slug;
-      await axios.put(`${API_ENDPOINTS.pages}/slug/${slugToUse}`, this.form);
+    const res = await axios.get(API_ENDPOINTS.categories)
+    categories.value = res.data
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// Save page
+const savePage = async () => {
+  try {
+    if (!form.value.category_ids.length) {
+      alert('Harap pilih category terlebih dahulu!')
+      return
+    }
+
+    const payload = {
+      ...form.value,
+      categoryId: form.value.category_ids // bisa dikirim array atau pertama saja
+    }
+
+    if (isEdit) {
+      await axios.put(`${API_ENDPOINTS.pages}/slug/${form.value.slug}`, payload)
     } else {
-      await axios.post(API_ENDPOINTS.pages, this.form);
+      await axios.post(API_ENDPOINTS.posts, payload)
     }
-    this.$router.push('/admin/pages');
-  } catch (err) {
-    console.error('Failed to save page:', err);
-  }
-}
-},
-mounted() {
-  const slug = this.$route.params.slug;
-  if (slug) {
-    this.fetchPageBySlug(slug);
-  }
-}
-}
-</script>
 
-<style scoped>
-/* Tambahan styling opsional */
-</style>
+    router.push('/admin/pages')
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+onMounted(async () => {
+  await fetchCategories()
+  if (isEdit) await fetchPageBySlug()
+})
+</script>

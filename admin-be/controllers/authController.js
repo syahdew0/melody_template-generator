@@ -44,43 +44,45 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Ambil user beserta Role
     const user = await User.findOne({
       where: { email },
-      include: [{ model: Role, as: 'Role', attributes: ['id', 'name'] }]
+      include: [{ model: Role, as: "Role" }]
     });
 
-    if (!user) return res.status(404).json({ message: 'User tidak ditemukan' });
+    if (!user) {
+      return res.status(401).json({ message: "Email tidak ditemukan" });
+    }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: 'Password salah' });
+    // cek password...
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(401).json({ message: "Password salah" });
+    }
 
-    // Sign JWT
     const token = jwt.sign(
       {
         id: user.id,
-        email: user.email,
-        role: user.role,
-        RoleId: user.Role?.id
+        RoleId: user.RoleId,
+        role: user.Role?.name || user.role,
+        email: user.email
       },
-      process.env.JWT_SECRET || 'SECRET_KEY',
-      { expiresIn: '3h' }
+      process.env.JWT_SECRET || "SECRET_KEY",
+      { expiresIn: "3h" }
     );
 
-    res.json({ message: 'Login berhasil', token, user });
+    res.json({ token, user });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: err.message });
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // ===================== GET ME ===================== //
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'username', 'email', 'role', 'avatar', 'RoleId']
-    });
+   const user = await User.findByPk(req.user.UserId, {
+  attributes: ["id", "name", "username", "email", "role", "avatar", "RoleId"]
+});
 
     if (!user) return res.status(404).json({ message: 'User tidak ditemukan' });
 
