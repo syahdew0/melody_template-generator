@@ -2,38 +2,46 @@
   <div class="p-6 space-y-6">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Products</h1>
-      <router-link :to="{ name: 'ProductCreate' }" class="btn-primary">Add New</router-link>
-      </div>
+      <router-link 
+        v-if="permissions.canAdd" 
+        :to="{ name: 'ProductCreate' }" 
+        class="btn-primary"
+      >
+        Add New
+      </router-link>
+    </div>
 
-      <!-- Search and filter-->
-      <div class="flex flex-wrap gap-4 items-center">
-        <input
-          v-model="search"
-          placeholder="Search posts..."
-          class="border w-2/3 max-w-xl p-2 rounded"
-        />
-        <select
-          v-model="statusFilter"
-          class="border p-2 rounded"
-        >
-          <option value="">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-      </div>
+    <!-- Search and filter-->
+    <div class="flex flex-wrap gap-4 items-center">
+      <input
+        v-model="search"
+        placeholder="Search posts..."
+        class="border w-2/3 max-w-xl p-2 rounded"
+      />
+      <select
+        v-model="statusFilter"
+        class="border p-2 rounded"
+      >
+        <option value="">All Status</option>
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+      </select>
+    </div>
 
     <!-- Bulk Actions -->
-    <div v-if="selectedIds.length" class="text-sm text-red-600">
+    <div v-if="permissions.canDelete && selectedIds.length" class="text-sm text-red-600">
       {{ selectedIds.length }} selected.
       <button @click="bulkDelete" class="text-red-600 underline ml-2">Delete Selected</button>
     </div>
 
     <!-- Table -->
-    <div class="overflow-auto border rounded">
+    <div class="overflow-auto border rounded" v-if="permissions.canView && items.length">
       <table class="min-w-full table-auto">
         <thead class="bg-gray-100 text-left">
           <tr>
-            <th class="px-4 py-2"><input type="checkbox" @change="toggleAll" :checked="isAllSelected" /></th>
+            <th class="px-4 py-2">
+              <input type="checkbox" @change="toggleAll" :checked="isAllSelected" />
+            </th>
             <th class="px-4 py-2 cursor-pointer" @click="toggleSort('title')">Title</th>
             <th class="px-4 py-2">Status</th>
             <th class="px-4 py-2">Price</th>
@@ -51,12 +59,28 @@
             <td class="px-4 py-2">{{ formatCurrency(item.product_detail?.price) }}</td>
             <td class="px-4 py-2">{{ item.product_detail?.stock ?? '-' }}</td>
             <td class="px-4 py-2 text-right space-x-2">
-              <router-link :to="{ name: 'ProductEdit', params: { id: item.id } }" class="text-blue-600 hover:underline">Edit</router-link>
-              <button @click="confirmDelete(item.id)" class="text-red-600 hover:underline">Delete</button>
+              <router-link
+                v-if="permissions.canEdit"
+                :to="{ name: 'ProductEdit', params: { id: item.id } }"
+                class="text-blue-600 hover:underline"
+              >
+                Edit
+              </router-link>
+              <button
+                v-if="permissions.canDelete"
+                @click="confirmDelete(item.id)"
+                class="text-red-600 hover:underline"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-else class="text-center py-6 text-gray-500">
+      {{ permissions.canView ? 'No products found.' : 'Anda tidak memiliki izin untuk melihat produk.' }}
     </div>
 
     <!-- Pagination -->
@@ -69,9 +93,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import axios from 'axios'
-import { API_ENDPOINTS } from '@/config/api'
+import { ref, computed, onMounted, watch } from 'vue'
+import { api, API_ENDPOINTS } from '@/config/api'
 
 const items = ref([])
 const page = ref(1)
@@ -82,26 +105,19 @@ const selectedIds = ref([])
 const sort = ref('title')
 const sortDir = ref('asc')
 const hasNextPage = ref(false)
+const permissions = ref({
+  canView: false,
+  canEdit: false,
+  canAdd: false,
+  canDelete: false
+})
 
-const formatCurrency = (value) => {
-  if (!value) return '-'
-  return 'Rp ' + Number(value).toLocaleString('id-ID')
-}
+const formatCurrency = (value) => value ? 'Rp ' + Number(value).toLocaleString('id-ID') : '-'
 
 const fetchData = async () => {
+  if (!permissions.value.canView) return
   try {
-    console.log('FETCH PARAMS', {
-      page: page.value,
-      limit,
-      search: search.value,
-      status: statusFilter.value,
-      type: 'product'
-    })
-
-    const { data } = await axios.get(API_ENDPOINTS.posts, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
+    const { data } = await api.get(API_ENDPOINTS.posts, {
       params: {
         type: 'product',
         page: page.value,
@@ -110,7 +126,6 @@ const fetchData = async () => {
         status: statusFilter.value
       }
     })
-
     items.value = data.data || []
     hasNextPage.value = page.value * limit < data.total
   } catch (err) {
@@ -129,65 +144,53 @@ const toggleSort = (key) => {
 }
 
 const toggleAll = () => {
-  if (isAllSelected.value) {
-    selectedIds.value = []
-  } else {
-    selectedIds.value = items.value.map(i => i.id)
-  }
+  selectedIds.value = isAllSelected.value ? [] : items.value.map(i => i.id)
 }
 
 const isAllSelected = computed(() => selectedIds.value.length === items.value.length)
 
-const prevPage = () => {
-  if (page.value > 1) {
-    page.value--
-    fetchData()
-  }
-}
-const nextPage = () => {
-  page.value++
-  fetchData()
-}
+const prevPage = () => { if (page.value > 1) { page.value--; fetchData() } }
+const nextPage = () => { page.value++; fetchData() }
 
 const confirmDelete = async (id) => {
+  if (!permissions.value.canDelete) return
   if (confirm('Delete this product?')) {
-    await axios.delete(`${API_ENDPOINTS.posts}/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
+    await api.delete(`${API_ENDPOINTS.posts}/${id}`)
     fetchData()
   }
 }
-watch([search, statusFilter], () => {
-  page.value = 1
-  fetchData()
-})
-
 
 const bulkDelete = async () => {
+  if (!permissions.value.canDelete || !selectedIds.value.length) return
   if (confirm('Delete selected products?')) {
-    await Promise.all(
-      selectedIds.value.map(id =>
-        axios.delete(`${API_ENDPOINTS.posts}/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-      )
-    )
+    await Promise.all(selectedIds.value.map(id => api.delete(`${API_ENDPOINTS.posts}/${id}`)))
     selectedIds.value = []
     fetchData()
   }
 }
 
-onMounted(fetchData)
+const fetchPermissions = async () => {
+  try {
+    const res = await api.get(API_ENDPOINTS.userPermissions)
+    const productKey = Object.keys(res.data).find(k => k.toLowerCase() === 'product')
+    permissions.value = productKey
+      ? res.data[productKey]
+      : { canView: false, canEdit: false, canAdd: false, canDelete: false }
+  } catch (err) {
+    console.error('Gagal fetch permissions:', err)
+    permissions.value = { canView: false, canEdit: false, canAdd: false, canDelete: false }
+  }
+}
+
+watch([search, statusFilter], () => { page.value = 1; fetchData() })
+
+onMounted(async () => {
+  await fetchPermissions()
+  fetchData()
+})
 </script>
 
 <style scoped>
-.input {
-  @apply px-3 py-2 border rounded-md;
-}
-.btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700;
-}
-.btn-secondary {
-  @apply bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300;
-}
+.btn-primary { @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 }
+.btn-secondary { @apply bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 }
 </style>

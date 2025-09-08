@@ -12,6 +12,7 @@ router.post('/register', authController.register)
 router.post('/login', authController.login)
 router.post('/forgot-password', authController.forgotPassword)
 router.post('/reset-password/:token', authController.resetPassword)
+// router.get('/admin/user/permissions', requireAuth, getUserPermissions);
 
 // Konten routes
 // router.post('/konten', requireAuth, requirePermission('manage_content'), kontenController.create)

@@ -154,6 +154,7 @@ export const API_ENDPOINTS = {
     update: (id) => `${API_URL}/api/admin/modules/${id}`,
     delete: (id) => `${API_URL}/api/admin/modules/${id}`,
   },
+  userPermissions: `${API_URL}/api/admin/permissions`,
 
 }
 

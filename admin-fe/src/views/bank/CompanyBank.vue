@@ -3,7 +3,10 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-xl font-bold">Master Bank Perusahaan</h1>
+
+      <!-- Tombol Tambah Bank hanya jika ada permission -->
       <button
+        v-if="canAddBank"
         @click="openForm()"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
       >
@@ -29,38 +32,45 @@
           <td class="border p-2">{{ bank.account_name }}</td>
           <td class="border p-2">{{ bank.account_number }}</td>
           <td class="border p-2 text-center">
-  <button
-    @click="openForm(bank)"
-    class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded mr-1"
-  >
-    Edit
-  </button>
 
-  <button
-    v-if="bank.is_active"
-    @click="deactivateBank(bank.id)"
-    class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded mr-1"
-  >
-    Nonaktifkan
-  </button>
+            <!-- Edit hanya jika ada permission -->
+            <button
+              v-if="canEditBank"
+              @click="openForm(bank)"
+              class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded mr-1"
+            >
+              Edit
+            </button>
 
-  <button
-    v-else
-    @click="activateBank(bank.id)"
-    class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded mr-1"
-  >
-    Aktifkan
-  </button>
+            <!-- Aktif/Nonaktif hanya jika ada permission -->
+            <button
+              v-if="bank.is_active && canEditBank"
+              @click="deactivateBank(bank.id)"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded mr-1"
+            >
+              Nonaktifkan
+            </button>
 
-  <button
-    @click="deleteBank(bank.id)"
-    class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-  >
-    Hapus
-  </button>
-</td>
-          
+            <button
+              v-else-if="!bank.is_active && canEditBank"
+              @click="activateBank(bank.id)"
+              class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded mr-1"
+            >
+              Aktifkan
+            </button>
+
+            <!-- Hapus hanya jika ada permission -->
+            <button
+              v-if="canDeleteBank"
+              @click="deleteBank(bank.id)"
+              class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+            >
+              Hapus
+            </button>
+
+          </td>
         </tr>
+
         <tr v-if="banks.length === 0">
           <td colspan="5" class="text-center p-4 text-gray-500">Tidak ada data bank</td>
         </tr>
@@ -101,6 +111,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 
+// Data
 const banks = ref([])
 const showForm = ref(false)
 const form = ref({
@@ -110,6 +121,13 @@ const form = ref({
   account_number: ''
 })
 
+// Permission
+// Misal currentUser disimpan di localStorage
+const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+const canAddBank = currentUser.permissions?.includes('bank_add')
+const canEditBank = currentUser.permissions?.includes('bank_edit')
+const canDeleteBank = currentUser.permissions?.includes('bank_delete')
+
 // Ambil daftar bank
 const fetchBanks = async () => {
   try {
@@ -117,17 +135,19 @@ const fetchBanks = async () => {
     banks.value = data.data || []
   } catch (err) {
     console.error(err)
-    alert('Gagal memuat daftar bank')
   }
 }
 
 // Buka form tambah/edit
 const openForm = (bank = null) => {
-  if (bank) {
-    form.value = { ...bank }
-  } else {
-    form.value = { id: null, bank_name: '', account_name: '', account_number: '' }
+  if (!bank && !canAddBank) {
+    alert('Anda tidak memiliki izin untuk menambahkan bank')
+    return
   }
+
+  form.value = bank
+    ? { ...bank }
+    : { id: null, bank_name: '', account_name: '', account_number: '' }
   showForm.value = true
 }
 
@@ -148,17 +168,19 @@ const saveBank = async () => {
 
 // Hapus data
 const deleteBank = async (id) => {
+  if (!canDeleteBank) return alert('Anda tidak memiliki izin untuk menghapus bank')
   if (!confirm('Yakin ingin menghapus bank ini?')) return
   try {
     await axios.delete(`${API_ENDPOINTS.company_banks}/${id}`)
     fetchBanks()
   } catch (err) {
     alert(err.response?.data?.message || 'Gagal menghapus data bank')
- 
- }
+  }
 }
 
+// Aktif/Nonaktifkan bank
 const deactivateBank = async (id) => {
+  if (!canEditBank) return alert('Anda tidak memiliki izin untuk menonaktifkan bank')
   if (!confirm('Yakin ingin menonaktifkan bank ini?')) return;
   try {
     await axios.patch(API_ENDPOINTS.deactivate_company_bank(id));
@@ -169,6 +191,7 @@ const deactivateBank = async (id) => {
 };
 
 const activateBank = async (id) => {
+  if (!canEditBank) return alert('Anda tidak memiliki izin untuk mengaktifkan bank')
   if (!confirm('Yakin ingin mengaktifkan bank ini?')) return;
   try {
     await axios.patch(API_ENDPOINTS.activate_company_bank(id));

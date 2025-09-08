@@ -110,7 +110,6 @@ async listOrders(req, res) {
     }
   },
 
-  // Detail order admin
 // Detail order admin
 async orderDetail(req, res) {
   try {
@@ -229,46 +228,29 @@ async updateStatus(req, res) {
     const customer = await Customer.findByPk(order.customer_id, { transaction: t });
     if (!customer) return res.status(404).json({ message: 'Customer tidak ditemukan' });
 
-    // Ambil wallet customer (buat otomatis kalau belum ada)
-    let wallet = await Wallet.findOne({ 
-      where: { customer_id: customer.id, wallet_type: 'saldo' },
-      transaction: t 
-    });
+    const refundableStatuses = ['Unpaid', 'Cancel', 'Refund'];
+    const amount = Number(order.total_amount ?? 0);
 
-    if (!wallet) {
-      wallet = await Wallet.create({
-        customer_id: customer.id,
-        wallet_type: 'saldo',
-        balance: 0
-      }, { transaction: t });
-    }
-
-    // Ambil wallet history terakhir
+    // Ambil saldo terakhir customer dari WalletHistory
     const lastWalletHistory = await WalletHistory.findOne({
-      where: { walletId: wallet.id },
+      where: { username: customer.username },
       order: [['created_at', 'DESC']],
       transaction: t
     });
 
-    const amount = Number(order.total_amount ?? 0);
-    const balanceBefore = Number(lastWalletHistory?.balance_after ?? wallet.balance ?? 0);
+    const balanceBefore = Number(lastWalletHistory?.balance_after ?? 0);
     let balanceAfter = balanceBefore;
 
-    const refundableStatuses = ['Unpaid', 'Cancel', 'Refund'];
-
-    // ====== LOGIKA BARU ======
+    // ===== LOGIKA REFUND =====
     if (refundableStatuses.includes(status)) {
-      // hanya refund kalau status sebelumnya bukan refundable
+      // refund hanya jika status sebelumnya bukan refundable
       if (!refundableStatuses.includes(order.status)) {
         balanceAfter = balanceBefore + amount;
-        wallet.balance = balanceAfter;
-        await wallet.save({ transaction: t });
 
         await WalletHistory.create({
-          walletId: wallet.id,
-          username: customer.username ?? 'unknown',
+          username: customer.username,
           transaction_type_id: 13, // order_dibatalkan
-          wallet_type: 'saldo',
+          wallet_type_id: 1, // sesuaikan mapping wallet_type kamu
           reference_id: order.id,
           balance_before: balanceBefore,
           amount: amount,
@@ -278,8 +260,10 @@ async updateStatus(req, res) {
           created_at: new Date()
         }, { transaction: t });
       }
-    } else if (status === 'Paid') {
-      // kalau dari refund → balik ke paid, potong saldo
+    }
+    // ===== LOGIKA PAID =====
+    else if (status === 'Paid') {
+      // jika sebelumnya status refundable, potong saldo
       if (refundableStatuses.includes(order.status)) {
         balanceAfter = balanceBefore - amount;
         if (balanceAfter < 0) {
@@ -287,19 +271,15 @@ async updateStatus(req, res) {
           return res.status(400).json({ message: 'Saldo tidak mencukupi untuk mengembalikan ke Paid' });
         }
 
-        wallet.balance = balanceAfter;
-        await wallet.save({ transaction: t });
-
         await WalletHistory.create({
-          walletId: wallet.id,
-          username: customer.username ?? 'unknown',
-          transaction_type_id: 11, // bisa bikin type baru: order_dibayar
-          wallet_type: 'saldo',
+          username: customer.username,
+          transaction_type_id: 11, // order_dibayar
+          wallet_type_id: 1,
           reference_id: order.id,
           balance_before: balanceBefore,
           amount: -amount,
           balance_after: balanceAfter,
-          remarks: ` order #${order.id} dibayar`,
+          remarks: `Order #${order.id} dibayar`,
           status: 'success',
           created_at: new Date()
         }, { transaction: t });
@@ -324,5 +304,6 @@ async updateStatus(req, res) {
     console.error('updateStatus error:', err);
     res.status(500).json({ message: 'Gagal update status', error: err.message });
   }
-},
+}
+
 };

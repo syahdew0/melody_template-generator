@@ -4,7 +4,13 @@
 
     <!-- Tombol tambah bank -->
     <div class="mb-4">
-      <button @click="openForm()" class="btn bg-green-500 hover:bg-green-600">Tambah Bank</button>
+      <button
+        v-if="canAddBank"
+        @click="openForm()"
+        class="btn bg-green-500 hover:bg-green-600"
+      >
+        Tambah Bank
+      </button>
     </div>
 
     <!-- Tabel daftar bank -->
@@ -23,8 +29,20 @@
           <td class="p-2 border">{{ bank.name }}</td>
           <td class="p-2 border capitalize">{{ bank.status }}</td>
           <td class="p-2 border space-x-2">
-            <button @click="editBank(bank)" class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Edit</button>
-            <button @click="deleteBank(bank.id)" class="btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Hapus</button>
+            <button
+              v-if="canEditBank"
+              @click="editBank(bank)"
+              class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              Edit
+            </button>
+            <button
+              v-if="canDeleteBank"
+              @click="deleteBank(bank.id)"
+              class="btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Hapus
+            </button>
           </td>
         </tr>
         <tr v-if="banks.length === 0">
@@ -47,7 +65,9 @@
           <button type="submit" class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
             {{ editMode ? 'Update' : 'Simpan' }}
           </button>
-          <button type="button" @click="closeForm()" class="btn bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Batal</button>
+          <button type="button" @click="closeForm()" class="btn bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">
+            Batal
+          </button>
         </div>
       </form>
     </div>
@@ -68,19 +88,32 @@ export default {
         id: null,
         name: '',
         status: 'active'
-      }
+      },
+      currentUser: null
+    }
+  },
+  computed: {
+    canAddBank() {
+      return this.currentUser?.permissions?.includes('bank_add')
+    },
+    canEditBank() {
+      return this.currentUser?.permissions?.includes('bank_edit')
+    },
+    canDeleteBank() {
+      return this.currentUser?.permissions?.includes('bank_delete')
     }
   },
   methods: {
     async fetchBanks() {
       try {
         const res = await axios.get(API_ENDPOINTS.banks)
-        this.banks = res.data.data
+        this.banks = res.data.data || []
       } catch (err) {
         console.error('Gagal mengambil daftar bank:', err)
       }
     },
     openForm() {
+      if (!this.canAddBank) return alert('Anda tidak memiliki izin untuk menambah bank')
       this.editMode = false
       this.form = { id: null, name: '', status: 'active' }
       this.showForm = true
@@ -89,6 +122,7 @@ export default {
       this.showForm = false
     },
     editBank(bank) {
+      if (!this.canEditBank) return alert('Anda tidak memiliki izin untuk mengedit bank')
       this.editMode = true
       this.form = { ...bank }
       this.showForm = true
@@ -96,10 +130,8 @@ export default {
     async submitForm() {
       try {
         if (this.editMode) {
-          // PUT /api/banks/:id
           await axios.put(`${API_ENDPOINTS.banks}/${this.form.id}`, this.form)
         } else {
-          // POST /api/banks
           await axios.post(API_ENDPOINTS.banks, this.form)
         }
         await this.fetchBanks()
@@ -110,6 +142,7 @@ export default {
       }
     },
     async deleteBank(id) {
+      if (!this.canDeleteBank) return alert('Anda tidak memiliki izin untuk menghapus bank')
       if (!confirm('Yakin ingin menghapus bank ini?')) return
       try {
         await axios.delete(`${API_ENDPOINTS.banks}/${id}`)
@@ -121,6 +154,8 @@ export default {
     }
   },
   mounted() {
+    const user = localStorage.getItem('currentUser')
+    this.currentUser = user ? JSON.parse(user) : { permissions: [] }
     this.fetchBanks()
   }
 }

@@ -79,6 +79,8 @@ app.use('/customer/auth', changePasswordRoutes);
 
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/admin/permissions', require('./routes/role/permissionRoutes'));
+
 app.use('/apis/public', publicRoutes);
 
 app.use("/api/admin/roles", require("./routes/role/roleRoutes"));
@@ -87,7 +89,7 @@ app.use('/api/admin/modules', require('./routes/role/moduleRoutes'));
 app.use('/apis/icons', require('./routes/iconRoutes'));
 app.use('/api/admin/websites', require('./routes/websiteRoutes'));
 app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
-app.use('/apis/setting-logo', require('./routes/settingLogoRoutes'));
+app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
 app.use('/apis/admin/posts', require('./routes/postadminRoutes'));// admin
 app.use('/apis/categories', require('./routes/categoryRoutes'));
 app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));

@@ -1,12 +1,13 @@
 <template>
   <div class="py-12 px-6">
     <h2 class="text-xl font-bold mb-4">Daftar Menu</h2>
-    <button
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        @click="createNewMenuGroup"
-      >
-        + Tambah Menu
-      </button>
+<button
+  v-if="permissions.canAdd"
+  class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+  @click="createNewMenuGroup"
+>
+  + Tambah Menu
+</button>
     <table class="w-full border text-sm">
       <thead class="bg-gray-100 text-left">
         <tr>
@@ -46,14 +47,16 @@
               <span class="text-blue-600">Non-aktif</span>
             </span>
           </td>
-          <td class="p-2 space-x-2">
+<td class="p-2 space-x-2">
   <button
+    v-if="permissions.canEdit"
     @click="editMenuGroup(menu)"
     class="text-sm text-yellow-600 hover:underline"
   >
     Edit
   </button>
   <button
+    v-if="permissions.canDelete"
     @click="deleteMenuGroup(menu.id)"
     class="text-sm text-red-600 hover:underline"
   >
@@ -68,18 +71,43 @@
 
 <script>
 import axios from 'axios';
-import { API_ENDPOINTS } from '@/config/api';
+import { API_ENDPOINTS, api } from '@/config/api';
 
 export default {
   data() {
-    return {
-      menuGroups: [],
-    };
-  },
+  return {
+    menuGroups: [],
+    permissions: {
+      canView: false,
+      canAdd: false,
+      canEdit: false,
+      canDelete: false,
+    },
+  };
+},
+
   mounted() {
     this.fetchMenuGroups();
+      this.fetchPermissions();
   },
   methods: {
+async fetchPermissions() {
+  try {
+    const res = await api.get(API_ENDPOINTS.userPermissions);
+
+    // Cari key "menu" tanpa peduli huruf kapital
+    const menuKey = Object.keys(res.data).find(k => k.toLowerCase() === 'menu');
+
+    // Ambil permissions module Menu, jika tidak ada pakai default false
+    this.permissions = menuKey
+      ? res.data[menuKey]
+      : { canView: false, canAdd: false, canEdit: false, canDelete: false };
+
+  } catch (err) {
+    console.error('Gagal ambil permissions:', err);
+    this.permissions = { canView: false, canAdd: false, canEdit: false, canDelete: false };
+  }
+},
     fetchMenuGroups() {
       axios.get(API_ENDPOINTS.MENU_GROUPS).then(res => {
         this.menuGroups = res.data;

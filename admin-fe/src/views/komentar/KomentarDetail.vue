@@ -13,9 +13,20 @@
       <p class="mt-2 text-gray-500"><strong>Dibuat:</strong> {{ formatDate(comment.created_at) }}</p>
       <p><strong>Status:</strong> {{ comment.approved ? 'Approved' : 'Pending' }}</p>
 
-      <div class="mt-4 flex gap-2">
-        <button @click="updateStatus(true)" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
-        <button @click="updateStatus(false)" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
+      <!-- Tombol Approve/Reject hanya muncul jika user punya canEdit -->
+      <div class="mt-4 flex gap-2" v-if="permissions.canEdit">
+        <button
+          @click="updateStatus(true)"
+          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Approve
+        </button>
+        <button
+          @click="updateStatus(false)"
+          class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Reject
+        </button>
       </div>
     </div>
 
@@ -33,33 +44,61 @@ import { API_ENDPOINTS } from "@/config/api";
 
 const route = useRoute();
 const comment = ref(null);
+const permissions = ref({
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+});
 
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
 }
 
+// Ambil detail komentar
 async function fetchComment() {
   try {
     const res = await axios.get(API_ENDPOINTS.getCommentById(route.params.id));
-    comment.value = {
-      ...res.data,
-      approved: res.data.approved === true || res.data.approved === 'true'
-    };
+    comment.value = { ...res.data, approved: res.data.approved === true || res.data.approved === 'true' };
   } catch (err) {
     console.error("Gagal memuat komentar:", err);
   }
 }
 
-async function updateStatus(approved) {
+// Ambil permission user
+async function fetchPermissions() {
   try {
-    await axios.patch(API_ENDPOINTS.updateCommentStatus(comment.value.id), { approved });
-    await fetchComment(); // refresh
-    alert("Status komentar berhasil diperbarui.");
+    const res = await axios.get(API_ENDPOINTS.userPermissions);
+    const perm = res.data['komentar'] || { canView: false, canEdit: false, canDelete: false };
+    permissions.value = perm;
   } catch (err) {
-    console.error("Gagal memperbarui status:", err);
+    console.error("Gagal ambil permissions:", err);
+    permissions.value = { canView: false, canEdit: false, canDelete: false };
   }
 }
 
-onMounted(fetchComment);
+// Update status komentar (approve/reject)
+async function updateStatus(approved) {
+  if (!permissions.value.canEdit) {
+    alert("Anda tidak memiliki izin untuk mengubah status komentar.");
+    return;
+  }
+  try {
+    await axios.patch(API_ENDPOINTS.updateCommentStatus(comment.value.id), { approved });
+    await fetchComment(); // refresh detail setelah update
+    alert("Status komentar berhasil diperbarui.");
+  } catch (err) {
+    console.error("Gagal memperbarui status:", err);
+    alert("Terjadi kesalahan saat memperbarui status komentar.");
+  }
+}
+
+onMounted(async () => {
+  await fetchPermissions();
+  if (permissions.value.canView) {
+    await fetchComment();
+  } else {
+    alert("Anda tidak memiliki izin untuk melihat komentar ini.");
+  }
+});
 </script>

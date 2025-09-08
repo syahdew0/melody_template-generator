@@ -80,7 +80,10 @@ exports.requireOtherModule = (moduleName) => {
       if (!roleId) return res.status(403).json({ message: "Role tidak ditemukan" });
 
       const hasModule = await RoleOtherModule.findOne({
-        where: { RoleId: roleId, ModuleName: moduleName },
+        where: {
+          RoleId: roleId,
+          ModuleName: moduleName, // nama modul atau permission spesifik
+        },
       });
 
       if (!hasModule) {
@@ -94,6 +97,7 @@ exports.requireOtherModule = (moduleName) => {
     }
   };
 };
+
 exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
   return async (req, res, next) => {
     try {

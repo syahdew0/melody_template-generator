@@ -24,7 +24,7 @@
 const express = require('express');
 const router = express.Router();
 const commentController = require('../../controllers/commentController');
-const { requireAuth, requireModulePermission } = require('../../middlewares/authMiddleware');
+const { requireAuth, requireModulePermission, requireOtherModule } = require('../../middlewares/authMiddleware');
 
 // Middleware permission khusus komentar
 const checkCommentPermission = (action) => requireModulePermission("komentar", action);
@@ -47,14 +47,6 @@ router.get(
   commentController.getDetail
 );
 
-// Update status approve/reject (edit)
-router.patch(
-  '/:id/status',
-  requireAuth,
-  checkCommentPermission("canEdit"),
-  commentController.updateStatus
-);
-
 // Ambil status auto-approve (view)
 router.get(
   '/settings/auto-approve',
@@ -63,12 +55,8 @@ router.get(
   commentController.getAutoApproveSetting
 );
 
-// Update status auto-approve (edit)
-router.patch(
-  '/settings/auto-approve',
-  requireAuth,
-  checkCommentPermission("canEdit"),
-  commentController.updateAutoApproveSetting
-);
+router.patch('/:id/status', requireAuth, requireOtherModule("Boleh Approve Komentar"), commentController.updateStatus);
+router.patch('/settings/auto-approve', requireAuth, requireOtherModule("Boleh Approve Komentar"), commentController.updateAutoApproveSetting);
+
 
 module.exports = router;

@@ -35,35 +35,23 @@
 const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/postController');
-
 const {
   requireAuth,
   requireModulePermission,
   requireCategoryAccess,
 } = require('../middlewares/authMiddleware');
 
-// ====================== POST ROUTES ====================== //
-
-// Ambil semua post (admin) - optional filter by category
+// ====================== GET ALL ====================== //
+// Bisa pakai query ?type=post|product|page
 router.get(
   '/',
   requireAuth,
   (req, res, next) => {
     const type = req.query.type || 'post';
-    if (type === 'page') {
-      requireModulePermission("Page", "canView")(req, res, next);
-    } else {
-      requireModulePermission("Post", "canView")(req, res, next);
-    }
+    if (type === 'page') requireModulePermission("Page", "canView")(req, res, next);
+    else if (type === 'product') requireModulePermission("Product", "canView")(req, res, next);
+    else requireModulePermission("Post", "canView")(req, res, next);
   },
-  postController.getAll
-);
-
-
-router.get(
-  '/posts',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
   postController.getAll
 );
 
@@ -76,62 +64,16 @@ router.get(
 );
 
 // ====================== GET BY SLUG ====================== //
-
-router.get(
-  '/slug/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
-
-router.get(
-  '/category/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
-
-router.get(
-  '/post/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
-
-// nested slug (opsional)
-router.get(
-  '/post/:categorySlug/:postSlug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
-
-router.get(
-  '/page/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
-
-router.get(
-  '/pages/slug/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getBySlug
-);
+router.get('/slug/:slug', requireAuth, postController.getBySlug);
+router.get('/post/:slug', requireAuth, postController.getBySlug);
+router.get('/post/:categorySlug/:postSlug', requireAuth, postController.getBySlug);
+router.get('/page/:slug', requireAuth, postController.getBySlug);
+router.get('/pages/slug/:slug', requireAuth, postController.getBySlug);
 
 // ====================== GET BY ID ====================== //
-
-router.get(
-  '/:id',
-  requireAuth,
-  requireModulePermission("Post", "canView"),
-  postController.getById
-);
+router.get('/:id', requireAuth, postController.getById);
 
 // ====================== CREATE / UPDATE ====================== //
-
-// sekarang jadi /api/admin/posts
 router.post(
   '/',
   requireAuth,
@@ -140,36 +82,11 @@ router.post(
   postController.create
 );
 
-
-router.put(
-  '/:id',
-  requireAuth,
-  requireModulePermission("Post", "canEdit"),
-  // ambil categoryId di controller, bukan param
-  postController.update
-);
-
-router.put(
-  '/slug/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canEdit"),
-  postController.updateBySlug
-);
+router.put('/:id', requireAuth, requireModulePermission("Post", "canEdit"), postController.update);
+router.put('/slug/:slug', requireAuth, requireModulePermission("Post", "canEdit"), postController.updateBySlug);
 
 // ====================== DELETE ====================== //
-
-router.delete(
-  '/:id',
-  requireAuth,
-  requireModulePermission("Post", "canDelete"),
-  postController.remove
-);
-
-router.delete(
-  '/slug/:slug',
-  requireAuth,
-  requireModulePermission("Post", "canDelete"),
-  postController.deleteBySlug
-);
+router.delete('/:id', requireAuth, requireModulePermission("Post", "canDelete"), postController.remove);
+router.delete('/slug/:slug', requireAuth, requireModulePermission("Post", "canDelete"), postController.deleteBySlug);
 
 module.exports = router;
