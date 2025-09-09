@@ -84,16 +84,22 @@ const routes = [
 
   { path: '/admin/user/customerlist', name: 'CustomerList', component: () => import('@/views/user/CustomerList.vue') },
 
-    { path: '/admin/orders', name: 'OrderHistory', component: () => import('@/views/checkout/OrderHistory.vue') },
+  { path: '/admin/orders', name: 'OrderHistory', component: () => import('@/views/checkout/OrderHistory.vue') },
   { path: '/admin/orders/:id', name: 'OrderDetail', component: () => import('@/views/checkout/OrderDetail.vue') },
 
-    { path: '/admin/komentar/komentarlist', name: 'KomentarList', component: () => import('@/views/komentar/KomentarList.vue') }, 
-    { path: '/admin/komentar/:id', name: 'KomentarDetail', component: () => import('@/views/komentar/KomentarDetail.vue') },
+  { path: '/admin/komentar/komentarlist', name: 'KomentarList', component: () => import('@/views/komentar/KomentarList.vue') }, 
+  { path: '/admin/komentar/:id', name: 'KomentarDetail', component: () => import('@/views/komentar/KomentarDetail.vue') },
 
-      { path: '/RolePage', name: 'RolePage', component: () => import('@/views/role/RolePage.vue') },
-       { path: '/CreateRolePage', name: 'CreateRolePage', component: () => import('@/views/role/RoleBaru.vue') },
-       { path: '/roles/edit/:id', name: 'EditRole', component: () => import('@/views/role/RoleEdit.vue') },
-  
+  { path: '/RolePage', name: 'RolePage', component: () => import('@/views/role/RolePage.vue') },
+  { path: '/CreateRolePage', name: 'CreateRolePage', component: () => import('@/views/role/RoleBaru.vue') },
+  { path: '/roles/edit/:id', name: 'EditRole', component: () => import('@/views/role/RoleEdit.vue') },
+
+  { path: '/MLMSetting', name: 'MLMSetting', component: () => import('@/views/MLM/MLMSetting.vue') },
+  { path: '/PackageBaru', name: 'PackageBaru', component: () => import('@/views/MLM/PackageBaru.vue') },
+  { path: '/DaftarPackage', name: 'DaftarPackage',component: () => import('@/views/MLM/DaftarPackage.vue') },
+  { path: '/MLMEdit', name: 'MLMEdit', component: () => import('@/views/MLM/MLMEdit.vue') },
+
+
 ]
 
 const base = process.env.VUE_APP_BASE_PATH || '/'

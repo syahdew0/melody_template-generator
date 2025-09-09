@@ -156,6 +156,9 @@ export const API_ENDPOINTS = {
   },
   userPermissions: `${API_URL}/api/admin/permissions`,
 
+  mlmPackages: `${API_URL}/api/mlm/packages`,
+  mlmPackageById: (id) => `${API_URL}/api/mlm/packages/${id}`,
+  mlmSettings: `${API_URL}/api/mlm/settings`,
 }
 
 

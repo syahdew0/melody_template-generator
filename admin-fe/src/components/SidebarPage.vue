@@ -80,11 +80,11 @@
         <transition>
           <ul v-show="subDropdownOpen === 'posts'" class="dropdown-submenu">
             <router-link :to="{ name: 'PostList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PostList') }">All Posts</router-link>
-            <router-link :to="{ name: 'PostCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PostCreate') }">Add Posts</router-link>
+            <!-- <router-link :to="{ name: 'PostCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PostCreate') }">Add Posts</router-link> -->
             <router-link :to="{ name: 'CategoryList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryList') }">All Categories</router-link>
-            <router-link :to="{ name: 'CategoryCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryCreate') }">Add Category</router-link>
+            <!-- <router-link :to="{ name: 'CategoryCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('CategoryCreate') }">Add Category</router-link> -->
             <router-link :to="{ name: 'TestimonialList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialList') }">All Testimonials</router-link>
-            <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link>
+            <!-- <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link> -->
           </ul>
         </transition>
       </li>
@@ -243,7 +243,7 @@
         <transition>
           <ul v-show="subDropdownOpen === 'pages'" class="dropdown-submenu">
             <router-link :to="{ name: 'PageList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PageList') }">All Pages</router-link>
-            <router-link :to="{ name: 'PageCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PageCreate') }">Add Pages</router-link>
+            <!-- <router-link :to="{ name: 'PageCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PageCreate') }">Add Pages</router-link> -->
             <router-link :to="{ name: 'CustomPageManager' }" class="submenu-link"> All Custom Pages</router-link>
           </ul>
         </transition>
@@ -263,7 +263,7 @@
         <transition>
           <ul v-show="subDropdownOpen === 'products'" class="dropdown-submenu">
             <router-link :to="{ name: 'ProductList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('ProductList') }">All Products</router-link>
-            <router-link :to="{ name: 'ProductCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('ProductCreate') }">Add New</router-link>
+            <!-- <router-link :to="{ name: 'ProductCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('ProductCreate') }">Add New</router-link> -->
              <router-link :to="{ name: 'OrderHistory' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('OrderHistory') }">Order History</router-link>
                <!-- <router-link :to="{ name: 'OrderDetail' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('OrderDetail') }">Order Detail</router-link> -->
           </ul>
@@ -512,6 +512,107 @@
       >
         Komentar
       </router-link>
+
+<!-- MLM -->
+<li class="relative">
+  <div
+    @click="toggleSubDropdown('mlm')"
+    class="dropdown-btn flex items-center gap-2 cursor-pointer"
+    :class="subDropdownOpen === 'mlm' ? 'text-amber-400 bg-slate-700/50' : ''"
+  >
+    <!-- Icon MLM -->
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7L2 9h7z" />
+    </svg>
+    <span>MLM</span>
+    <svg
+      class="w-3 h-3 ml-auto transition-transform"
+      :class="subDropdownOpen === 'mlm' ? 'rotate-180' : ''"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M5.293 7.293a1 1 0 011.414 0L10 
+           10.586l3.293-3.293a1 1 0 
+           111.414 1.414l-4 4a1 1 0 
+           01-1.414 0l-4-4a1 1 0 
+           010-1.414z"
+        clip-rule="evenodd"
+      />
+    </svg>
+  </div>
+
+  <transition>
+    <ul v-show="subDropdownOpen === 'mlm'" class="dropdown-submenu">
+      <!-- Submenu MLM langsung -->
+      <li>
+        <router-link
+          :to="{ name: 'MLMSetting' }"
+          class="submenu-link"
+          :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MLMSetting') }"
+        >
+          Pengaturan MLM
+        </router-link>
+      </li>
+
+       <li>
+              <router-link
+                :to="{ name: 'PackageBaru' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PackageBaru') }"
+                @click.stop
+              >
+                Package Baru
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                :to="{ name: 'DaftarPackage' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('DaftarPackage') }"
+                @click.stop
+              >
+                Daftar Package
+              </router-link>
+            </li>
+
+      <!-- Paket (hanya toggle, tidak bisa di-route langsung) -->
+      <!-- <li>
+        <div
+          class="submenu-link flex items-center justify-between cursor-pointer"
+          @click="toggleSubDropdown('paket')"
+          :class="subDropdownOpen === 'paket' ? 'text-amber-400 bg-slate-700/50' : ''"
+        >
+          <span>Paket</span>
+          <svg
+            class="w-3 h-3 ml-2 transition-transform"
+            :class="subDropdownOpen === 'paket' ? 'rotate-180' : ''"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 
+                 10.586l3.293-3.293a1 1 0 
+                 111.414 1.414l-4 4a1 1 0 
+                 01-1.414 0l-4-4a1 1 0 
+                 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div> -->
+
+        <!-- Submenu Paket -->
+        <!-- <transition>
+          <ul v-show="subDropdownOpen === 'paket'" class="dropdown-submenu pl-4">
+           
+          </ul>
+        </transition> -->
+      <!-- </li> -->
+    </ul>
+  </transition>
+</li>
 
       </ul>
     </nav>
