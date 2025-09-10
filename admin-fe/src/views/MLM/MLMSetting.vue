@@ -127,42 +127,82 @@ import axios from "axios";
 import { API_ENDPOINTS } from "@/config/api";
 
 const form = reactive({
-  maxHariTransaksi: 2,
+  maxHariTransaksi: 0,
   maxIklanPerHari: "",
   autoApprove: false,
   samePackage: false,
   autoHold: false,
-  maxChild: 4,
-  positions: [
-    { name: "Left", value: 10 },
-    { name: "Mid 1", value: 20 },
-    { name: "Mid 2", value: 30 },
-    { name: "Right", value: 40 },
-  ],
-  wallets: [
-    { name: "MLM BALANCE", percent: 30, active: true },
-    { name: "MLM WD", percent: 70, active: true },
-  ],
+  maxChild: 0,
+  positions: [],
+  wallets: [],
 });
 
+// Load pengaturan dari backend
 const loadSettings = async () => {
   try {
     const res = await axios.get(API_ENDPOINTS.mlmSettings, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
     if (res.data) {
-      Object.assign(form, res.data); // update reactive form dengan data backend
+      let data = res.data;
+
+      // Pastikan positions array
+      if (data.Positions) {
+        form.positions = Array.isArray(data.Positions)
+          ? data.Positions
+          : JSON.parse(data.Positions);
+      } else if (data.positions) {
+        form.positions = Array.isArray(data.positions)
+          ? data.positions
+          : JSON.parse(data.positions);
+      } else {
+        form.positions = [];
+      }
+
+      // Wallets
+      if (data.Wallets) {
+        form.wallets = Array.isArray(data.Wallets)
+          ? data.Wallets
+          : JSON.parse(data.Wallets);
+      } else if (data.wallets) {
+        form.wallets = Array.isArray(data.wallets)
+          ? data.wallets
+          : JSON.parse(data.wallets);
+      } else {
+        form.wallets = [];
+      }
+
+      // Field lainnya
+      form.maxHariTransaksi = data.MaxHariTransaksi ?? 2;
+      form.maxIklanPerHari = data.MaxIklanPerHari ?? "";
+      form.autoApprove = !!data.AutoApprove;
+      form.samePackage = !!data.SamePackage;
+      form.autoHold = !!data.AutoHold;
+      form.maxChild = data.MaxChild ?? 4;
     }
   } catch (err) {
     console.error("Gagal load pengaturan MLM:", err);
   }
 };
 
+// Simpan pengaturan ke backend
 const saveSettings = async () => {
   try {
-    await axios.put(API_ENDPOINTS.mlmSettings, form, {
+    const payload = {
+      MaxHariTransaksi: form.maxHariTransaksi,
+      MaxIklanPerHari: form.maxIklanPerHari,
+      AutoApprove: form.autoApprove ? 1 : 0,
+      SamePackage: form.samePackage ? 1 : 0,
+      AutoHold: form.autoHold ? 1 : 0,
+      MaxChild: form.maxChild,
+      positions: form.positions,
+      wallets: form.wallets,
+    };
+
+    await axios.put(API_ENDPOINTS.mlmSettings, payload, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
+
     alert("Pengaturan berhasil disimpan!");
   } catch (err) {
     console.error("Gagal simpan pengaturan MLM:", err);
@@ -170,8 +210,9 @@ const saveSettings = async () => {
   }
 };
 
+// Tombol dummy untuk suspend
 const setSuspend = () => {
-  alert("Suspend set!"); // nanti bisa diganti dengan request API
+  alert("Suspend set!");
 };
 
 onMounted(loadSettings);

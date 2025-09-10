@@ -80,6 +80,11 @@ app.use('/customer/auth', changePasswordRoutes);
 // === Public Routes ===
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/admin/permissions', require('./routes/role/permissionRoutes'));
+// MLM
+app.use('/api/admin/mlm-packages', require('./routes/MLM/mlmPackageRoutes'));
+// Pengaturan MLM
+app.use('/api/admin/mlm-settings', require('./routes/MLM/mlmSettingRoutes'));
+
 
 app.use('/apis/public', publicRoutes);
 

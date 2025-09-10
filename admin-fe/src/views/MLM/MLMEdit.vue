@@ -3,26 +3,25 @@
     <h1 class="text-4xl font-semibold mb-10">Ubah Paket</h1>
 
     <form @submit.prevent="savePackage" class="space-y-8">
-
       <!-- Nama -->
       <div>
         <label class="block font-semibold">Nama</label>
-        <input v-model="form.name" class="input" type="text" placeholder="Nama Paket" />
+        <input v-model="form.nama" class="input" type="text" placeholder="Nama Paket" />
       </div>
 
       <!-- Prioritas, Jumlah Hari, Jumlah Shares -->
       <div class="grid grid-cols-3 gap-6">
         <div>
           <label class="block font-semibold">Prioritas</label>
-          <input v-model="form.priority" class="input" type="number" />
+          <input v-model="form.prioritas" class="input" type="number" />
         </div>
         <div>
           <label class="block font-semibold">Jumlah Hari</label>
-          <input v-model="form.days" class="input" type="number" />
+          <input v-model="form.jumlah_hari" class="input" type="number" />
         </div>
         <div>
           <label class="block font-semibold">Jumlah Shares</label>
-          <input v-model="form.shares" class="input" type="number" />
+          <input v-model="form.jumlah_shares" class="input" type="number" />
         </div>
       </div>
 
@@ -33,7 +32,6 @@
           <input v-model="form.roi" class="input" type="number" />
         </div>
         <div>
-            
           <label class="block font-semibold">Value</label>
           <input v-model="form.value" class="input" type="number" />
         </div>
@@ -43,11 +41,12 @@
         </div>
       </div>
 
-      <div class="">
-         <label class="inline-flex items-center mt-1">
-            <input type="checkbox" v-model="form.roi_percent" class="mr-2" /> Persen?
-          </label>
+      <div>
+        <label class="inline-flex items-center mt-1">
+          <input type="checkbox" v-model="form.roi_percent" class="mr-2" /> Persen?
+        </label>
       </div>
+
       <!-- Pairing, Max Pairing, Other Matching -->
       <div class="grid grid-cols-3 gap-6">
         <div>
@@ -65,14 +64,14 @@
       </div>
 
       <!-- Skip Suspended, Keterangan, Suspended -->
-      <div class=" gap-6 items-end">
+      <div class="gap-6 items-end">
         <div class="flex items-center space-x-2">
           <input type="checkbox" v-model="form.skip_suspended" />
           <span>Skip Pembagian pada user yang di suspend</span>
         </div>
         <div>
           <label class="block font-semibold">Keterangan</label>
-          <textarea v-model="form.notes" class="input"></textarea>
+          <textarea v-model="form.keterangan" class="input"></textarea>
         </div>
         <div class="flex items-center">
           <input type="checkbox" v-model="form.suspended" />
@@ -99,7 +98,9 @@
             </tr>
           </tbody>
         </table>
-        <button type="button" class="btn-secondary" @click="addMatching">+ Tambah Level</button>
+        <button type="button" class="btn-secondary" @click="addMatching">
+          + Tambah Level
+        </button>
       </div>
 
       <!-- Random Matching -->
@@ -121,12 +122,15 @@
             </tr>
           </tbody>
         </table>
-        <button type="button" class="btn-secondary" @click="addRandomMatching">+ Tambah Level</button>
+        <button type="button" class="btn-secondary" @click="addRandomMatching">
+          + Tambah Level
+        </button>
       </div>
 
       <div>
         <label class="inline-flex items-center">
-          <input type="checkbox" v-model="form.include_matching_random" class="mr-2" /> Include Matching Pada Random Matching?
+          <input type="checkbox" v-model="form.include_matching_random" class="mr-2" />
+          Include Matching Pada Random Matching?
         </label>
       </div>
 
@@ -139,18 +143,21 @@
 <script>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import axios from "axios";
+import { API_ENDPOINTS } from "@/config/api";
 
 export default {
-  name: "MLMedit",
+  name: "MLMEdit",
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const id = route.params.id;
 
     const form = ref({
-      name: "",
-      priority: 0,
-      days: 0,
-      shares: 0,
+      nama: "",
+      prioritas: 0,
+      jumlah_hari: 0,
+      jumlah_shares: 0,
       roi: 0,
       roi_percent: false,
       value: 0,
@@ -159,33 +166,51 @@ export default {
       max_pairing: 0,
       other_matching: 0,
       skip_suspended: false,
-      notes: "",
+      keterangan: "",
       suspended: false,
-      matchings: [{ percentage: 5 }, { percentage: 4 }],
-      random_matchings: [{ percentage: 2 }, { percentage: 1 }], 
+      matchings: [{ percentage: 0 }],
+      random_matchings: [{ percentage: 0 }],
       include_matching_random: false,
     });
 
-    onMounted(() => {
-      const id = route.params.id;
-      console.log("Load package ID:", id);
-      // TODO: fetch API get package detail
-    });
+    // 🔹 load data paket saat edit
+    const loadPackage = async () => {
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.mlmPackages}/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        if (res.data) form.value = res.data;
+      } catch (err) {
+        console.error("Gagal load package:", err);
+        alert("Gagal memuat data paket.");
+      }
+    };
 
     const addMatching = () => {
       form.value.matchings.push({ percentage: 0 });
     };
 
     const addRandomMatching = () => {
-      form.value.random_matchings.push({ percentage: 0 }); 
+      form.value.random_matchings.push({ percentage: 0 });
     };
 
-    const savePackage = () => {
-      console.log("Saving package:", form.value);
-      // TODO: call API update
-      alert("Paket berhasil disimpan!");
-      router.push("/admin/mlm/packages");
+    // 🔹 simpan update paket
+    const savePackage = async () => {
+      try {
+        await axios.put(`${API_ENDPOINTS.mlmPackages}/${id}`, form.value, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        alert("Paket berhasil diperbarui!");
+        router.push("/admin/mlm/packages");
+      } catch (err) {
+        console.error("Gagal update package:", err);
+        alert("Terjadi kesalahan saat menyimpan paket.");
+      }
     };
+
+    onMounted(() => {
+      loadPackage();
+    });
 
     return { form, addMatching, addRandomMatching, savePackage };
   },
