@@ -4,6 +4,8 @@ const mlmPackageController = require('../../controllers/MLM/mlmPackageController
 const { requireAuth } = require('../../middlewares/authMiddleware');
 
 router.get("/", requireAuth, mlmPackageController.getAll);
+// GET list paket (public)
+router.get("/public", mlmPackageController.getAll);
 
 // GET detail package by id
 router.get("/:id", requireAuth, mlmPackageController.getById);

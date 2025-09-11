@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
   }, { tableName: 'mlmpackagematchings', timestamps: false });
 
   MLMPackageMatching.associate = (models) => {
-    MLMPackageMatching.belongsTo(models.MLMPackage, { foreignKey: 'MLMPackageID' });
+    MLMPackageMatching.belongsTo(models.MLMPackage, { foreignKey: 'MLMPackageID', as: 'package' });
   };
 
   return MLMPackageMatching;

@@ -11,6 +11,8 @@ module.exports = {
       ReferralBonus: { type: Sequelize.DOUBLE, defaultValue: 0 },
       ROI: { type: Sequelize.DOUBLE, allowNull: false },
       Pairing: { type: Sequelize.DOUBLE, allowNull: false },
+      Priority: { type: DataTypes.INTEGER,defaultValue: 0},
+      Shares: { type: DataTypes.INTEGER, defaultValue: 0},
       MaxPairing: { type: Sequelize.DOUBLE, allowNull: false },
       OtherMatching: { type: Sequelize.DOUBLE, allowNull: false },
       MatchingLevel: { type: Sequelize.INTEGER, allowNull: false },

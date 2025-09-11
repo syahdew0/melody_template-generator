@@ -7,6 +7,8 @@ module.exports = (sequelize, DataTypes) => {
     ReferralBonus: DataTypes.DOUBLE,
     ROI: DataTypes.DOUBLE,
     Pairing: DataTypes.DOUBLE,
+    Priority: { type: DataTypes.INTEGER, defaultValue: 0 },
+    Shares: { type: DataTypes.INTEGER, defaultValue: 0 },
     MaxPairing: DataTypes.DOUBLE,
     OtherMatching: DataTypes.DOUBLE,
     MatchingLevel: DataTypes.INTEGER,
@@ -28,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
   MLMPackage.associate = (models) => {
     MLMPackage.hasMany(models.MLMPackageMatching, { foreignKey: 'MLMPackageID', as: 'matchings' });
     MLMPackage.hasMany(models.MLMPackageRandom, { foreignKey: 'MLMPackageID', as: 'randomMatchings' });
+    MLMPackage.hasMany(models.MlmRegistration, {  foreignKey: 'mlm_package_id',as: 'registrations',});
   };
 
   return MLMPackage;

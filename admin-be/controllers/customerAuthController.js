@@ -1,41 +1,118 @@
-const { Customer, WalletHistory} = require('../models');
+const { Customer, WalletHistory, MLMPackage, MlmRegistration, MLMWallet } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 
+// register.js
 exports.register = async (req, res) => {
+  const t = await Customer.sequelize.transaction();
   try {
     const {
       username, email, no_hp, bank,
-      no_rekening, nama_rekening, referral, password
+      no_rekening, nama_rekening, referral, password,
+      mlm_package_id
     } = req.body;
 
-    const existingUser = await Customer.findOne({ where: { username } });
+    // 1️⃣ Cek username & email unik
+    const existingUser = await Customer.findOne({
+      where: { [Op.or]: [{ username }, { email }] }
+    });
     if (existingUser) {
-      return res.status(400).json({ message: 'Username sudah terdaftar.' });
+      return res.status(400).json({ message: 'Username atau email sudah terdaftar.' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await Customer.create({
-      username, email, no_hp, bank, no_rekening, nama_rekening, referral,
-      password: hashedPassword
-    });
-     // Tambahkan wallet default setelah customer berhasil dibuat
-    await Wallet.create({
-    customer_id: newUser.id,
-    username: newUser.username,
-    wallet_type: 'saldo',
-    balance: 0,
-    createdon: new Date(),
-    updatedon: new Date()
-  });
+    // 2️⃣ Cek paket MLM valid & tidak suspend
+    const pkg = await MLMPackage.findByPk(mlm_package_id);
+    if (!pkg || pkg.IsSuspend) {
+      return res.status(400).json({ message: 'Paket MLM tidak valid / suspended' });
+    }
 
-    res.json({ success: true, message: 'Registrasi berhasil', data: newUser });
+    // 3️⃣ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 4️⃣ Ambil upline jika ada referral
+    let uplineUser = null;
+    let uplineId = null;
+    if (referral) {
+      const uplineUser = await Customer.findByPk(referral); // cari by ID
+      if (uplineUser) uplineId = uplineUser.id;
+    }
+
+    // 5️⃣ Buat customer baru
+    const newUser = await Customer.create({
+      username,
+      email,
+      no_hp,
+      bank,
+      no_rekening,
+      nama_rekening,
+      referral,
+      password: hashedPassword,
+      mlm_package_id: pkg.MLMPackageID
+    }, { transaction: t });
+
+    // 6️⃣ Buat MLM Registration
+    await MlmRegistration.create({
+      customer_id: newUser.id,
+      mlm_package_id: pkg.MLMPackageID,
+       upline_id: uplineId,
+      start_date: new Date(),
+      status: 'active'
+    }, { transaction: t });
+
+    // 7️⃣ Bonus referral ke upline
+    if (uplineUser && pkg.ReferralBonus > 0) {
+      // Ambil semua history sukses upline
+      const histories = await WalletHistory.findAll({
+        where: { username: uplineUser.username, status: 'success' }
+      });
+
+      let currentBalance = 0;
+      histories.forEach(h => {
+        // Sesuaikan tipe transaksi: 1=topup, 2=withdraw, 3=adjust_in, 4=adjust_out
+        if ([1, 3].includes(h.transaction_type_id)) currentBalance += h.amount;
+        else if ([2, 4].includes(h.transaction_type_id)) currentBalance -= h.amount;
+      });
+
+      // Ambil aturan dari MLMWallet
+      const walletRules = await MLMWallet.findAll();
+
+      for (const rule of walletRules) {
+        const amount = (pkg.ReferralBonus * rule.Percentage) / 100;
+
+        await WalletHistory.create({
+          username: uplineUser.username,
+          transaction_type_id: 99, // bonus referral
+          wallet_type_id: rule.WalletTypeID,
+          balance_before: currentBalance,
+          amount,
+          balance_after: currentBalance + amount,
+          status: 'success',
+          remarks: `Bonus referral (${rule.WalletTypeID}) dari ${newUser.username}`,
+          created_at: new Date()
+        }, { transaction: t });
+
+        currentBalance += amount;
+      }
+    }
+
+    // 8️⃣ Commit transaction
+    await t.commit();
+
+    res.json({
+      success: true,
+      message: 'Registrasi berhasil',
+      data: newUser
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Terjadi kesalahan saat register' });
+    await t.rollback();
+    console.error('Register error:', err);
+    res.status(500).json({
+      message: 'Terjadi kesalahan saat register',
+      error: err.message
+    });
   }
 };
 
@@ -185,6 +262,7 @@ exports.requestEmailVerificationOld = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengirim kode verifikasi email lama.' });
   }
 };
+
 exports.confirmEmailVerificationOld = async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.customer.id);

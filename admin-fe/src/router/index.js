@@ -97,7 +97,7 @@ const routes = [
   { path: '/MLMSetting', name: 'MLMSetting', component: () => import('@/views/MLM/MLMSetting.vue') },
   { path: '/PackageBaru', name: 'PackageBaru', component: () => import('@/views/MLM/PackageBaru.vue') },
   { path: '/DaftarPackage', name: 'DaftarPackage',component: () => import('@/views/MLM/DaftarPackage.vue') },
-  { path: '/MLMEdit', name: 'MLMEdit', component: () => import('@/views/MLM/MLMEdit.vue') },
+  { path: '/MLMEdit/:id', name: 'MLMEdit', component: () => import('@/views/MLM/MLMEdit.vue') },
 
 
 ]

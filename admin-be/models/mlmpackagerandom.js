@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
   }, { tableName: 'mlmpackagerandoms', timestamps: false });
 
   MLMPackageRandom.associate = (models) => {
-    MLMPackageRandom.belongsTo(models.MLMPackage, { foreignKey: 'MLMPackageID' });
+     MLMPackageRandom.belongsTo(models.MLMPackage, { foreignKey: 'MLMPackageID', as: 'package' });
   };
 
   return MLMPackageRandom;

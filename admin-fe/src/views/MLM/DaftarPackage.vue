@@ -102,6 +102,8 @@
 
 <script>
 import { ref, computed, watch, onMounted } from "vue";
+import axios from "axios";
+import { API_ENDPOINTS } from "@/config/api";
 
 export default {
   name: "DaftarPackage",
@@ -113,26 +115,29 @@ export default {
     const currentPage = ref(1);
     const rowsPerPage = ref(5);
 
-    // Dummy data
-    const dummyData = [
-      { id: 1, name: "Starter Pack", days: 30, value: 1000000, roi: 1200000, pairing: 500000, matching_level: 3, suspended: false },
-      { id: 2, name: "Silver Pack", days: 60, value: 5000000, roi: 6500000, pairing: 2000000, matching_level: 5, suspended: false },
-      { id: 3, name: "Gold Pack", days: 90, value: 10000000, roi: 14000000, pairing: 5000000, matching_level: 7, suspended: false },
-      { id: 4, name: "Platinum Pack", days: 180, value: 25000000, roi: 40000000, pairing: 10000000, matching_level: 10, suspended: true },
-      { id: 5, name: "Diamond Pack", days: 365, value: 50000000, roi: 100000000, pairing: 20000000, matching_level: 12, suspended: false },
-      { id: 6, name: "Titanium Pack", days: 400, value: 75000000, roi: 150000000, pairing: 30000000, matching_level: 15, suspended: false },
-      { id: 7, name: "Legend Pack", days: 500, value: 100000000, roi: 250000000, pairing: 40000000, matching_level: 20, suspended: true },
-    ];
-
     const fetchPackages = async () => {
-      try {
-        // langsung pakai dummy
-        packages.value = dummyData;
-      } catch (err) {
-        console.error("Error load packages:", err);
-        packages.value = dummyData;
-      }
-    };
+  try {
+    const res = await axios.get(API_ENDPOINTS.mlmPackages, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    // asumsikan API merespons array paket
+packages.value = res.data.map(pkg => ({
+  id: pkg.MLMPackageID,
+  name: pkg.MLMPackageName,
+  days: pkg.Days,
+  value: pkg.PackageValue,
+  roi: pkg.ROI,
+  pairing: pkg.Pairing,
+  matching_level: pkg.MatchingLevel,
+  suspended: Boolean(pkg.IsSuspend),
+}));
+
+  } catch (err) {
+    console.error("Error load packages:", err);
+    packages.value = [];
+  }
+};
+
 
     const filteredPackages = computed(() => {
       const pkgs = packages.value || [];
@@ -170,15 +175,28 @@ export default {
       }
     };
 
-    const deleteSelected = () => {
-      if (!selected.value.length) return alert("Pilih paket dulu!");
-      if (!confirm("Yakin hapus paket terpilih?")) return;
-      packages.value = packages.value.filter(
-        pkg => !selected.value.includes(pkg.id)
-      );
-      selected.value = [];
-      selectAll.value = false;
-    };
+const deleteSelected = async () => {
+  if (!selected.value.length) return alert("Pilih paket dulu!");
+  if (!confirm("Yakin hapus paket terpilih?")) return;
+
+  try {
+    await Promise.all(
+      selected.value.map(id =>
+        axios.delete(`${API_ENDPOINTS.mlmPackages}/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        })
+      )
+    );
+    alert("Paket berhasil dihapus!");
+    selected.value = [];
+    selectAll.value = false;
+    fetchPackages(); // reload data setelah hapus
+  } catch (err) {
+    console.error("Gagal hapus paket:", err);
+    alert("Terjadi kesalahan saat menghapus paket.");
+  }
+};
+
 
     const formatCurrency = val =>
       new Intl.NumberFormat("id-ID").format(val);
