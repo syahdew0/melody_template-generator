@@ -117,7 +117,8 @@ exports.getMyWalletHistory = async (req, res) => {
       10: 'stamp_minus',
       11: 'order',
       12: 'order_ditolak',
-      13: 'order_dibatalkan'
+      13: 'order_dibatalkan',
+      14: 'mlm_join'
     };
 
     const rows = result.rows.map(r => {

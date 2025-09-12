@@ -82,6 +82,14 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/admin/permissions', require('./routes/role/permissionRoutes'));
 // MLM
 app.use('/api/admin/mlm-packages', require('./routes/MLM/mlmPackageRoutes'));
+
+// MLM Registrasi
+app.use('/customer/mlm-registrations', require('./routes/MLM/mlmRegisterRoutes'));
+
+app.use('/customer/mlm-tree', require('./routes/MLM/mlmtreeRoutes'));
+
+// MLM Downline
+// app.use('/customer/mlm-downlines', require('./routes/MLM/mlmDownlineRoutes'));
 app.use('/apis/mlm-packages', require('./routes/MLM/mlmPackageRoutes'));
 // Pengaturan MLM
 app.use('/api/admin/mlm-settings', require('./routes/MLM/mlmSettingRoutes'));
