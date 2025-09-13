@@ -39,7 +39,9 @@ module.exports = {
       { id: 12, name: 'order_ditolak', created_at: new Date() },
       { id: 13, name: 'order_dibatalkan', created_at: new Date() },
       { id: 14, name: 'mlm_join', created_at: new Date() },
-      { id: 99, name: 'referral_bonus', created_at: new Date() },
+      { id: 15, name: 'referral_bonus', created_at: new Date() },
+      { id: 16, name: 'matching_bonus', created_at: new Date() },
+      
     ]);
   },
 

@@ -1,5 +1,8 @@
-const { Customer, MLMPackage, MlmRegistration, MLMWallet, MlmUserWallet, WalletHistory, sequelize } = require('../../models');
+const { Customer, MLMPackage, MlmRegistration, MLMWallet, MlmUserWallet, WalletHistory, sequelize 
+} = require('../../models');
 const bcrypt = require('bcryptjs');
+const { giveReferralBonus } = require('../../services/referralBonus');
+const { giveMatchingBonus } = require('../../services/matchingBonus');
 
 exports.addDownline = async (req, res) => {
   const t = await sequelize.transaction();
@@ -108,33 +111,22 @@ exports.addDownline = async (req, res) => {
       userWallets.push(uw);
     }
 
-    // Bonus 10% ke upline (wallet_type_id = 1)
-    const uplineWallet = await MlmUserWallet.findOne({
-      where: { customer_id: uplineCustomer.id, wallet_type_id: 1 },
-      transaction: t
-    });
+    // === Jalankan Bonus lewat services ===
+// Jalankan Bonus
+await giveReferralBonus({
+  newUserId: newDownline.id,
+  packageValue,        // dari saldo join paket user login
+  packageId: mlm_package_id,
+  transaction: t
+});
 
-    if (uplineWallet) {
-      const bonus = packageValue * 0.1;
-      const before = uplineWallet.balance;
-      const after = before + bonus;
+await giveMatchingBonus({
+  downline: newDownline,
+  packageValue,        // dari saldo join paket user login
+  packageId: mlm_package_id,
+  transaction: t
+});
 
-      await uplineWallet.update({ balance: after }, { transaction: t });
-
-      // Catat WalletHistory upline
-    //   await WalletHistory.create({
-    //     wallet_id: uplineWallet.id,
-    //     customer_id: uplineCustomer.id,
-    //     username: uplineCustomer.username,
-    //     transaction_type_id: 5, // bonus referral
-    //     wallet_type_id: 1,
-    //     amount: bonus,
-    //     balance_before: before,
-    //     balance_after: after,
-    //     remarks: `Bonus referral dari downline ${username}`,
-    //     status: 'success'
-    //   }, { transaction: t });
-    }
 
     await t.commit();
     res.json({

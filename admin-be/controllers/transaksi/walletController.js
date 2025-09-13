@@ -71,10 +71,10 @@ exports.getMyTotalBalance = async (req, res) => {
 
 exports.getMyWalletHistory = async (req, res) => {
   try {
-    const { fromDate, toDate, transaction_type, username, wallet_id, page = 1, limit = 15 } = req.query;
+    const { fromDate, toDate, transaction_type, wallet_id, page = 1, limit = 15 } = req.query;
+    const username = req.customer.username; // ambil username dari user login
 
-    const where = {};
-    if (username) where.username = username;
+    const where = { username }; // hanya data user login
     if (transaction_type) where.transaction_type_id = transaction_type;
 
     if (fromDate && toDate) {
@@ -99,26 +99,25 @@ exports.getMyWalletHistory = async (req, res) => {
         'transaction_type_id', 'status',
         'amount', 'balance_before', 'balance_after', 'remarks', 'created_at'
       ],
-      order: [['created_at', 'DESC']],
+     order: [
+  ['created_at', 'DESC'],
+  [sequelize.literal(`CASE
+    WHEN transaction_type_id = 14 THEN 1
+    WHEN transaction_type_id = 15 THEN 2
+    WHEN transaction_type_id = 16 THEN 3
+    ELSE 4
+  END`), 'ASC']
+],
+
       offset,
       limit: parseInt(limit),
     });
 
     const typeMap = {
-      1: 'topup',
-      2: 'withdraw',
-      3: 'withdraw_dibatalkan',
-      4: 'withdraw_ditolak',
-      5: 'adjust_plus',
-      6: 'adjust_minus',
-      7: 'point_plus',
-      8: 'point_minus',
-      9: 'stamp_plus',
-      10: 'stamp_minus',
-      11: 'order',
-      12: 'order_ditolak',
-      13: 'order_dibatalkan',
-      14: 'mlm_join'
+      1: 'topup', 2: 'withdraw', 3: 'withdraw_dibatalkan', 4: 'withdraw_ditolak',
+      5: 'adjust_plus', 6: 'adjust_minus', 7: 'point_plus', 8: 'point_minus',
+      9: 'stamp_plus', 10: 'stamp_minus', 11: 'order', 12: 'order_ditolak',
+      13: 'order_dibatalkan', 14: 'mlm_join', 15: 'referral_bonus', 16: 'matching_bonus'
     };
 
     const rows = result.rows.map(r => {

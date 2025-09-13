@@ -4,14 +4,14 @@ exports.joinMLM = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const customer_id = req.customer.id;
-    const username = req.customer.username;
+    const username = req.customer.username; // pastikan ini benar
     const { mlm_package_id, placement_pos, parentId } = req.body;
 
     // Ambil paket MLM
     const mlmPackage = await MLMPackage.findByPk(mlm_package_id, { transaction: t });
     if (!mlmPackage) throw new Error("Paket MLM tidak ditemukan");
 
-    // Cek user login sudah join paket ini
+    // Cek user sudah join paket ini
     const existingReg = await MlmRegistration.findOne({
       where: { customer_id, mlm_package_id, status: 'active' },
       transaction: t
@@ -21,16 +21,23 @@ exports.joinMLM = async (req, res) => {
       return res.status(400).json({ message: "Anda sudah join paket MLM ini" });
     }
 
-    // Ambil wallet user login
-    const userWallet = await MlmUserWallet.findOne({
+    // Ambil atau buat wallet user
+    let userWallet = await MlmUserWallet.findOne({
       where: { customer_id, wallet_type_id: 1 },
       transaction: t
     });
-    if (!userWallet) throw new Error('Wallet MLM user tidak ditemukan');
+    if (!userWallet) {
+      userWallet = await MlmUserWallet.create({
+        customer_id,
+        wallet_type_id: 1,
+        balance: 0,
+        created_by: username
+      }, { transaction: t });
+    }
 
-    // Ambil saldo terakhir user login
+    // Ambil saldo terakhir dari wallet_histories
     const lastHistory = await WalletHistory.findOne({
-      where: { username, transaction_type_id: 14 }, // Join MLM
+      where: { username, wallet_type_id: 1 },
       order: [['id', 'DESC']],
       transaction: t
     });
@@ -44,36 +51,7 @@ exports.joinMLM = async (req, res) => {
 
     const balanceAfter = balanceBefore - packageValue;
 
-    // Cek apakah sudah ada WalletHistory untuk paket ini
-    const existingHistory = await WalletHistory.findOne({
-      where: {
-        username,
-        transaction_type_id: 14,
-        remarks: `Join MLM paket ${mlmPackage.MLMPackageName || mlmPackage.PackageName || 'paket'}`
-      },
-      transaction: t
-    });
-
-    if (!existingHistory) {
-      // Update saldo user login
-      await userWallet.update({ balance: balanceAfter }, { transaction: t });
-
-      // Catat WalletHistory user login
-      await WalletHistory.create({
-        wallet_id: userWallet.id,
-        customer_id,
-        username,
-        transaction_type_id: 14, // Join MLM
-        wallet_type_id: 1,
-        amount: -packageValue,
-        balance_before: balanceBefore,
-        balance_after: balanceAfter,
-        remarks: `Join MLM paket ${mlmPackage.MLMPackageName || mlmPackage.PackageName || 'paket'}`,
-        status: 'success'
-      }, { transaction: t });
-    }
-
-    // Buat MLM registration
+    // Buat MLM registration dulu agar reference_id bisa dipakai
     const reg = await MlmRegistration.create({
       customer_id,
       mlm_package_id,
@@ -83,37 +61,71 @@ exports.joinMLM = async (req, res) => {
       start_date: new Date()
     }, { transaction: t });
 
+    // Update saldo wallet user
+    await userWallet.update({ balance: balanceAfter }, { transaction: t });
+
+    // Catat WalletHistory user
+    const remarks = `Join MLM paket ${mlmPackage.MLMPackageName || mlmPackage.PackageName || 'paket'}`;
+    const history = await WalletHistory.create({
+      wallet_id: userWallet.id,
+      customer_id,
+      username,
+      transaction_type_id: 14, // Join MLM
+      wallet_type_id: 1,
+      reference_id: reg.id,
+      amount: -packageValue,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      remarks,
+      status: 'success'
+    }, { transaction: t });
+
     // Bonus 10% ke upline jika ada
     if (parentId) {
-      const uplineWallet = await MlmUserWallet.findOne({
+      let uplineWallet = await MlmUserWallet.findOne({
         where: { customer_id: parentId, wallet_type_id: 1 },
         transaction: t
       });
-      if (uplineWallet) {
-        const bonus = packageValue * 0.1;
-        const before = uplineWallet.balance;
-        const after = before + bonus;
 
-        await uplineWallet.update({ balance: after }, { transaction: t });
-
-        // Catat WalletHistory upline
-        await WalletHistory.create({
-          wallet_id: uplineWallet.id,
+      const uplineUser = await Customer.findByPk(parentId, { transaction: t });
+      if (!uplineWallet) {
+        // Buat wallet upline jika belum ada
+        uplineWallet = await MlmUserWallet.create({
           customer_id: parentId,
-          username: (await Customer.findByPk(parentId, { transaction: t })).username,
-          transaction_type_id: 5, // bonus referral
           wallet_type_id: 1,
-          amount: bonus,
-          balance_before: before,
-          balance_after: after,
-          remarks: `Bonus referral dari downline ${username}`,
-          status: 'success'
+          balance: 0,
+          created_by: uplineUser.username
         }, { transaction: t });
       }
+
+      const bonus = packageValue * 0.1;
+      const beforeUpline = uplineWallet.balance;
+      const afterUpline = beforeUpline + bonus;
+
+      await uplineWallet.update({ balance: afterUpline }, { transaction: t });
+
+      // Catat WalletHistory upline
+      await WalletHistory.create({
+        wallet_id: uplineWallet.id,
+        customer_id: parentId,
+        username: uplineUser.username,
+        transaction_type_id: 15, // Referral bonus
+        wallet_type_id: 1,
+        reference_id: reg.id,
+        amount: bonus,
+        balance_before: beforeUpline,
+        balance_after: afterUpline,
+        remarks: `Bonus referral dari downline ${username}`,
+        status: 'success'
+      }, { transaction: t });
     }
 
     await t.commit();
-    return res.json({ success: true, message: "Saldo diperbarui dan join MLM berhasil", data: { registration: reg } });
+    return res.json({
+      success: true,
+      message: "Saldo diperbarui dan join MLM berhasil",
+      data: { registration: reg, history }
+    });
 
   } catch (err) {
     await t.rollback();
