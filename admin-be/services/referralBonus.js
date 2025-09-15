@@ -13,7 +13,7 @@ async function giveReferralBonus({ newUserId, packageValue, packageId, transacti
   const bonusPercent = parseFloat(mlmPackage.ReferralBonus || 0);
   if (bonusPercent <= 0) return;
 
-  const bonusAmount = packageValue * bonusPercent; // <- wajib didefinisikan di sini
+  const bonusAmount = packageValue * (bonusPercent / 100);
 
   const upline = await Customer.findByPk(uplineId, { transaction });
   if (!upline) return;
@@ -24,31 +24,28 @@ async function giveReferralBonus({ newUserId, packageValue, packageId, transacti
   });
   if (!uplineWallet) return;
 
-// giveReferralBonus
-const lastHistory = await WalletHistory.findOne({
-  where: { username: upline.username, wallet_type_id: 1 },
-  order: [['id', 'DESC']],
-  transaction
-});
-
-const balanceBefore = lastHistory ? lastHistory.balance_after : 0;
-
+  const lastHistory = await WalletHistory.findOne({
+    where: { username: upline.username, wallet_type_id: 1 },
+    order: [['id', 'DESC']],
+    transaction
+  });
+  const balanceBefore = lastHistory ? lastHistory.balance_after : 0;
   const balanceAfter = balanceBefore + bonusAmount;
 
   await uplineWallet.update({ balance: balanceAfter }, { transaction });
 
-await WalletHistory.create({
-  username: upline.username,
-  transaction_type_id: 15, // referral bonus
-  wallet_type_id: 1,
-  reference_id: newUser.id,  // <-- isi dengan ID downline
-  amount: bonusAmount,
-  balance_before: balanceBefore,
-  balance_after: balanceAfter,
-  remarks: `Referral bonus dari downline ${newUser.username}`,
-  status: 'success'
-}, { transaction });
-
+  await WalletHistory.create({
+    username: upline.username,
+    transaction_type_id: 15, // referral bonus
+    wallet_type_id: 1,
+    reference_id: newUser.id,
+    amount: bonusAmount,
+    balance_before: balanceBefore,
+    balance_after: balanceAfter,
+    remarks: `Referral bonus dari ${upline.username}`,
+    status: 'success'
+  }, { transaction });
 }
+
 
 module.exports = { giveReferralBonus };
