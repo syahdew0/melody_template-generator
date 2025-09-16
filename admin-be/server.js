@@ -88,6 +88,10 @@ app.use('/customer/mlm-registrations', require('./routes/MLM/mlmRegisterRoutes')
 
 app.use('/customer/mlm-tree', require('./routes/MLM/mlmtreeRoutes'));
 
+// route khusus admin
+app.use('/api/admin/mlm-tree', require('./routes/MLM/mlmtreeAdminRoutes'));
+
+
 // MLM Downline
 // app.use('/customer/mlm-downlines', require('./routes/MLM/mlmDownlineRoutes'));
 app.use('/apis/mlm-packages', require('./routes/MLM/mlmPackageRoutes'));

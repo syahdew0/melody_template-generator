@@ -65,4 +65,8 @@ router.post('/adjust', requireAuth, requireOtherModule('Adjust'), adjustControll
 router.get('/wallet-histories', requireAuth, requireModulePermission('Wallet', 'canView'), walletController.getAdminWalletHistory);
 router.get('/wallet-histories/usernames', requireAuth, requireModulePermission('Wallet', 'canView'), walletController.getWalletUsernames);
 
+// Admin - MLM Transactions
+router.get(
+  '/mlm-transactions', requireAuth,requireModulePermission('Wallet', 'canView'),walletController.getAdminMlmTransactions);
+
 module.exports = router;

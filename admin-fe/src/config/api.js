@@ -159,6 +159,9 @@ export const API_ENDPOINTS = {
     mlmPackages: `${API_URL}/api/admin/mlm-packages`,
     mlmPackageById: (id) => `${API_URL}/api/admin/mlm-packages/${id}`,
     mlmSettings: `${API_URL}/api/admin/mlm-settings`,
+    MLMTree: `${API_URL}/api/admin/mlm-tree`, 
+    // adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
+    mlmTransactions: `${API_URL}/api/transaksi/mlm-transactions`,
 }
 
 

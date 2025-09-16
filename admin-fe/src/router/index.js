@@ -98,6 +98,10 @@ const routes = [
   { path: '/PackageBaru', name: 'PackageBaru', component: () => import('@/views/MLM/PackageBaru.vue') },
   { path: '/DaftarPackage', name: 'DaftarPackage',component: () => import('@/views/MLM/DaftarPackage.vue') },
   { path: '/MLMEdit/:id', name: 'MLMEdit', component: () => import('@/views/MLM/MLMEdit.vue') },
+  { path: '/MLMTree', name: 'MLMTree', component: () => import('@/views/MLM/MLMTree.vue') },
+  { path: '/MLMNode', name: 'MLMNode', component: () => import('@/views/MLM/MLMNode.vue') },
+  { path: '/MLMTransaksi', name: 'MLMTransaksi', component: () => import('@/views/MLM/MLMTransaksi.vue') },
+  {path: '/mlm/paket-user',name: 'PaketUser',component: () => import('@/views/MLM/PaketUser.vue'),},{path: '/mlm/paket-user/edit/:noOrder',name: 'PaketUserEdit',component: () => import('@/views/MLM/PaketUseredit.vue'),props: true,},
 
 
 ]

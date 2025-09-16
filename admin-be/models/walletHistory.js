@@ -66,6 +66,12 @@ WalletHistory.associate = function(models) {
     as: 'transaction_type_data',
     foreignKey: 'transaction_type_id'
   });
+
+    WalletHistory.belongsTo(models.MlmRegistration, {
+      foreignKey: 'reference_id',
+       targetKey: 'id',
+      as: 'mlm_registration',
+    });
 };
 
 

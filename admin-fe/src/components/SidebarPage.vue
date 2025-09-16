@@ -577,6 +577,38 @@
               </router-link>
             </li>
 
+             <li>
+              <router-link
+                :to="{ name: 'MLMTree' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MLMTree') }"
+                @click.stop
+              >
+                MLM Tree
+              </router-link>
+            </li>
+       
+            <li>
+              <router-link
+                :to="{ name: 'MLMTransaksi' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MLMTransaksi') }"
+                @click.stop
+              >
+              Transaksi
+              </router-link>
+            </li>
+              <li>
+              <router-link
+                :to="{ name: 'PaketUser' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('PaketUser') }"
+                @click.stop
+              >
+              Paket User
+              </router-link>
+            </li>
+
       <!-- Paket (hanya toggle, tidak bisa di-route langsung) -->
       <!-- <li>
         <div

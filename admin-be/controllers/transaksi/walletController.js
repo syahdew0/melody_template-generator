@@ -1,4 +1,4 @@
-const { Withdraw, Customer, Wallet, Adjust, WalletHistory, Topup, TransactionType, WalletType, sequelize } = require('../../models');
+const { Withdraw, Customer, Wallet, Adjust, WalletHistory, Topup, TransactionType, WalletType,MlmRegistration, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const { getWallet } = require('../../services/walletServices');
 
@@ -224,7 +224,70 @@ exports.getWalletUsernames = async (req, res) => {
   }
 };
 
+exports.getAdminMlmTransactions = async (req, res) => {
+  try {
+    const { fromDate, toDate, username, page = 1, limit = 15 } = req.query;
+    const { Op } = require("sequelize");
 
+    const where = { transaction_type_id: [ 15, 16] }; // hanya MLM
+    if (username) where.username = username;
+
+    if (fromDate && toDate) {
+      const start = new Date(fromDate + 'T00:00:00');
+      const end = new Date(toDate + 'T23:59:59');
+      where.created_at = { [Op.between]: [start, end] };
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const result = await WalletHistory.findAndCountAll({
+      where,
+      include: [
+        {
+          model: TransactionType,
+          as: 'transaction_type_data',
+          attributes: ['id', 'name']
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      offset,
+      limit: parseInt(limit),
+    });
+
+    // mapping supaya "to" = username penerima
+    const rows = await Promise.all(result.rows.map(async r => {
+      let toUser = '-';
+
+      if ([15,16].includes(r.transaction_type_id) && r.reference_id) {
+        const refCustomer = await Customer.findOne({
+          where: { id: r.reference_id },
+          attributes: ['username']
+        });
+        toUser = refCustomer ? refCustomer.username : '-';
+      }
+
+      return {
+        date: new Date(r.created_at).toLocaleString(),
+        type: r.transaction_type_data?.name || r.transaction_type_id,
+        amount: r.amount,
+        from: r.username,
+        to: toUser,
+        remarks: r.remarks,
+        transferred: r.transferred ? "Ya" : "Tidak",
+        received: r.received ? "Ya" : "Tidak"
+      };
+    }));
+
+    res.json({
+      count: result.count,
+      rows
+    });
+
+  } catch (err) {
+    console.error('Admin MLM Transactions Error:', err);
+    res.status(500).json({ message: 'Gagal mengambil transaksi MLM' });
+  }
+};
 // exports.getDailyBalance = async (req, res) => {
 //   try {
 //     const { fromDate, toDate } = req.query;

@@ -1,83 +1,145 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">MLM Tree</h1>
+  <section class="p-6 py-22 max-w-full text-center font-poppins">
+    <h2 class="text-2xl font-bold mb-8">MLM Tree (Admin)</h2>
 
-    <div class="ml-4">
-      <TreeNode :node="treeData" />
+    <!-- Search -->
+    <div class="flex justify-center items-center gap-2 mb-6">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Cari username..."
+        class="border rounded px-3 py-2 w-64 focus:outline-none focus:ring focus:border-blue-400"
+        @keyup.enter="handleSearch"
+      />
+      <button
+        class="px-4 py-2 bg-white text-black rounded border transition"
+        @click="handleSearch"
+      >
+        search
+      </button>
     </div>
-  </div>
+
+    <div v-if="loading" class="text-gray-500">Loading tree...</div>
+    <div v-else>
+      <div v-if="!currentRoot" class="text-red-500">Tidak ada data MLM</div>
+      <div v-else class="mlm-tree">
+        <!-- Tombol back -->
+        <button
+          v-if="historyStack.length > 0"
+          class="mb-4 px-4 py-2 text-black border rounded"
+          @click="backOneStep"
+        >
+          ← Kembali
+        </button>
+
+        <!-- Render MLM Tree -->
+        <MlmNode
+          :node="currentRoot"
+          :max-depth="3"
+          :depth="1"
+          @edit-node="handleEditNode"
+          @focus-node="handleFocusNode"
+        />
+      </div>
+    </div>
+  </section>
 </template>
 
 <script>
-import { ref } from "vue";
+import { API_ENDPOINTS } from "@/config/api";
+import MlmNode from "./MLMNode.vue";
+import axios from "axios";
 
 export default {
   name: "MLMTree",
-  components: {
-    TreeNode: {
-      props: ["node"],
-      setup(props) {
-        const isOpen = ref(true);
+  components: { MlmNode },
+  data() {
+    return {
+      loading: true,
+      currentRoot: null,
+      originalRoot: null,
+      historyStack: [],
+      searchQuery: "" 
+    };
+  },
+  async mounted() {
+    await this.loadMlmTree();
+  },
+  methods: {
+    async loadMlmTree() {
+      this.loading = true;
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.MLMTree}/tree`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
 
-        const toggle = () => {
-          isOpen.value = !isOpen.value;
-        };
-
-        return { isOpen, toggle };
-      },
-      template: `
-        <div class="mb-2">
-          <div
-            class="flex items-center space-x-2 cursor-pointer bg-blue-100 px-3 py-1 rounded hover:bg-blue-200"
-            @click="toggle"
-          >
-            <span v-if="node.downline && node.downline.length > 0">
-              <span v-if="isOpen">[-]</span>
-              <span v-else>[+]</span>
-            </span>
-            <span class="font-semibold">{{ node.name }}</span>
-            <span class="text-sm text-gray-600">({{ node.level }})</span>
-          </div>
-
-          <div v-if="isOpen && node.downline && node.downline.length > 0" class="ml-6 border-l border-gray-300 pl-4 mt-1">
-            <TreeNode v-for="child in node.downline" :key="child.id" :node="child" />
-          </div>
-        </div>
-      `,
+        const treeData = res.data?.data?.tree || res.data?.data || res.data || [];
+        this.tree = Array.isArray(treeData) ? treeData : [treeData];
+        this.originalRoot = this.tree[0] || null;
+        this.currentRoot = this.originalRoot;
+      } catch (err) {
+        console.error("Gagal load MLM tree:", err);
+        alert("Gagal memuat MLM tree");
+      } finally {
+        this.loading = false;
+      }
     },
-  },
-  setup() {
-    const treeData = ref({
-      id: 1,
-      name: "A",
-      level: 1,
-      downline: [
-        {
-          id: 2,
-          name: "B",
-          level: 2,
-          downline: [
-            { id: 4, name: "D", level: 3, downline: [] },
-            { id: 5, name: "E", level: 3, downline: [] },
-          ],
-        },
-        {
-          id: 3,
-          name: "C",
-          level: 2,
-          downline: [
-            { id: 6, name: "F", level: 3, downline: [] },
-            { id: 7, name: "G", level: 3, downline: [] },
-          ],
-        },
-      ],
-    });
+    handleEditNode(node) {
+      this.$router.push({
+        name: "MLMNode",
+        params: { id: node.id }
+      });
+    },
+    handleFocusNode(node) {
+      if (this.currentRoot && this.currentRoot.id !== node.id) {
+        this.historyStack.push(this.currentRoot);
+        this.currentRoot = node;
+      }
+    },
+    backOneStep() {
+      if (this.historyStack.length > 0) {
+        this.currentRoot = this.historyStack.pop();
+      }
+    },
 
-    return { treeData };
-  },
+    // 🔍 Cari node berdasarkan username
+    handleSearch() {
+      if (!this.searchQuery) return;
+
+      const found = this.findNodeByUsername(this.originalRoot, this.searchQuery);
+      if (found) {
+        this.historyStack.push(this.currentRoot);
+        this.currentRoot = found;
+      } else {
+        alert(`Username "${this.searchQuery}" tidak ditemukan`);
+      }
+    },
+
+    // Recursive traversal tree
+    findNodeByUsername(node, username) {
+      if (!node) return null;
+
+      if (node.customer?.username?.toLowerCase() === username.toLowerCase()) {
+        return node;
+      }
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          const found = this.findNodeByUsername(child, username);
+          if (found) return found;
+        }
+      }
+
+      return null;
+    }
+  }
 };
 </script>
 
 <style scoped>
-/* Optional styling */
+.mlm-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 </style>
