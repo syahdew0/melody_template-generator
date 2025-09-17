@@ -609,6 +609,17 @@
               </router-link>
             </li>
 
+              <li>
+              <router-link
+                :to="{ name: 'MlmPengaduan' }"
+                class="submenu-link"
+                :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('MlmPengaduan') }"
+                @click.stop
+              >
+              Pengaduan
+              </router-link>
+            </li>
+
       <!-- Paket (hanya toggle, tidak bisa di-route langsung) -->
       <!-- <li>
         <div

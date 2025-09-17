@@ -140,11 +140,11 @@ export const API_ENDPOINTS = {
   },
 
   roles: {
-    list: `${API_URL}/api/admin/roles`, // GET semua role
-    create: `${API_URL}/api/admin/roles`, // POST buat role baru
-    detail: (id) => `${API_URL}/api/admin/roles/${id}`, // GET detail role
-    update: (id) => `${API_URL}/api/admin/roles/${id}`, // PUT/PATCH update role
-    delete: (id) => `${API_URL}/api/admin/roles/${id}`, // DELETE role
+    list: `${API_URL}/api/admin/roles`, 
+    create: `${API_URL}/api/admin/roles`, 
+    detail: (id) => `${API_URL}/api/admin/roles/${id}`, 
+    update: (id) => `${API_URL}/api/admin/roles/${id}`, 
+    delete: (id) => `${API_URL}/api/admin/roles/${id}`,
   },
 
   modules: {
@@ -162,6 +162,8 @@ export const API_ENDPOINTS = {
     MLMTree: `${API_URL}/api/admin/mlm-tree`, 
     // adminWalletHistory: `${API_URL}/api/transaksi/wallet-histories`,
     mlmTransactions: `${API_URL}/api/transaksi/mlm-transactions`,
+    mlmPaketUser: `${API_URL}/api/admin/paket-user`,
+    mlmComplaints: `${API_URL}/api/admin/mlm-complaints`,
 }
 
 

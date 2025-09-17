@@ -101,7 +101,19 @@ const routes = [
   { path: '/MLMTree', name: 'MLMTree', component: () => import('@/views/MLM/MLMTree.vue') },
   { path: '/MLMNode', name: 'MLMNode', component: () => import('@/views/MLM/MLMNode.vue') },
   { path: '/MLMTransaksi', name: 'MLMTransaksi', component: () => import('@/views/MLM/MLMTransaksi.vue') },
-  {path: '/mlm/paket-user',name: 'PaketUser',component: () => import('@/views/MLM/PaketUser.vue'),},{path: '/mlm/paket-user/edit/:noOrder',name: 'PaketUserEdit',component: () => import('@/views/MLM/PaketUseredit.vue'),props: true,},
+  {path: '/mlm/paket-user',name: 'PaketUser',component: () => import('@/views/MLM/PaketUser.vue'),},
+  {path: '/mlm/paket-user/edit/:noOrder',name: 'PaketUserEdit',component: () => import('@/views/MLM/PaketUseredit.vue'),props: true,},
+{
+  path: "/pages/pengaduan",
+  name: "MlmPengaduan",
+  component: () => import("@/views/MLM/MlmPengaduan.vue"),
+},
+{
+  path: "/mlm/pengaduan/:id",
+  name: "MlmPengaduanDetail",
+  component: () => import("@/views/MLM/MlmPengaduanDetail.vue"),
+  props: true,
+},
 
 
 ]
