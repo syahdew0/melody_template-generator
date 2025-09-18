@@ -56,7 +56,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('wallet_histories', ['walletId']);
+    // await queryInterface.addIndex('wallet_histories', ['walletId']);
     await queryInterface.addIndex('wallet_histories', ['username']);
     await queryInterface.addIndex('wallet_histories', ['transaction_type_id']);
   },

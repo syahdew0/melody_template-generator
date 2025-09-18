@@ -11,15 +11,15 @@ module.exports = {
       ReferralBonus: { type: Sequelize.DOUBLE, defaultValue: 0 },
       ROI: { type: Sequelize.DOUBLE, allowNull: false },
       Pairing: { type: Sequelize.DOUBLE, allowNull: false },
-      Priority: { type: DataTypes.INTEGER,defaultValue: 0},
-      Shares: { type: DataTypes.INTEGER, defaultValue: 0},
+      Priority: { type: Sequelize.INTEGER,defaultValue: 0},
+      Shares: { type: Sequelize.INTEGER, defaultValue: 0},
       MaxPairing: { type: Sequelize.DOUBLE, allowNull: false },
       OtherMatching: { type: Sequelize.DOUBLE, allowNull: false },
       MatchingLevel: { type: Sequelize.INTEGER, allowNull: false },
       RandomLevel: { type: Sequelize.INTEGER, defaultValue: 0 },
       TicketNumber: { type: Sequelize.INTEGER, defaultValue: 0 },
       IsSuspend: { type: Sequelize.BOOLEAN, defaultValue: false },
-      SkipSuspended: { type: Sequelize.BOOLEAN, defaultValue: false }, // ⬅️ tambahan
+      SkipSuspended: { type: Sequelize.BOOLEAN, defaultValue: false }, 
       SkipSuspendedOption: { 
         type: Sequelize.ENUM('skip', 'pass_up', 'random'), 
         defaultValue: 'skip' 

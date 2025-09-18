@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     RandomLevel: DataTypes.INTEGER,
     TicketNumber: DataTypes.INTEGER,
     IsSuspend: DataTypes.BOOLEAN,
-    SkipSuspended: { type: DataTypes.BOOLEAN, defaultValue: false }, // ⬅️ tambahan
+    SkipSuspended: { type: DataTypes.BOOLEAN, defaultValue: false }, 
     SkipSuspendedOption: { type: DataTypes.ENUM('skip', 'pass_up', 'random'), defaultValue: 'skip' }, // ⬅️ tambahan
     Description: DataTypes.TEXT,
     CreatedOn: DataTypes.DATE,

@@ -24,10 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'user',
     },
       RoleId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: true,
       references: {
-        model: 'Roles',
+        model: 'roles',
         key: 'id',
       },
     },
@@ -42,6 +42,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'https://i.pravatar.cc/100',
     },
+  }, {
+    freezeTableName: true,
+    tableName: 'users',  
+    timestamps: true,
+  
   });
 
   User.associate = function (models) {

@@ -46,7 +46,7 @@ exports.requireModulePermission = (moduleName, action) => {
       if (!roleId) return res.status(403).json({ message: "Role tidak ditemukan" });
 
       // Admin otomatis bisa akses
-      if (req.user.role === 'Admin') return next();
+      if (req.user.role === 'admin') return next();
 
       const roleModule = await RoleActiveModule.findOne({
         where: { RoleId: roleId },

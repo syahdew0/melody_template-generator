@@ -1,12 +1,33 @@
-const db = require('../models');
 const bcrypt = require('bcrypt');
-const User = db.User;
+const db = require('../models'); 
+const { User, Role, Sequelize } = db;
 
 exports.getAllUsers = async (req, res) => {
-  const users = await User.findAll({
-    attributes: ['id', 'username', 'email', 'role', 'isSuperAdmin']
-  });  
-  res.json(users);
+  try {
+    const users = await User.findAll({
+      attributes: [
+        'id',
+        'username',
+        'email',
+        'RoleId', 
+        'isSuperAdmin',
+        [Sequelize.col('Role.name'), 'role'],
+      ],
+      include: [
+        {
+          model: Role,
+          as: 'Role',   
+          attributes: [],
+        },
+      ],
+      raw: true,
+    });
+
+    res.json(users);
+  } catch (err) {
+    console.error('getAllUsers error:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan', error: err.message });
+  }
 };
 
 exports.createUser = async (req, res) => {

@@ -9,7 +9,7 @@
         </svg>
       </button>
       <div class="text-xl font-bold capitalize">
-        {{ userRole === 'Admin' ? 'Admin Panel' : userRole === 'editor' ? 'Editor Panel' : 'User Panel' }}
+        {{ userRole === 'admin' ? 'Admin Panel' : userRole === 'editor' ? 'Editor Panel' : 'User Panel' }}
       </div>
     </div>
 
@@ -26,7 +26,7 @@
 
       <div v-if="dropdownOpen" class="absolute text-sm right-0 mt-3 w-56 text-gray-800 z-50 bg-white shadow rounded">
         <router-link
-          v-if="userRole === 'Admin'"
+          v-if="userRole === 'admin'"
           to="/Admin/users"
           class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100"
         >
