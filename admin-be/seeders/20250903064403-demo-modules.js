@@ -33,6 +33,7 @@ module.exports = {
       { name: 'Boleh Update Order', type: 'other', description: 'Halaman pengaturan Oerder', createdAt: new Date(), updatedAt: new Date() },
       { name: 'Boleh Approve Komentar', type: 'other', description: 'Halaman pengaturan komentar', createdAt: new Date(), updatedAt: new Date() },
       { name: 'Boleh Assign Menu', type: 'other', description: 'Halaman pengaturan menu', createdAt: new Date(), updatedAt: new Date() },
+      { name: 'Boleh Unassign Menu', type: 'other', description: 'Halaman pengaturan menu', createdAt: new Date(), updatedAt: new Date() },
       
 
     ], {});
