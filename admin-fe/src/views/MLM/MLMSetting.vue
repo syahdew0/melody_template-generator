@@ -29,6 +29,11 @@
           class="w-full border rounded px-3 py-2"
         />
       </div>
+      <!-- matching -->
+      <div class="flex items-center space-x-2">
+        <input type="checkbox" v-model="form.matchingFromUpline" id="matchingFromUpline" />
+        <label for="matchingFromUpline">Ambil Matching Bonus dari Paket Upline?</label>
+      </div>
 
       <div class="flex items-center space-x-2">
         <input type="checkbox" v-model="form.autoApprove" id="autoApprove" />
@@ -135,6 +140,7 @@ const form = reactive({
   maxChild: 0,
   positions: [],
   wallets: [],
+   matchingFromUpline: false,
 });
 
 // Load pengaturan dari backend
@@ -179,6 +185,7 @@ const loadSettings = async () => {
       form.samePackage = !!data.SamePackage;
       form.autoHold = !!data.AutoHold;
       form.maxChild = data.MaxChild ?? 4;
+      form.matchingFromUpline = data.BonusSource === "upline";
     }
   } catch (err) {
     console.error("Gagal load pengaturan MLM:", err);
@@ -197,6 +204,7 @@ const saveSettings = async () => {
       MaxChild: form.maxChild,
       positions: form.positions,
       wallets: form.wallets,
+      BonusSource: form.matchingFromUpline ? "upline" : "downline",
     };
 
     await axios.put(API_ENDPOINTS.mlmSettings, payload, {

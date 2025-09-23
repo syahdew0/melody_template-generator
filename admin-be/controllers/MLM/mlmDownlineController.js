@@ -15,9 +15,15 @@ exports.addDownline = async (req, res) => {
 
     const loginUser = req.customer;
 
-    // Validasi parentId
-    const uplineCustomer = await Customer.findByPk(parentId, { transaction: t });
-    if (!uplineCustomer) return res.status(400).json({ message: 'Parent tidak ditemukan' });
+    // Validasi parentId berdasarkan mlm_registrations
+   const uplineReg = await MlmRegistration.findOne({
+  where: { customer_id: parentId },
+  transaction: t
+});
+if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemukan' });
+
+    // Ambil data customer dari upline
+    const uplineCustomer = await Customer.findByPk(uplineReg.customer_id, { transaction: t });
 
     // Validasi username unik
     const exist = await Customer.findOne({ where: { username }, transaction: t });
@@ -70,7 +76,7 @@ exports.addDownline = async (req, res) => {
     const reg = await MlmRegistration.create({
       customer_id: newDownline.id,
       mlm_package_id,
-      upline_id: uplineCustomer.id,
+      upline_id: uplineReg.id, 
       placement_pos: placement_pos || 'left',
       status: 'active',
       start_date: new Date()

@@ -42,7 +42,7 @@ async function giveReferralBonus({ newUserId, packageValue, packageId, transacti
     amount: bonusAmount,
     balance_before: balanceBefore,
     balance_after: balanceAfter,
-    remarks: `Referral bonus dari ${upline.username}`,
+    remarks: `Referral bonus dari ${newUser.username}`,
     status: 'success'
   }, { transaction });
 }

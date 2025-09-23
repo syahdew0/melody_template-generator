@@ -36,12 +36,12 @@
         >
           Simpan Perubahan
         </button>
-        <router-link
+        <!-- <router-link
           to="/mlm/pengaduan"
           class="bg-gray-300 px-4 py-2 rounded"
         >
           Kembali
-        </router-link>
+        </router-link> -->
       </div>
     </div>
   </section>

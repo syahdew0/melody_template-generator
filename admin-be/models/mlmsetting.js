@@ -8,6 +8,10 @@ module.exports = (sequelize, DataTypes) => {
     SamePackage: DataTypes.BOOLEAN,
     AutoHold: DataTypes.BOOLEAN,
     MaxChild: DataTypes.INTEGER,
+     BonusSource: {   
+      type: DataTypes.ENUM('downline', 'upline'),
+      defaultValue: 'downline',
+    },
     Positions: DataTypes.JSON,
     Wallets: DataTypes.JSON,
     CreatedOn: DataTypes.DATE,

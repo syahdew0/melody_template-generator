@@ -10,6 +10,10 @@ module.exports = {
       SamePackage: { type: Sequelize.BOOLEAN, defaultValue: false },
       AutoHold: { type: Sequelize.BOOLEAN, defaultValue: false },
       MaxChild: { type: Sequelize.INTEGER, defaultValue: 4 },
+      BonusSource: { 
+        type: Sequelize.ENUM('downline', 'upline'),
+        defaultValue: 'downline',
+      },
       Positions: { type: Sequelize.JSON, defaultValue: JSON.stringify([
         { name: 'Left', value: 10 },
         { name: 'Right', value: 10 }

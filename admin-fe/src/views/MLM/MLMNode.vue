@@ -19,31 +19,48 @@
       v-if="depth < maxDepth"
       class="children flex justify-between w-full mt-10 gap-4 px-6"
     >
-      <!-- Left -->
-      <div class="child w-1/2 flex flex-col items-center relative">
-        <div class="connector"></div>
-        <MlmNode
-          v-if="leftChild"
-          :node="leftChild"
-          :depth="depth + 1"
-          :max-depth="maxDepth"
-          @focus-node="$emit('focus-node', $event)"
-        />
-        <div v-else class="node-card empty-card">Kosong</div>
-      </div>
+ <!-- Left -->
+<div class="child w-1/2 flex flex-col items-center relative">
+  <div class="connector"></div>
+  <MlmNode
+    v-if="leftChild"
+    :node="leftChild"
+    :depth="depth + 1"
+    :max-depth="maxDepth"
+    @focus-node="$emit('focus-node', $event)"
+    @select-placement="$emit('select-placement', $event)"
+  />
+  <div
+    v-else
+    class="node-card empty-card cursor-pointer"
+    @click="$emit('select-placement', { parentId: node.id, placement: 'left' })"
+  >
+    Kosong
+  </div>
+</div>
 
-      <!-- Right -->
-      <div class="child w-1/2 flex flex-col items-center relative">
-        <div class="connector"></div>
-        <MlmNode
-          v-if="rightChild"
-          :node="rightChild"
-          :depth="depth + 1"
-          :max-depth="maxDepth"
-          @focus-node="$emit('focus-node', $event)"
-        />
-        <div v-else class="node-card empty-card">Kosong</div>
-      </div>
+<!-- Right -->
+<div class="child w-1/2 flex flex-col items-center relative">
+  <div class="connector"></div>
+  <MlmNode
+    v-if="rightChild"
+    :node="rightChild"
+    :depth="depth + 1"
+    :max-depth="maxDepth"
+    @focus-node="$emit('focus-node', $event)"
+    @select-placement="$emit('select-placement', $event)"
+  />
+  <div
+    v-else
+    class="node-card empty-card cursor-pointer"
+    @click="$emit('select-placement', { parentId: node.id, placement: 'right' })"
+  >
+    Kosong
+  </div>
+</div>
+
+
+      
     </div>
   </div>
 </template>

@@ -34,12 +34,14 @@
 
         <!-- Render MLM Tree -->
         <MlmNode
-          :node="currentRoot"
-          :max-depth="3"
-          :depth="1"
-          @edit-node="handleEditNode"
-          @focus-node="handleFocusNode"
-        />
+  :node="currentRoot"
+  :max-depth="3"
+  :depth="1"
+  @edit-node="handleEditNode"
+  @focus-node="handleFocusNode"
+  @select-placement="handleSelectPlacement"
+/>
+
       </div>
     </div>
   </section>
@@ -84,6 +86,12 @@ export default {
         this.loading = false;
       }
     },
+    handleSelectPlacement({ parentId, placement }) {
+  this.$router.push({
+    name: "MlmAddDownlinePage",
+    params: { parentId, placement }
+  });
+},
     handleEditNode(node) {
       this.$router.push({
         name: "MLMNode",

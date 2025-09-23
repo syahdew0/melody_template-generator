@@ -17,5 +17,8 @@ router.get('/:id/active-theme', websiteController.getActiveTheme);
 router.get('/:id/settings', requireAuth, requireModulePermission('Setting', 'canView'), websiteController.getSettings);
 router.put('/:id/settings', requireAuth, requireModulePermission('Setting', 'canEdit'), websiteController.updateSettings);
 
+// public site settings
+router.get('/public/:id/settings', websiteController.getSettingsPublic);
+
 
 module.exports = router;

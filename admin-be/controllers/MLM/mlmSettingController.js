@@ -35,6 +35,7 @@ module.exports = {
         samePackage: !!settings.SamePackage,
         autoHold: !!settings.AutoHold,
         maxChild: settings.MaxChild || 0,
+        bonusSource: settings.BonusSource || 'downline',
       });
 
     } catch (err) {
@@ -60,6 +61,7 @@ async updateSettings(req, res) {
       SamePackage: data.SamePackage !== undefined ? Number(data.SamePackage) : (data.samePackage ? 1 : 0),
       AutoHold: data.AutoHold !== undefined ? Number(data.AutoHold) : (data.autoHold ? 1 : 0),
       MaxChild: Number(data.MaxChild || data.maxChild),
+      BonusSource: data.BonusSource || data.bonusSource || 'downline',
       Positions: safeStringify(data.Positions || data.positions),
       Wallets: safeStringify(data.Wallets || data.wallets),
       UpdatedOn: new Date(),
@@ -128,6 +130,8 @@ async updateSettings(req, res) {
       samePackage: !!settings.SamePackage,
       autoHold: !!settings.AutoHold,
       maxChild: settings.MaxChild,
+      bonusSource: settings.BonusSource,
+
     });
 
   } catch (err) {

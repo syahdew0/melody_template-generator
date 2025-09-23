@@ -12,10 +12,10 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
-      wallet_id: {
-        type: Sequelize.BIGINT,
-        allowNull: false,
-      },
+      // wallet_id: {
+      //   type: Sequelize.BIGINT,
+      //   allowNull: false,
+      // },
       username: {
         type: Sequelize.STRING(50),
         allowNull: false,

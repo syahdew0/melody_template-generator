@@ -122,3 +122,26 @@ exports.updateSettings = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+exports.getSettingsPublic = async (req, res) => {
+  try {
+    const website = await db.Website.findByPk(req.params.id);
+    if (!website) return res.status(404).json({ success: false, message: 'Website not found' });
+
+    // hanya data aman untuk publik
+    const settings = {
+      site_title: website.site_title,
+      title: website.title,
+      site_description: website.site_description,
+      seo_keywords: website.seo_keywords,
+      seo_description: website.seo_description,
+      logo: website.logo,
+      favicon: website.favicon,
+    };
+
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

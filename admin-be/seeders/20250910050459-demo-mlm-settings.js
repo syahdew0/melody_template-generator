@@ -11,6 +11,7 @@ module.exports = {
         SamePackage: false,
         AutoHold: false,
         MaxChild: 4,
+        BonusSource: 'downline',
         Positions: JSON.stringify([
           { name: 'Left', value: 10 },
           { name: 'Right', value: 10 }
