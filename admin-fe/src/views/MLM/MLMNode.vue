@@ -9,8 +9,14 @@
         {{ node.customer?.username || 'Kosong' }}
       </div>
       <div v-if="node.package" class="text-md text-gray-500 leading-snug">
-        {{ node.package.name }} <br />
-        <!-- <span class="font-semibold text-gray-700"> value : {{ node.package.value }}</span> -->
+        {{ node.package.name }}
+      </div>
+
+      <!-- 🔢 Info jumlah downline -->
+      <div class="text-xs text-blue-600 mt-2">
+        <p>Total Downline: {{ totalDownline }}</p>
+        <p>Left: {{ leftCount }}</p>
+        <p>Right: {{ rightCount }}</p>
       </div>
     </div>
 
@@ -19,48 +25,45 @@
       v-if="depth < maxDepth"
       class="children flex justify-between w-full mt-10 gap-4 px-6"
     >
- <!-- Left -->
-<div class="child w-1/2 flex flex-col items-center relative">
-  <div class="connector"></div>
-  <MlmNode
-    v-if="leftChild"
-    :node="leftChild"
-    :depth="depth + 1"
-    :max-depth="maxDepth"
-    @focus-node="$emit('focus-node', $event)"
-    @select-placement="$emit('select-placement', $event)"
-  />
-  <div
-    v-else
-    class="node-card empty-card cursor-pointer"
-    @click="$emit('select-placement', { parentId: node.id, placement: 'left' })"
-  >
-    Kosong
-  </div>
-</div>
+      <!-- Left -->
+      <div class="child w-1/2 flex flex-col items-center relative">
+        <div class="connector"></div>
+        <MlmNode
+          v-if="leftChild"
+          :node="leftChild"
+          :depth="depth + 1"
+          :max-depth="maxDepth"
+          @focus-node="$emit('focus-node', $event)"
+          @select-placement="$emit('select-placement', $event)"
+        />
+        <div
+          v-else
+          class="node-card empty-card cursor-pointer"
+          @click="$emit('select-placement', { parentId: node.id, placement: 'left' })"
+        >
+          Kosong
+        </div>
+      </div>
 
-<!-- Right -->
-<div class="child w-1/2 flex flex-col items-center relative">
-  <div class="connector"></div>
-  <MlmNode
-    v-if="rightChild"
-    :node="rightChild"
-    :depth="depth + 1"
-    :max-depth="maxDepth"
-    @focus-node="$emit('focus-node', $event)"
-    @select-placement="$emit('select-placement', $event)"
-  />
-  <div
-    v-else
-    class="node-card empty-card cursor-pointer"
-    @click="$emit('select-placement', { parentId: node.id, placement: 'right' })"
-  >
-    Kosong
-  </div>
-</div>
-
-
-      
+      <!-- Right -->
+      <div class="child w-1/2 flex flex-col items-center relative">
+        <div class="connector"></div>
+        <MlmNode
+          v-if="rightChild"
+          :node="rightChild"
+          :depth="depth + 1"
+          :max-depth="maxDepth"
+          @focus-node="$emit('focus-node', $event)"
+          @select-placement="$emit('select-placement', $event)"
+        />
+        <div
+          v-else
+          class="node-card empty-card cursor-pointer"
+          @click="$emit('select-placement', { parentId: node.id, placement: 'right' })"
+        >
+          Kosong
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -79,10 +82,30 @@ export default {
     },
     rightChild() {
       return this.node.children?.find(c => c.placement_pos === "right") || null;
+    },
+
+    // hitung recursive semua downline
+    countRecursive() {
+      return (n) =>
+        n && n.children
+          ? n.children.length +
+              n.children.reduce((sum, c) => sum + this.countRecursive(c), 0)
+          : 0;
+    },
+
+    leftCount() {
+      return this.leftChild ? 1 + this.countRecursive(this.leftChild) : 0;
+    },
+    rightCount() {
+      return this.rightChild ? 1 + this.countRecursive(this.rightChild) : 0;
+    },
+    totalDownline() {
+      return this.leftCount + this.rightCount;
     }
   }
 };
 </script>
+
 
 <style scoped>
 .node-card {

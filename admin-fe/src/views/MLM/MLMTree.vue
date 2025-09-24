@@ -26,7 +26,7 @@
         <!-- Tombol back -->
         <button
           v-if="historyStack.length > 0"
-          class="mb-4 px-4 py-2 text-black border rounded"
+          class="mb-4 px-4 py-2 text-black "
           @click="backOneStep"
         >
           ← Kembali

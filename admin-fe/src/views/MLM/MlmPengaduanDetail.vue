@@ -1,5 +1,5 @@
 <template>
-  <section class="p-6 max-w-3xl mx-auto font-poppins">
+  <section class="p-6 max-w-full mx-auto font-poppins">
     <h1 class="text-2xl font-bold mb-6">Detail Pengaduan</h1>
 
     <div v-if="pengaduan" class="bg-white shadow rounded-lg p-6">
@@ -28,6 +28,7 @@
           <option value="high">High</option>
         </select>
       </div>
+
 
       <div class="mt-6 flex gap-4">
         <button

@@ -1,7 +1,17 @@
 // controllers/MLM/mlmtreeController.js
 const { MlmRegistration, Customer, MLMPackage } = require('../../models');
 
-// Helper rekursif untuk membangun tree
+//Helper untuk hitung jumlah downline (rekursif)
+function countDownline(users, parentId) {
+  const children = users.filter(u => u.upline_id === parentId);
+  let count = children.length;
+  for (const child of children) {
+    count += countDownline(users, child.customer_id);
+  }
+  return count;
+}
+
+//Helper rekursif untuk membangun tree (tetap sama, hanya tambah field total_downline)
 function buildTree(users, parentId) {
   return users
     .filter(u => u.upline_id === parentId)
@@ -10,6 +20,7 @@ function buildTree(users, parentId) {
       username: u.username,
       package: u.package || '',
       placement_pos: u.placement_pos,
+      total_downline: countDownline(users, u.customer_id), 
       availablePositions: ['left', 'right'].filter(
         pos => !users.some(c => c.upline_id === parentId && c.placement_pos === pos)
       ),
@@ -47,11 +58,13 @@ exports.getTree = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Root user tidak ditemukan' });
     }
 
+    // 🔹 Bangun tree + inject total_downline root
     const tree = [{
       id: rootReg.customer_id,
       username: rootReg.username,
       package: rootReg.package || '',
       placement_pos: rootReg.placement_pos || 'root',
+      total_downline: countDownline(users, rootId), 
       availablePositions: ['left', 'right'].filter(
         pos => !users.some(u => u.upline_id === rootId && u.placement_pos === pos)
       ),
