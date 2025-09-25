@@ -112,6 +112,7 @@ app.use('/api/admin/mlm-settings', require('./routes/MLM/mlmSettingRoutes'));
 
 
 app.use('/apis/public', publicRoutes);
+app.use('/apis/contact', require('./routes/contactRoutes'));
 
 app.use("/api/admin/roles", require("./routes/role/roleRoutes"));
 app.use('/api/admin/modules', require('./routes/role/moduleRoutes'));
@@ -196,6 +197,10 @@ app.use('/apis/comments', require('./routes/customer/commentRoutes'));
 // Admin (butuh auth)
 app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
 
+
+
+// server.js
+app.use('/apis/contact', require('./routes/contactRoutes'));
 
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));

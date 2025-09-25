@@ -10,7 +10,7 @@ class EmailService {
   init() {
     // Konfigurasi email transporter
     // Sesuaikan dengan provider email yang Anda gunakan
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'localhost',
       port: process.env.SMTP_PORT || 587,
       secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
@@ -137,6 +137,7 @@ class EmailService {
     }
   }
 
+
   // Template auto-reply untuk contact form
   async sendContactAutoReply(contactData) {
     if (!this.transporter) {
@@ -144,46 +145,46 @@ class EmailService {
       return false;
     }
 
+  
     try {
       const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: contactData.email,
         subject: 'Terima kasih atas pesan Anda',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 24px;">Terima Kasih, ${contactData.name}!</h1>
-            </div>
-            
-            <div style="background: white; padding: 30px 20px; border: 1px solid #e5e7eb; border-top: none;">
-              <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
-                Kami telah menerima pesan Anda dan akan merespons sesegera mungkin. 
-                Biasanya kami membalas dalam waktu 1-2 hari kerja.
-              </p>
-              
-              <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #374151;">Detail Pesan Anda:</h3>
-                ${contactData.subject ? `<p><strong>Subjek:</strong> ${contactData.subject}</p>` : ''}
-                <p><strong>Pesan:</strong></p>
-                <p style="background: white; padding: 15px; border-radius: 4px; color: #6b7280; line-height: 1.6;">
-                  ${contactData.message.replace(/\n/g, '<br>')}
-                </p>
-              </div>
-              
-              <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 8px;">
-                <p style="margin: 0; color: #92400e; font-size: 14px;">
-                  <strong>Butuh respon lebih cepat?</strong><br>
-                  Anda juga bisa menghubungi kami langsung melalui telepon atau WhatsApp.
-                </p>
-              </div>
-            </div>
-            
-            <div style="background: #f3f4f6; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Email ini dikirim otomatis. Mohon jangan membalas email ini.
-              </p>
-            </div>
-          </div>
+       html: `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #e0f2ff; border-radius: 8px; overflow: hidden;">
+    
+    <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">Terima Kasih, ${contactData.name}!</h1>
+    </div>
+    
+    <div style="background: #bfdbfe; padding: 30px 20px; border-top: 1px solid #93c5fd; color: #1e3a8a;">
+      <p style="line-height: 1.6; margin: 0 0 20px 0;">
+        Kami telah menerima pesan Anda dan akan merespons sesegera mungkin. 
+        Biasanya kami membalas dalam waktu 1-2 hari kerja.
+      </p>
+      
+      <div style="background: #dbecff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0;">Detail Pesan Anda:</h3>
+        ${contactData.subject ? `<p><strong>Subjek:</strong> ${contactData.subject}</p>` : ''}
+        <p><strong>Pesan:</strong></p>
+        <p style="background: white; padding: 15px; border-radius: 4px; color: #1e3a8a; line-height: 1.6;">
+          ${contactData.message.replace(/\n/g, '<br>')}
+        </p>
+      </div>
+      
+      <div style="margin-top: 30px; padding: 20px; background: #bfdbfe; border-radius: 8px; color: #1e3a8a; font-size: 14px;">
+        <strong>Butuh respon lebih cepat?</strong><br>
+        Anda juga bisa menghubungi kami langsung melalui telepon atau WhatsApp.
+      </div>
+    </div>
+    
+    <div style="background: #93c5fd; padding: 20px; text-align: center; color: white; font-size: 12px;">
+      Email ini dikirim otomatis. Mohon jangan membalas email ini.
+    </div>
+    
+  </div>
+
         `
       };
 
