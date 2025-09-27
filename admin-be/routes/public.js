@@ -21,7 +21,8 @@ router.get('/site-info', async (req, res) => {
     const icon = website.logo || '/favicon.ico';
     const apiUrl = process.env.API_URL || `${req.protocol}://${req.get('host')}`;
 
-    res.json({ id: theme.id,name: theme.name || 'Default', title, icon, apiUrl });
+    res.json({ 
+      id: theme.id,name: theme.name || 'Default', slug: theme.slug || null, title, icon, apiUrl });
   } catch (err) {
     console.error("Error site-info:", err);
     res.status(500).json({ success: false, message: 'Server error' });
