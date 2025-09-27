@@ -94,9 +94,9 @@ const manifest = ref({ themes: {} })
 // Load manifest
 const fetchManifest = async () => {
   try {
-    const res = await fetch('/themes/manifest.json')
-    const data = await res.json()
-    manifest.value = data
+    const res = await fetch('/manifest.html')
+    const text = await res.text()
+    manifest.value = JSON.parse(text)
   } catch (err) {
     console.error('Gagal load manifest:', err)
   }

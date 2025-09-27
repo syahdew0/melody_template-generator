@@ -27,7 +27,6 @@ module.exports = {
       { name: 'page', type: 'main', description: 'Halaman pengaturan page', createdAt: new Date(), updatedAt: new Date() },
       // { name: '', type: 'main', description: 'Halaman pengaturan', createdAt: new Date(), updatedAt: new Date() },
 
-
       { name: 'Boleh Approve Topups', type: 'other', description: 'Halaman pengaturan topups', createdAt: new Date(), updatedAt: new Date() },
       { name: 'Boleh Approve Withdraw', type: 'other', description: 'Halaman pengaturan withdraw', createdAt: new Date(), updatedAt: new Date() },
       { name: 'Boleh Update Order', type: 'other', description: 'Halaman pengaturan Oerder', createdAt: new Date(), updatedAt: new Date() },
