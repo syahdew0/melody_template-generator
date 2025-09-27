@@ -42,7 +42,7 @@ module.exports = {
     });
 
     // Indexes
-    await queryInterface.addIndex('wallet_summaries', ['summary_date']);
+    // await queryInterface.addIndex('wallet_summaries', ['summary_date']);
     await queryInterface.addIndex('wallet_summaries', ['username']);
     await queryInterface.addIndex('wallet_summaries', ['transaction_type_id']);
   },
