@@ -1,43 +1,36 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('users', {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.createTable('contact_infos', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      name: {
+      title: {
         type: Sequelize.STRING,
+        allowNull: true,
       },
-      username: {
+
+      items: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+        defaultValue: '[]',
+      },
+      address: {
         type: Sequelize.STRING,
         allowNull: false,
-        // unique: true,
-      },      
+      },
+      phone: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       email: {
         type: Sequelize.STRING,
         allowNull: false,
-        // unique: true,
       },
-      password: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      role: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'user'
-      },
-    
-      avatar: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'https://i.pravatar.cc/100'
-      },      
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -48,10 +41,18 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
+       description: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      image: {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+      },
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('users');
+  async down(queryInterface, Sequelize) {
+    await queryInterface.dropTable('contact_infos');
   },
 };

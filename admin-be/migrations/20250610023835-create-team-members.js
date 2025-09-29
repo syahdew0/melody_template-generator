@@ -3,37 +3,35 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('postmeta', {
+    await queryInterface.createTable('TeamSections', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      post_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
-        allowNull: true,
-        references: {
-          model: 'posts',   // pastikan tabel posts ada
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+      type: {
+        type: Sequelize.ENUM('header', 'member'),
+        allowNull: false
       },
-      meta_key: {
+      title: {
         type: Sequelize.STRING,
-        allowNull: true,
+        allowNull: true // Bisa kosong tergantung tipe
       },
-      meta_value: {
-        type: Sequelize.TEXT,
-        allowNull: true,
+      subtitle: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      created_at: {
+      image: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updated_at: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
@@ -42,6 +40,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('postmeta');
+    await queryInterface.dropTable('TeamSections');
   }
 };

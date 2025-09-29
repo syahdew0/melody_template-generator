@@ -9,8 +9,12 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+down: async (queryInterface, Sequelize) => {
+  // Hanya hapus kolom jika ada
+  const table = await queryInterface.describeTable('menu_items');
+  if (table.isActive) {
     await queryInterface.removeColumn('menu_items', 'isActive');
   }
+  },
 };
 
