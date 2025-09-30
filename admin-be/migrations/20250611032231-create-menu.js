@@ -21,7 +21,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: '',
+          model: 'menus',
           key: 'id',
         },
         onUpdate: 'NO ACTION',
