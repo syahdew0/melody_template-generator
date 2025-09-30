@@ -18,6 +18,7 @@ const postController = require('../controllers/postController');
 // Customer routes
 router.get('/', postController.getAll); 
 router.get('/category/:slug', postController.getPostsByCategory);
+router.get('/slug/:slug', postController.getBySlug);
 router.get('/:slug', postController.getBySlug);
 
 module.exports = router;
