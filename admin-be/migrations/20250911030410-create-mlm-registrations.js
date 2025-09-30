@@ -13,7 +13,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'customers',  
+          model: 'customers',
           key: 'id',
         },
         onUpdate: 'NO ACTION',
@@ -23,7 +23,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'mlmpackages',  
+          model: 'mlmpackages',
           key: 'MLMPackageID',
         },
         onUpdate: 'NO ACTION',
@@ -39,39 +39,9 @@ module.exports = {
         onUpdate: 'NO ACTION',
         onDelete: 'SET NULL',
       },
-      referral_id: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'customers',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
-      },
       status: {
         type: Sequelize.ENUM('active', 'inactive', 'suspended'),
         defaultValue: 'active',
-      },
-      placement_pos: {
-        type: Sequelize.ENUM('left','right','root'),
-        allowNull: true,
-      },
-      mlm_level: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0,
-      },
-      points_left: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0,
-      },
-      points_right: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0,
-      },
-      notes: {
-        type: Sequelize.TEXT,
-        allowNull: true,
       },
       start_date: {
         type: Sequelize.DATE,
@@ -80,6 +50,10 @@ module.exports = {
       },
       end_date: {
         type: Sequelize.DATE,
+        allowNull: true,
+      },
+      notes: {
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       created_at: {

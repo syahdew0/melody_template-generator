@@ -34,7 +34,7 @@ const MlmRegistration = sequelize.define('MlmRegistration', {
     // relasi ke customer
     MlmRegistration.belongsTo(models.Customer, {
       foreignKey: 'customer_id',
-      as: 'customer',
+      as: 'Customer',
     });
 
     // relasi ke package
