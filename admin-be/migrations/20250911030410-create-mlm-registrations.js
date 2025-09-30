@@ -24,7 +24,7 @@ module.exports = {
         allowNull: false,
         references: {
           model: 'mlmpackages',
-          key: 'MLMPackageID',
+          key: 'id',
         },
         onUpdate: 'NO ACTION',
         onDelete: 'NO ACTION',
