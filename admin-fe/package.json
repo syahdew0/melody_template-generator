@@ -8,6 +8,7 @@
     "build:sandbox": "vue-cli-service build --mode sandbox",
     "build:production": "vue-cli-service build --mode production",
     "build:staging": "vue-cli-service build --mode staging",
+    "build:psggroup": "vue-cli-service build --mode psggroup",
     "lint": "vue-cli-service lint"
     
   },
