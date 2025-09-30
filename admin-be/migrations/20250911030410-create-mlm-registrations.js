@@ -13,7 +13,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'customers',
+          model: 'Customers',
           key: 'id',
         },
         onUpdate: 'NO ACTION',
@@ -33,7 +33,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'customers',
+          model: 'Customers',
           key: 'id',
         },
         onUpdate: 'NO ACTION',
