@@ -67,7 +67,7 @@ export const API_ENDPOINTS = {
   pages: `${API_URL}/api/admin/posts`,
   pageBySlug: (slug) => `${API_URL}/api/admin/pages/slug/${slug}`,
   customPages: `${API_URL}/api/admin/custom-pages`,
-
+  manifestThemes: `${API_URL}/apis/public/themes/manifest`,
   activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
   updateTheme: (id) => `${API_URL}/api/admin/themes/${id}`,
   themes: `${API_URL}/api/admin/themes`,
