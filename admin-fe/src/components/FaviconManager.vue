@@ -52,40 +52,55 @@ export default {
   },
 
   methods: {
- async fetchFavicon() {
-  try {
-    const res = await axios.get(API_ENDPOINTS.favicon);
-    this.form.favicon = res.data?.value || '/uploads/default-favicon.ico';
-  } catch (err) {
-    console.warn('Gagal mengambil favicon:', err);
-  }
-},
+    async fetchFavicon() {
+      try {
+        const res = await axios.get(API_ENDPOINTS.favicon)
+        let url = res.data.value || res.data || '/uploads/default-favicon.ico'
+
+        // Pakai HTTPS untuk domain live, HTTP untuk localhost
+        if (url.includes('localhost')) {
+          this.form.favicon = url
+        } else {
+          this.form.favicon = url.replace(/^http:\/\//, 'https://')
+        }
+      } catch (err) {
+        console.warn('Gagal mengambil favicon:', err)
+      }
+    },
 
     handleFileChange(event) {
       this.selectedFile = event.target.files[0] || null
     },
 
-    async uploadFavicon() {
+async uploadFavicon() {
   if (!this.selectedFile) return
 
   const formData = new FormData()
   formData.append('file', this.selectedFile)
 
   try {
-    const res = await axios.post(API_ENDPOINTS.icons, formData)
+    const token = localStorage.getItem('token')
+    const res = await axios.post(API_ENDPOINTS.icons, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    })
 
-    // Paksa favicon URL jadi HTTPS
-    const url = res.data.value || res.data.url || ''
-    // this.form.favicon = url.replace(/^http:\/\//, 'https://')
-    this.form.favicon = url
+    let url = res.data.value || res.data.url || '/uploads/default-favicon.ico'
+    if (url.includes('localhost')) {
+      this.form.favicon = url
+    } else {
+      this.form.favicon = url.replace(/^http:\/\//, 'https://')
+    }
 
     this.selectedFile = null
+    alert('Favicon berhasil di-upload.')
   } catch (err) {
     console.error('Gagal upload favicon:', err)
-    alert('Gagal upload file favicon.')
+    alert('Gagal upload favicon. Pastikan Anda login sebagai admin.')
   }
 },
-
 
     async saveFavicon() {
       try {

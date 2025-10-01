@@ -23,6 +23,7 @@ router.get('/site-info', async (req, res) => {
 
     res.json({ 
       id: theme.id,
+      website_id: website.id,
       name: theme.name || 'Default',
       slug: theme.slug || null,
       title,
