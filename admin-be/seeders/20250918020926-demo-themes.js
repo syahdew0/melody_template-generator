@@ -7,11 +7,11 @@ module.exports = {
     // =====================
 await queryInterface.bulkInsert('websites', [
   {
-    name: 'Vizions Website',
+    name: 'Ecommerce Website',
     user_id: null,
     subdomain: null,
-    site_title: 'Vizions 3D',
-    site_description: 'Vizions 3D Website',
+    site_title: 'Ecommerce Website',
+    site_description: 'Ecommerce Website',
     admin_email: null,
     logo: null,
     seo_keywords: null,
@@ -19,16 +19,16 @@ await queryInterface.bulkInsert('websites', [
     rate: null,
     created_at: new Date(),
     updated_at: new Date(),
-    title: 'vizion3D'
+    title: 'Ecommerce Website',
   }
 ], {});
 
 await queryInterface.bulkInsert('themes', [
   {
     website_id: 1, 
-    name: 'vizions',
-    slug: 'vizions',
-    description: 'Theme untuk website Vizions',
+    name: 'Ecommerce Default Theme',
+    slug: 'ecommerce-default-theme',
+    description: 'Default theme for ecommerce website',
     schema: JSON.stringify({}),
     is_active: 1,
     created_at: new Date(),

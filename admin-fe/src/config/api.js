@@ -163,6 +163,13 @@ export const API_ENDPOINTS = {
     mlmTransactions: `${API_URL}/api/transaksi/mlm-transactions`,
     mlmPaketUser: `${API_URL}/api/admin/paket-user`,
     mlmComplaints: `${API_URL}/api/admin/mlm-complaints`,
+
+  productTypes: {
+  list: `${API_URL}/api/admin/product-types`,
+  create: `${API_URL}/api/admin/product-types`,
+  update: (id) => `${API_URL}/api/admin/product-types/${id}`,
+  delete: (id) => `${API_URL}/api/admin/product-types/${id}`,
+},
 }
 
 

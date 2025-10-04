@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       as: 'post',
       onDelete: 'NO ACTION',
     });
+    
 
     PostCategory.belongsTo(models.Category, {
       foreignKey: 'category_id',

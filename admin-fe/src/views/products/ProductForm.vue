@@ -7,12 +7,12 @@
       <div class="md:col-span-2 space-y-4">
         <div>
           <label class="block mb-1 font-medium">Product Title</label>
-          <input v-model="form.title" @input="generateSlug" type="text" class="input" />
+          <input v-model="form.title" @input="generateSlug" type="text" class="input border border-gray-400" />
         </div>
 
         <div>
           <label class="block mb-1 font-medium">Slug</label>
-          <input v-model="form.slug" type="text" class="input" />
+          <input v-model="form.slug" type="text" class="input border border-gray-400" />
         </div>
 
         <div>
@@ -108,13 +108,53 @@
               <span>Is Preorder?</span>
             </div>
             <div>
-              <label>Product Type</label>
-              <select v-model="form.product_detail.product_type_id"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1">
-                <option :value="null">Select Type</option>
-                <option v-for="type in productTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
-              </select>
-            </div>
+  <div>
+  <label class="block font-medium mb-1">Manage Product Types</label>
+
+<!-- Input new product type -->
+<div class="flex space-x-2 mb-2">
+  <input
+    v-model="newProductType.name"
+    type="text"
+    placeholder="New product type..."
+    class="input flex-1"
+  />
+
+  <!-- Select parent type (optional) -->
+  <select v-model="newProductType.parent_id" class="input w-48">
+    <option :value="null">-- No Parent --</option>
+    <template v-for="type in flattenedProductTypes" :key="type.id">
+     <option :value="type.id">
+      {{ [...type.parentChain.map(id => getTypeName(id)), type.name].join(' > ') }}
+    </option>
+    </template>
+  </select>
+
+  <button
+    @click="createProductType"
+    class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+  >
+    Add
+  </button>
+</div>
+
+
+<!-- Select product type -->
+<label class="block mb-2 font-medium">Select Product Type</label>
+<div v-if="parentTypeName">
+  <label class="block font-medium mb-2">Parent Type :  <input type="text" :value="parentTypeName" class="input" readonly /></label>
+ 
+</div>
+
+<select v-model="form.product_detail.product_type_id" class="mt-2 input w-full border rounded">
+  <option :value="null">-- Select Type --</option>
+  <template v-for="type in flattenedProductTypes" :key="type.id">
+    <option :value="type.id">{{ ' '.repeat(type.level * 4) + type.name }}</option>
+  </template>
+</select>
+
+</div>
+</div>
             <div>
               <label>Minimum Quantity</label>
               <input v-model.number="form.product_detail.minimum_qty" type="number"
@@ -212,7 +252,7 @@
 </template>
 
 <script setup>
-import { ref,computed, onMounted } from 'vue'
+import { ref,computed, onMounted,watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { QuillEditor } from '@vueup/vue-quill'
@@ -226,6 +266,8 @@ const router = useRouter()
 const isEdit = !!route.params.id
 const isEditorReady = ref(false)
 const isMediaPickerReady = ref(false)
+const productTypes = ref([])
+
 
 const form = ref({
   website_id: 1,
@@ -277,6 +319,11 @@ const generateSlug = () => {
     .replace(/[^\w ]+/g, '')
     .replace(/ +/g, '-')
 }
+
+const newProductType = ref({
+  name: '',
+  parent_id: null
+})
 
 const formatNumber = (num) => {
   if (!num) return ''
@@ -347,6 +394,23 @@ const fetchProduct = async () => {
     toast.error('Failed to fetch product data.')
   }
 }
+// Flatten nested types untuk dropdown
+const flattenedProductTypes = computed(() => {
+  const result = []
+
+  const traverse = (nodes, level = 0, parentIds = []) => {
+    nodes.forEach(n => {
+      result.push({ ...n, level, parentChain: [...parentIds] })
+      if (n.children && n.children.length) {
+        traverse(n.children, level + 1, [...parentIds, n.id])
+      }
+    })
+  }
+
+  traverse(productTypes.value)
+  return result
+})
+
 
 const fetchCategories = async () => {
   try {
@@ -356,11 +420,51 @@ const fetchCategories = async () => {
     console.error(err)
   }
 }
+// Fetch product types 
+const fetchProductTypes = async () => {
+  try {
+    const res = await axios.get(API_ENDPOINTS.productTypes.list, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    productTypes.value = res.data.data // <--- ambil data di dalam object response
+  } catch (err) {
+    console.error(err)
+    toast.error('Failed to load product types.')
+  }
+}
+
+
+// Create new product type
+const createProductType = async () => {
+  if (!newProductType.value.name) return
+  try {
+    await axios.post(API_ENDPOINTS.productTypes.create, { 
+      name: newProductType.value.name,
+      parent_id: newProductType.value.parent_id // bisa null atau pilih parent
+    }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    newProductType.value.name = ''
+    newProductType.value.parent_id = null
+    await fetchProductTypes() // refresh list
+    toast.success('Product type added.')
+  } catch (err) {
+    console.error(err)
+    toast.error('Failed to add product type.')
+  }
+}
+const getTypeName = (id) => {
+  const type = productTypes.value.find(t => t.id === id)
+  return type ? type.name : ''
+}
+
 
 const submit = async () => {
   try {
+    
     const payload = {
       ...form.value,
+      content: form.value.content || '',
       categoryId: form.value.category_ids,
       product_detail: {
         ...form.value.product_detail,
@@ -393,20 +497,29 @@ const submit = async () => {
 }
 
 onMounted(async () => {
-  await fetchCategories()
-  if (isEdit) await fetchProduct()
-    isEditorReady.value = true
+  isEditorReady.value = true
   isMediaPickerReady.value = true
+  await fetchCategories()
+    await fetchProductTypes()
+  if (isEdit) await fetchProduct()
+   form.value.content = form.value.content || ''
 })
 
-// watch(
-//   () => [form.value.product_detail?.price, form.value.product_detail?.discount_percentage],
-//   ([price, discount]) => {
-//     if (!form.value.product_detail) return
-//     form.value.product_detail.discount_price = price && discount
-//       ? price - (price * discount / 100)
-//       : price
-//   }
-// )
+watch(() => form.value.product_detail.product_type_id, (val) => {
+  const selected = flattenedProductTypes.value.find(t => t.id === val)
+  if (selected && selected.parentChain.length) {
+    // Ambil parent langsung (terakhir di parentChain)
+    form.value.parent_id = selected.parentChain[selected.parentChain.length - 1]
+  } else {
+    form.value.parent_id = null
+  }
+})
+
+// Optional: tampilkan nama parent di UI
+const parentTypeName = computed(() => {
+  if (!form.value.parent_id) return ''
+  const parent = productTypes.value.find(t => t.id === form.value.parent_id)
+  return parent ? parent.name : ''
+})
 
 </script>

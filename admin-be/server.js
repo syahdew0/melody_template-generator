@@ -136,6 +136,7 @@ app.use('/company-banks', require('./routes/companybankRoutes'));
 app.use('/customer/company-banks', require('./routes/customer/companybankRoutes'));
 app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
+app.use('/api/admin/product-types', require('./routes/productTypeRoutes'));
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);

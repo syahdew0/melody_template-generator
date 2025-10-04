@@ -40,6 +40,11 @@ const ProductDetail = sequelize.define('ProductDetail', {
       foreignKey: 'product_id',
       as: 'OrderDetails'
     });
+      ProductDetail.belongsTo(models.ProductType, {
+    foreignKey: 'product_type_id',
+    as: 'product_type'
+  });
+
   };
 
   return ProductDetail;

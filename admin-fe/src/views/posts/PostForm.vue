@@ -195,10 +195,16 @@ async fetchPost() {
     console.error('Gagal mengambil data post:', error);
   }
 },
-    async fetchCategories() {
-      const res = await axios.get(API_ENDPOINTS.categories)
-      this.categories = res.data
-    },
+
+async fetchCategories() {
+  const res = await axios.get(API_ENDPOINTS.categories)
+  this.categories = res.data
+
+  // kalau create post baru, set default ke kategori pertama (misal Uncategorized)
+  if (!this.isEdit && this.categories.length > 0 && this.form.category_ids.length === 0) {
+    this.form.category_ids = [this.categories[0].id]
+  }
+},
 async savePost() {
   const meta = [
     { meta_key: 'meta_title', meta_value: this.seo.meta_title },
@@ -207,22 +213,23 @@ async savePost() {
 
   const payload = {
     ...this.form,
+    category_ids: [...this.form.category_ids], // ubah Proxy jadi array
     type: 'post',
     meta
   };
 
+  console.log("Payload final:", payload);
+
   try {
     if (this.isEdit && this.form.id) {
-      // Update pakai PUT ke /apis/admin/posts/:id
       await axios.put(`${API_ENDPOINTS.posts}/${this.form.id}`, payload);
     } else {
-      // Create post baru
       await axios.post(API_ENDPOINTS.posts, payload);
     }
 
     this.$router.push('/admin/posts');
   } catch (error) {
-    console.error('Failed to save post:', error);
+    console.error('Failed to save post:', error.response?.data || error);
   }
 },
 // async submitForm() {

@@ -98,30 +98,72 @@ exports.requireOtherModule = (moduleName) => {
   };
 };
 
+// exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
+//   return async (req, res, next) => {
+//     try {
+//       const user = req.user;
+//       if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+//       const categoryId = req.params[categoryIdParam] || req.body[categoryIdParam];
+//       if (!categoryId) return res.status(400).json({ message: "Category ID dibutuhkan" });
+
+//       // Cek role blocked categories
+//       const rolecategory = await RoleCategory.findOne({
+//   where: {
+//     RoleId: user.RoleId,
+//     CategoryId: categoryId,
+//   },
+// });
+
+// // Kalau tidak ditemukan, berarti role **tidak punya akses** ke kategori
+// if (!rolecategory) {
+//   return res.status(403).json({ message: "Kategori ini diblokir untuk role Anda" });
+// }
+
+// next();
+
+//     } catch (err) {
+//       console.error("requireCategoryAccess error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   };
+// };
+
 exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
   return async (req, res, next) => {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-      const categoryId = req.params[categoryIdParam] || req.body[categoryIdParam];
-      if (!categoryId) return res.status(400).json({ message: "Category ID dibutuhkan" });
+      let categoryIds = req.params[categoryIdParam] || req.body[categoryIdParam];
 
-      // Cek role blocked categories
-      const rolecategory = await RoleCategory.findOne({
-  where: {
-    RoleId: user.RoleId,
-    CategoryId: categoryId,
-  },
-});
+      // dukung array category_ids
+      if (!categoryIds && req.body.category_ids) {
+        categoryIds = req.body.category_ids;
+      }
 
-// Kalau tidak ditemukan, berarti role **tidak punya akses** ke kategori
-if (!rolecategory) {
-  return res.status(403).json({ message: "Kategori ini diblokir untuk role Anda" });
-}
+      if (!categoryIds || (Array.isArray(categoryIds) && categoryIds.length === 0)) {
+        return res.status(400).json({ message: "Category ID dibutuhkan" });
+      }
 
-next();
+      // pastikan array
+      if (!Array.isArray(categoryIds)) {
+        categoryIds = [categoryIds];
+      }
 
+      // cek apakah semua category boleh diakses
+      const blocked = await RoleCategory.findAll({
+        where: {
+          RoleId: user.RoleId,
+          CategoryId: categoryIds,
+        },
+      });
+
+      if (blocked.length === 0) {
+        return res.status(403).json({ message: "Kategori ini diblokir untuk role Anda" });
+      }
+
+      next();
     } catch (err) {
       console.error("requireCategoryAccess error:", err);
       res.status(500).json({ message: "Server error" });
