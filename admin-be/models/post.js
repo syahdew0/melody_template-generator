@@ -8,6 +8,23 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },      
+discount_percentage: {
+  type: DataTypes.FLOAT,
+  defaultValue: 0
+},
+is_discount_active: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false
+},
+product_type: {
+  type: DataTypes.STRING,
+  allowNull: true
+},
+variations: {
+  type: DataTypes.JSON,
+  allowNull: true
+},
+
     title: DataTypes.STRING,
     slug: DataTypes.STRING,
     content: DataTypes.TEXT,

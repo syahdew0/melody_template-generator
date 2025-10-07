@@ -3,34 +3,37 @@
     <h1 class="text-2xl font-bold">{{ isEdit ? 'Edit Product' : 'Add New Product' }}</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Main Form -->
+      <!-- MAIN FORM -->
       <div class="md:col-span-2 space-y-4">
+        <!-- Title -->
         <div>
           <label class="block mb-1 font-medium">Product Title</label>
           <input v-model="form.title" @input="generateSlug" type="text" class="input border border-gray-400" />
         </div>
 
+        <!-- Slug -->
         <div>
           <label class="block mb-1 font-medium">Slug</label>
           <input v-model="form.slug" type="text" class="input border border-gray-400" />
         </div>
 
+        <!-- Content -->
         <div>
           <label class="block mb-1 font-medium">Content</label>
-<quill-editor
-  v-if="isEditorReady"
-  v-model="form.content"
-  :style="{ minHeight: '200px' }"
-  class="bg-white"
-/>
+          <quill-editor
+            v-model:content="form.content"
+            contentType="html"
+            class="min-h-[300px] bg-white border rounded"
+          />
         </div>
 
+        <!-- Excerpt -->
         <div>
           <label class="block mb-1 font-medium">Excerpt</label>
           <textarea v-model="form.excerpt" rows="3" class="input"></textarea>
         </div>
 
-        <!-- SEO -->
+        <!-- SEO Settings -->
         <div class="border p-4 rounded shadow">
           <h3 class="font-semibold mb-2">SEO Settings</h3>
           <label class="block text-sm">Meta Title</label>
@@ -43,157 +46,11 @@
           <input v-model="seo.meta_keywords" type="text" class="input" />
         </div>
 
-        
-         <!-- Product Details -->
-        <div class="border border-gray-300 p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">Product Details</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-  <label>Price</label>
-  <input
-    type="text"
-    class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1"
-    :value="formattedPrice"
-    @input="onPriceInput($event.target.value)"
-  />
-</div>
-
-
-<!-- <div>
-  <label>Discount %</label>
-  <input v-model.number="form.product_detail.discount_percentage" type="number" min="0" max="100"
-    class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-</div> -->
-<div>
-  <label>Price After Discount</label>
-  <input
-    type="text"
-    :value="formattedDiscountPrice"
-    @input="onDiscountPriceInput($event.target.value)"
-    class="input border border-gray-400 rounded w-full px-2 py-1"
-  />
-</div>
-            <div>
-              <label>Discount Until</label>
-              <input v-model="form.product_detail.discount_until" type="datetime-local"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Weight</label>
-              <input v-model.number="form.product_detail.weight" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Unit Name</label>
-              <input v-model="form.product_detail.unit_name" type="text"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Purchase Price</label>
-              <input v-model.number="form.product_detail.purchase_price" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Admin Info</label>
-              <textarea v-model="form.product_detail.admin_info" rows="2"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1"></textarea>
-            </div>
-            <div>
-              <label>Formula Price</label>
-              <input v-model="form.product_detail.formula_price" type="text"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div class="flex items-center space-x-2">
-              <input type="checkbox" v-model="form.product_detail.is_preorder" class="border border-gray-400" />
-              <span>Is Preorder?</span>
-            </div>
-            <div>
-  <div>
-  <label class="block font-medium mb-1">Manage Product Types</label>
-
-<!-- Input new product type -->
-<div class="flex space-x-2 mb-2">
-  <input
-    v-model="newProductType.name"
-    type="text"
-    placeholder="New product type..."
-    class="input flex-1"
-  />
-
-  <!-- Select parent type (optional) -->
-  <select v-model="newProductType.parent_id" class="input w-48">
-    <option :value="null">-- No Parent --</option>
-    <template v-for="type in flattenedProductTypes" :key="type.id">
-     <option :value="type.id">
-      {{ [...type.parentChain.map(id => getTypeName(id)), type.name].join(' > ') }}
-    </option>
-    </template>
-  </select>
-
-  <button
-    @click="createProductType"
-    class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-  >
-    Add
-  </button>
-</div>
-
-
-<!-- Select product type -->
-<label class="block mb-2 font-medium">Select Product Type</label>
-<div v-if="parentTypeName">
-  <label class="block font-medium mb-2">Parent Type :  <input type="text" :value="parentTypeName" class="input" readonly /></label>
- 
-</div>
-
-<select v-model="form.product_detail.product_type_id" class="mt-2 input w-full border rounded">
-  <option :value="null">-- Select Type --</option>
-  <template v-for="type in flattenedProductTypes" :key="type.id">
-    <option :value="type.id">{{ ' '.repeat(type.level * 4) + type.name }}</option>
-  </template>
-</select>
-
-</div>
-</div>
-            <div>
-              <label>Minimum Quantity</label>
-              <input v-model.number="form.product_detail.minimum_qty" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div class="flex items-center space-x-2">
-              <input type="checkbox" v-model="form.product_detail.stock_integrated" class="border border-gray-400" />
-              <span>Stock Integrated?</span>
-            </div>
-            <div>
-              <label>Stock</label>
-              <input v-model.number="form.product_detail.stock" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Initial Stock</label>
-              <input v-model.number="form.product_detail.initial_stock" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>DP Percentage</label>
-              <input v-model.number="form.product_detail.dp_percentage" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Minimum Order</label>
-              <input v-model.number="form.product_detail.minimum_order" type="number"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-            <div>
-              <label>Dimension</label>
-              <input v-model="form.product_detail.dimension" type="text"
-                class="input border border-gray-400 focus:border-black focus:ring focus:ring-black/10 rounded w-full px-2 py-1" />
-            </div>
-          </div>
-        </div>
+        <!--  PRODUCT DETAILS -->
+        <ProductDetail v-model="form.product_detail" :productTypes="flattenedProductTypes" />
       </div>
 
-      <!-- Sidebar -->
+      <!-- SIDEBAR -->
       <div class="space-y-4">
         <!-- Thumbnail -->
         <div class="bg-white border rounded shadow-sm p-4">
@@ -211,21 +68,17 @@
               alt="Thumbnail"
               class="rounded shadow max-h-40 object-cover w-full"
             />
-            <button
-              @click="form.thumbnail_url = ''"
-              class="mt-2 text-sm text-red-600 hover:underline"
-            >
+            <button @click="form.thumbnail_url = ''" class="mt-2 text-sm text-red-600 hover:underline">
               Remove Image
             </button>
           </div>
 
-
-<MediaPickerModal
-  v-if="isMediaPickerReady && showMediaPicker"
-  :show="showMediaPicker"
-  @close="showMediaPicker = false"
-  @select="selectImage"
-/>
+          <MediaPickerModal
+            v-if="isMediaPickerReady && showMediaPicker"
+            :show="showMediaPicker"
+            @close="showMediaPicker = false"
+            @select="selectImage"
+          />
         </div>
 
         <!-- Category -->
@@ -244,7 +97,9 @@
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
-          <button @click="submit" class="btn-primary w-full">{{ isEdit ? 'Update' : 'Publish' }}</button>
+          <button @click="submit" class="btn-primary w-full">
+            {{ isEdit ? 'Update' : 'Publish' }}
+          </button>
         </div>
       </div>
     </div>
@@ -252,22 +107,19 @@
 </template>
 
 <script setup>
-import { ref,computed, onMounted,watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { QuillEditor } from '@vueup/vue-quill'
 import { API_ENDPOINTS } from '@/config/api'
 import { useToast } from 'vue-toastification'
 import MediaPickerModal from '@/views/MediaPicker.vue'
+import ProductDetail from '@/views/products/ProductDetails.vue'
 
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const isEdit = !!route.params.id
-const isEditorReady = ref(false)
-const isMediaPickerReady = ref(false)
-const productTypes = ref([])
-
 
 const form = ref({
   website_id: 1,
@@ -297,61 +149,60 @@ const form = ref({
     minimum_qty: null,
     stock_integrated: false,
     stock: 0,
-    initial_stock: null,
     dp_percentage: null,
     minimum_order: null,
     dimension: ''
   }
 })
 
-const seo = ref({
-  meta_title: '',
-  meta_description: '',
-  meta_keywords: ''
-})
-
+const seo = ref({ meta_title: '', meta_description: '', meta_keywords: '' })
 const categories = ref([])
+const productTypes = ref([])
 const showMediaPicker = ref(false)
+const isMediaPickerReady = ref(false)
 
 const generateSlug = () => {
-  form.value.slug = form.value.title
-    .toLowerCase()
-    .replace(/[^\w ]+/g, '')
-    .replace(/ +/g, '-')
+  form.value.slug = form.value.title.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-')
 }
 
-const newProductType = ref({
-  name: '',
-  parent_id: null
-})
-
-const formatNumber = (num) => {
-  if (!num) return ''
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-}
-const parseNumber = (str) => {
-  if (!str) return 0
-  return Number(str.toString().replace(/\./g, '')) || 0
-}
-
-const formattedPrice = computed(() => formatNumber(form.value.product_detail.price))
-
-const onPriceInput = (val) => {
-  form.value.product_detail.price = parseNumber(val)
-}
-const formattedDiscountPrice = computed(() => {
-  return formatNumber(form.value.product_detail.discount_price)
-})
-const onDiscountPriceInput = (val) => {
-  // ubah input jadi number tanpa titik
-  form.value.product_detail.discount_price = parseNumber(val)
-}
-const getImageUrl = (path) => path.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`
-
+const getImageUrl = (path) => (path.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`)
 const selectImage = (url) => {
   form.value.thumbnail_url = url
   showMediaPicker.value = false
 }
+
+// FETCH DATA
+const fetchCategories = async () => {
+  try {
+    const { data } = await axios.get(API_ENDPOINTS.categories)
+    categories.value = data
+  } catch {
+    toast.error('Failed to load categories.')
+  }
+}
+
+const fetchProductTypes = async () => {
+  try {
+    const res = await axios.get(API_ENDPOINTS.productTypes.list, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    productTypes.value = res.data.data
+  } catch {
+    toast.error('Failed to load product types.')
+  }
+}
+
+const flattenedProductTypes = computed(() => {
+  const result = []
+  const traverse = (nodes, level = 0, parentIds = []) => {
+    nodes.forEach((n) => {
+      result.push({ ...n, level, parentChain: [...parentIds] })
+      if (n.children?.length) traverse(n.children, level + 1, [...parentIds, n.id])
+    })
+  }
+  traverse(productTypes.value)
+  return result
+})
 
 const fetchProduct = async () => {
   try {
@@ -359,7 +210,6 @@ const fetchProduct = async () => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
 
-    // isi form utama
     form.value = {
       ...form.value,
       title: data.title || '',
@@ -368,158 +218,67 @@ const fetchProduct = async () => {
       excerpt: data.excerpt || '',
       thumbnail_url: data.thumbnail_url || '',
       status: data.status || 'draft',
-      category_ids: data.post_categories?.map(pc => pc.category.id) || [],
-      product_detail: { ...form.value.product_detail, ...data.product_detail }
+      category_ids: data.post_categories?.map((pc) => pc.category.id) || [],
+      product_detail: {
+        ...form.value.product_detail,
+        ...data.product_detail,
+  //  variations: form.value.product_detail.variations || [], 
+    variants: form.value.product_detail.variants || []
+      }
     }
 
-    // format discount_until ke datetime-local (local time)
-    if (form.value.product_detail.discount_until) {
-    const date = new Date(form.value.product_detail.discount_until)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    form.value.product_detail.discount_until = `${year}-${month}-${day}T${hours}:${minutes}`
-  }
-
-    // meta
     if (data.meta?.length) {
-      seo.value.meta_title = data.meta.find(m => m.meta_key === 'meta_title')?.meta_value || ''
-      seo.value.meta_description = data.meta.find(m => m.meta_key === 'meta_description')?.meta_value || ''
-      seo.value.meta_keywords = data.meta.find(m => m.meta_key === 'meta_keywords')?.meta_value || ''
+      seo.value = {
+        meta_title: data.meta.find((m) => m.meta_key === 'meta_title')?.meta_value || '',
+        meta_description: data.meta.find((m) => m.meta_key === 'meta_description')?.meta_value || '',
+        meta_keywords: data.meta.find((m) => m.meta_key === 'meta_keywords')?.meta_value || ''
+      }
     }
-  } catch (err) {
-    console.error(err)
+  } catch {
     toast.error('Failed to fetch product data.')
   }
 }
-// Flatten nested types untuk dropdown
-const flattenedProductTypes = computed(() => {
-  const result = []
-
-  const traverse = (nodes, level = 0, parentIds = []) => {
-    nodes.forEach(n => {
-      result.push({ ...n, level, parentChain: [...parentIds] })
-      if (n.children && n.children.length) {
-        traverse(n.children, level + 1, [...parentIds, n.id])
-      }
-    })
-  }
-
-  traverse(productTypes.value)
-  return result
-})
 
 
-const fetchCategories = async () => {
-  try {
-    const { data } = await axios.get(API_ENDPOINTS.categories)
-    categories.value = data
-  } catch (err) {
-    console.error(err)
-  }
-}
-// Fetch product types 
-const fetchProductTypes = async () => {
-  try {
-    const res = await axios.get(API_ENDPOINTS.productTypes.list, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-    productTypes.value = res.data.data // <--- ambil data di dalam object response
-  } catch (err) {
-    console.error(err)
-    toast.error('Failed to load product types.')
-  }
-}
-
-
-// Create new product type
-const createProductType = async () => {
-  if (!newProductType.value.name) return
-  try {
-    await axios.post(API_ENDPOINTS.productTypes.create, { 
-      name: newProductType.value.name,
-      parent_id: newProductType.value.parent_id // bisa null atau pilih parent
-    }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-    newProductType.value.name = ''
-    newProductType.value.parent_id = null
-    await fetchProductTypes() // refresh list
-    toast.success('Product type added.')
-  } catch (err) {
-    console.error(err)
-    toast.error('Failed to add product type.')
-  }
-}
-const getTypeName = (id) => {
-  const type = productTypes.value.find(t => t.id === id)
-  return type ? type.name : ''
-}
-
-
+// SUBMIT FORM
 const submit = async () => {
   try {
-    
+    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
     const payload = {
       ...form.value,
-      content: form.value.content || '',
-      categoryId: form.value.category_ids,
       product_detail: {
         ...form.value.product_detail,
         discount_until: form.value.product_detail.discount_until
           ? new Date(form.value.product_detail.discount_until).toISOString()
-          : null
+          : null,
+        variants: form.value.product_detail.variants || [] // <-- kirim variants
       },
+      variations: form.value.product_detail.variations || [], // <-- kirim untuk table variant
       meta: [
         { meta_key: 'meta_title', meta_value: seo.value.meta_title },
         { meta_key: 'meta_description', meta_value: seo.value.meta_description },
         { meta_key: 'meta_keywords', meta_value: seo.value.meta_keywords }
       ]
-    }
-
-    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    };
 
     if (isEdit) {
-      await axios.put(`${API_ENDPOINTS.posts}/${route.params.id}`, payload, { headers })
-      toast.success('Product updated successfully.')
+      await axios.put(`${API_ENDPOINTS.posts}/${route.params.id}`, payload, { headers });
+      toast.success('Product updated successfully.');
     } else {
-      await axios.post(API_ENDPOINTS.posts, payload, { headers })
-      toast.success('Product created successfully.')
+      await axios.post(API_ENDPOINTS.posts, payload, { headers });
+      toast.success('Product created successfully.');
     }
-
-    router.push({ name: 'ProductList' })
+    router.push({ name: 'ProductList' });
   } catch (err) {
-    console.error(err)
-    toast.error('Failed to save product.')
+    toast.error('Failed to save product: ' + err.message);
   }
-}
+};
+
 
 onMounted(async () => {
-  isEditorReady.value = true
   isMediaPickerReady.value = true
   await fetchCategories()
-    await fetchProductTypes()
+  await fetchProductTypes()
   if (isEdit) await fetchProduct()
-   form.value.content = form.value.content || ''
 })
-
-watch(() => form.value.product_detail.product_type_id, (val) => {
-  const selected = flattenedProductTypes.value.find(t => t.id === val)
-  if (selected && selected.parentChain.length) {
-    // Ambil parent langsung (terakhir di parentChain)
-    form.value.parent_id = selected.parentChain[selected.parentChain.length - 1]
-  } else {
-    form.value.parent_id = null
-  }
-})
-
-// Optional: tampilkan nama parent di UI
-const parentTypeName = computed(() => {
-  if (!form.value.parent_id) return ''
-  const parent = productTypes.value.find(t => t.id === form.value.parent_id)
-  return parent ? parent.name : ''
-})
-
 </script>

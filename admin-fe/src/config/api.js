@@ -170,6 +170,15 @@ export const API_ENDPOINTS = {
   update: (id) => `${API_URL}/api/admin/product-types/${id}`,
   delete: (id) => `${API_URL}/api/admin/product-types/${id}`,
 },
+productVariants: {
+  list: (productId) => `${API_URL}/api/products/${productId}/variants`,
+  create: (productId) => `${API_URL}/api/products/${productId}/variants`,
+  createCombinations: (productId) => `${API_URL}/api/products/${productId}/variants/combinations`,
+  update: (id) => `${API_URL}/api/variants/${id}`,
+  delete: (id) => `${API_URL}/api/variants/${id}`,
+
+}
+
 }
 
 

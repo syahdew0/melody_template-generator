@@ -129,6 +129,7 @@ app.use('/apis', require('./routes/menuRoutes'));
 app.use('/banks', require('./routes/masterbankRoutes'));
 app.use('/company-banks', require('./routes/companybankRoutes'));
 // app.use('/customer/company-banks', require('./routes/companybankRoutes'));
+
 // Admin
 // app.use('/company-banks', require('./routes/admin/companyBank'));
 
@@ -179,7 +180,7 @@ app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 // app.use('/api/public/banks', require('./routes/masterbankRoutes'));
 
-
+app.use('/api', require('./routes/productVariantRoutes'));
 
 // Setting Transaksi (tetap pakai tabel Setting)
 app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoutes'));
