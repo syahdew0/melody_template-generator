@@ -9,8 +9,8 @@ module.exports = (sequelize, DataTypes) => {
   }, { tableName: 'product_variants', underscored: true, timestamps: true });
 
   ProductVariant.associate = (models) => {
-    ProductVariant.belongsTo(models.Post, { foreignKey: 'product_id', as: 'product' });
     ProductVariant.hasMany(models.ProductVariantValue, { foreignKey: 'variant_id', as: 'values' });
+    ProductVariant.belongsTo(models.Post, { foreignKey: 'product_id', as: 'product' });
     
   };
 

@@ -88,31 +88,31 @@
             </tr>
           </thead>
 
-         <tbody>
-          <tr v-for="(combo, i) in combinations" :key="i" class="border-t hover:bg-gray-50 transition-colors">
-            <td v-for="attr in attributes" :key="attr.name" class="px-4 py-2 capitalize whitespace-nowrap">
-              {{ getValueByOption(combo, attr.name) }}
-            </td>
-            <td class="px-4 py-2">
-              <input type="number" v-model.number="combo.price" class="border border-gray-300 rounded-lg px-2 py-1 w-24" min="0" />
-            </td>
-            <td class="px-4 py-2">
-              <input type="number" v-model.number="combo.stock" class="border border-gray-300 rounded-lg px-2 py-1 w-20" min="0" />
-            </td>
-            <td class="px-4 py-2 flex items-center gap-2">
-              <button
-                class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-lg border border-gray-300"
-                @click="openMediaPicker(combo)"
-              >
-                Select Image
-              </button>
-              <img v-if="combo.image" :src="getImageUrl(combo.image)" class="w-16 h-16 object-cover rounded-lg border border-gray-300" />
-              <button v-if="combo.image" @click="removeImage(combo)" class="text-red-500 text-xs hover:underline">
-                Remove
-              </button>
-            </td>
-          </tr>
-         </tbody>
+          <tbody>
+            <tr v-for="(combo, i) in combinations" :key="combo.id || i" class="border-t hover:bg-gray-50 transition-colors">
+              <td v-for="attr in attributes" :key="attr.name" class="px-4 py-2 capitalize whitespace-nowrap">
+                {{ getValueByOption(combo, attr.name) }}
+              </td>
+              <td class="px-4 py-2">
+                <input type="number" v-model.number="combo.price" class="border border-gray-300 rounded-lg px-2 py-1 w-24" min="0" />
+              </td>
+              <td class="px-4 py-2">
+                <input type="number" v-model.number="combo.stock" class="border border-gray-300 rounded-lg px-2 py-1 w-20" min="0" />
+              </td>
+              <td class="px-4 py-2 flex items-center gap-2">
+                <button
+                  class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-lg border border-gray-300"
+                  @click="openMediaPicker(combo)"
+                >
+                  Select Image
+                </button>
+                <img v-if="combo.image" :src="getImageUrl(combo.image)" class="w-16 h-16 object-cover rounded-lg border border-gray-300" />
+                <button v-if="combo.image" @click="removeImage(combo)" class="text-red-500 text-xs hover:underline">
+                  Remove
+                </button>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
 
@@ -154,9 +154,11 @@ const newOption = ref([])
 const combinations = ref([])
 const showMediaPicker = ref(false)
 const selectedCombo = ref(null)
-// let initialLoad = true
 
-const getValueByOption = (combo, attrName) => combo.values.find(v => v.option === attrName)?.value || ''
+const getValueByOption = (combo, attrName) => {
+  const val = combo.values.find(v => v.option === attrName)
+  return val?.value || ''
+}
 const getImageUrl = (path) => path?.startsWith('http') ? path : path
 const emitUpdate = () => emit('update:modelValue', combinations.value)
 
@@ -172,7 +174,6 @@ const generateCombinations = (defaultPrice = 0, defaultStock = 0) => {
     )
   const allCombos = combine(optionSets, optionNames)
 
-  // Simpan kombinasi lama berdasarkan key unik
   const oldMap = new Map(combinations.value.map(c => [c.values.map(v => v.value).join('|'), c]))
   combinations.value = allCombos.map(values => oldMap.get(values.map(v => v.value).join('|')) || { values, price: defaultPrice, stock: defaultStock, image: null })
 }
@@ -212,25 +213,26 @@ const removeImage = (combo) => { combo.image = null; emitUpdate() }
 const fetchVariants = async () => {
   if (!props.productId) return
   try {
-    const res = await axios.get(API_ENDPOINTS.productVariants.list(props.productId))
+    const res = await axios.get(API_ENDPOINTS.productVariants.list(props.productId), {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
     const variantsFromBackend = res.data?.data || []
 
-    // Buat map berdasarkan kombinasi unik
-    const comboMap = new Map()
-    variantsFromBackend.forEach(v => {
+    // Buat map dari kombinasi lama supaya image tetap tersimpan
+    const oldMap = new Map(combinations.value.map(c => [c.values.map(v => v.value).join('|'), c]))
+
+    // Merge kombinasi dari backend dengan image lama
+    combinations.value = variantsFromBackend.map(v => {
       const key = (v.values || []).map(val => val.value).join('|')
-      if (!comboMap.has(key)) {
-        comboMap.set(key, {
-          id: v.id,
-          values: (v.values || []).map(val => ({ value: val.value, option: val.option })),
-          price: Number(v.price || 0),
-          stock: Number(v.stock || 0),
-          image: v.image || null
-        })
+      const old = oldMap.get(key)
+      return {
+        id: v.id,
+        values: (v.values || []).map(val => ({ value: val.value, option: val.option })),
+        price: Number(v.price || 0),
+        stock: Number(v.stock || 0),
+        image: old?.image || v.image || null
       }
     })
-
-    combinations.value = Array.from(comboMap.values())
 
     // Generate attributes unik dari variants
     const attrMap = {}
@@ -249,21 +251,28 @@ const fetchVariants = async () => {
   }
 }
 
-// ==== Simpan kombinasi ke backend ====
 const saveCombinations = async () => {
   if (!props.productId) return
   try {
     const payload = combinations.value.map(c => ({
-      id: c.id || null, // untuk update jika ada id
+      id: c.id || null,
       values: c.values.map(v => ({ option: v.option, value: v.value })),
       price: c.price,
       stock: c.stock,
       image: c.image
     }))
 
-    const res = await axios.post(API_ENDPOINTS.productVariants.createCombinations(props.productId), { variants: payload })
+    const res = await axios.post(
+      API_ENDPOINTS.productVariants.createCombinations(props.productId),
+      { variants: payload },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
     console.log('Variants saved:', res.data)
-    await fetchVariants() // refresh setelah save
+    await fetchVariants() // reload data setelah simpan
     alert('Variants berhasil disimpan')
   } catch (err) {
     console.error('Gagal simpan variants:', err)
@@ -272,8 +281,5 @@ const saveCombinations = async () => {
 }
 
 onMounted(fetchVariants)
-
-watch(() => props.productId, (newId) => {
-  if (newId) fetchVariants()
-})
+watch(() => props.productId, (newId) => { if (newId) fetchVariants() })
 </script>

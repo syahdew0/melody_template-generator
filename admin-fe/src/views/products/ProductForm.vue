@@ -220,11 +220,10 @@ const fetchProduct = async () => {
       status: data.status || 'draft',
       category_ids: data.post_categories?.map((pc) => pc.category.id) || [],
       product_detail: {
-        ...form.value.product_detail,
-        ...data.product_detail,
-  //  variations: form.value.product_detail.variations || [], 
-    variants: form.value.product_detail.variants || []
-      }
+      ...form.value.product_detail,
+      ...data.product_detail,
+      variations: data.product_detail?.variations || []
+    }
     }
 
     if (data.meta?.length) {
@@ -251,9 +250,8 @@ const submit = async () => {
         discount_until: form.value.product_detail.discount_until
           ? new Date(form.value.product_detail.discount_until).toISOString()
           : null,
-        variants: form.value.product_detail.variants || [] // <-- kirim variants
+         variations: form.value.product_detail.variations || []
       },
-      variations: form.value.product_detail.variations || [], // <-- kirim untuk table variant
       meta: [
         { meta_key: 'meta_title', meta_value: seo.value.meta_title },
         { meta_key: 'meta_description', meta_value: seo.value.meta_description },

@@ -137,45 +137,69 @@ exports.create = async (req, res) => {
     if (type === 'product') {
       const detail = await ProductDetail.create({ ...product_detail, post_id: post.id });
 
-      const productVariations = Array.isArray(variations) ? variations : [];
-      for (const v of productVariations) {
-        const variant = await ProductVariant.create({
-           product_id: post.id,
-          combination: v.values.map(i => i.value).join(','),
-          price: v.price || 0,
-          stock: v.stock || 0,
-          image: v.image || null
-        });
-
-        for (const val of v.values) {
-          const value = typeof val.value === 'object' ? val.value.value : val.value;
-
-          let option = await ProductVariantOption.findOne({
-            where: { product_id: post.id
-, name: val.option }
+      if (Array.isArray(variations) && variations.length) {
+        for (const v of variations) {
+          const variant = await ProductVariant.create({
+            product_id: post.id,
+            combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+            sku: v.sku || null,
+            price: Number(v.price || 0),
+            stock: Number(v.stock || 0),
+            image: v.image || null
           });
-          if (!option) {
-            option = await ProductVariantOption.create({ product_id: post.id
-, name: val.option });
+
+          for (const val of v.values) {
+            let option = await ProductVariantOption.findOne({
+              where: { product_id: post.id, name: val.option }
+            });
+            if (!option) {
+              option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
+            }
+
+            await ProductVariantValue.create({
+              variant_id: variant.id,
+              option_id: option.id,
+              value: val.value
+            });
           }
-
-          await ProductVariantValue.create({
-            variant_id: variant.id,
-            option_id: option.id,
-            value
-          });
         }
       }
     }
 
-    res.status(201).json(post);
+    // Ambil ulang post lengkap dengan variants
+    const createdPost = await Post.findOne({
+      where: { id: post.id },
+      include: [
+        { model: PostMeta, as: 'meta' },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+        {
+          model: ProductDetail,
+          as: 'product_detail',
+          include: [
+            {
+              model: ProductVariant,
+              as: 'variations',
+              include: [
+                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    const postJSON = createdPost.toJSON();
+    if (postJSON.product_detail?.variations) {
+      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
+    }
+
+    res.status(201).json({ message: 'Post created successfully', data: postJSON });
 
   } catch (err) {
     console.error(err);
     res.status(400).json({ message: err.message });
   }
 };
-
 // GET ALL 
 exports.getAll = async (req, res) => {
   try {
@@ -188,51 +212,32 @@ exports.getAll = async (req, res) => {
 
     const include = [
       { model: PostMeta, as: 'meta' },
-      {
-        model: PostCategory,
-        as: 'post_categories',
-        required: false,
-        include: [{ model: Category, as: 'category' }]
-      },
+      { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
       {
         model: ProductDetail,
         as: 'product_detail',
         include: [
           {
-            model: ProductType,
-            as: 'product_type',
-            attributes: ['id', 'name', 'parent_id'],
-            include: [
-              { model: ProductType, as: 'parent', attributes: ['id', 'name'] },
-              { model: ProductType, as: 'children', attributes: ['id', 'name'] }
-            ]
-          },
-          {
             model: ProductVariant,
             as: 'variations',
-            attributes: ['id','combination','sku','price','stock','image'],
-            include: [
-              { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
-            ]
-          }
+            include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }]
+          },
+          { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] }
         ]
       }
     ];
 
-    // Jika query berdasarkan slug
     if (slug) {
       const post = await Post.findOne({ where, include });
       if (!post) return res.status(404).json({ message: 'Post not found' });
 
       const postJSON = post.toJSON();
-      if(postJSON.product_detail?.variations){
+      if(postJSON.product_detail?.variations) {
         postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
       }
-
       return res.json({ data: [postJSON], total: 1 });
     }
 
-    // Jika query all posts
     const { count, rows } = await Post.findAndCountAll({
       where,
       include,
@@ -244,14 +249,13 @@ exports.getAll = async (req, res) => {
 
     const data = rows.map(post => {
       const p = post.toJSON();
-      if(p.product_detail?.variations){
+      if(p.product_detail?.variations) {
         p.product_detail.variations = formatVariants(p.product_detail.variations);
       }
       return p;
     });
 
     res.json({ data, total: count });
-
   } catch (err) {
     console.error('Error getAll:', err);
     res.status(500).json({ message: err.message });
@@ -260,26 +264,153 @@ exports.getAll = async (req, res) => {
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
+    const { id } = req.params;
     const post = await Post.findOne({
-      where: { id: req.params.id },
+      where: { id, status: 'published' },
       include: [
         { model: PostMeta, as: 'meta' },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
         {
-          model: PostCategory,
-          as: 'post_categories',
-          include: [{ model: Category, as: 'category' }]
-        },
+          model: ProductDetail,
+          as: 'product_detail',
+          include: [
+            { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] },
+            { model: ProductVariant, as: 'variations', include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }] }
+          ]
+        }
+      ]
+    });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    const postJSON = post.toJSON();
+    if (postJSON.product_detail?.variations) postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
+    res.json(postJSON);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.update = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const {
+      website_id, user_id, title, slug, content, excerpt,
+      thumbnail_url, status, type, template, parent_id,
+      meta = [], product_detail = {}, category_ids = []
+    } = req.body;
+    const variations = product_detail.variations || [];
+
+    const post = await Post.findByPk(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // UPDATE POST
+    await post.update({
+      website_id,
+      user_id,
+      title,
+      slug: slug || post.slug,
+      content: content !== undefined ? content : post.content,
+      excerpt,
+      thumbnail_url,
+      status,
+      published_at: status === 'published' ? (post.published_at || new Date()) : null,
+      type,
+      template,
+      parent_id
+    });
+
+    // META
+    await PostMeta.destroy({ where: { post_id: postId } });
+    if (meta.length > 0) {
+      const metas = meta.map(m => ({ post_id: postId, meta_key: m.meta_key, meta_value: m.meta_value }));
+      await PostMeta.bulkCreate(metas);
+    }
+
+    // CATEGORY
+    if (category_ids?.length > 0) await post.setCategories(category_ids);
+
+    // PRODUCT DETAIL + VARIANTS
+    if (type === 'product') {
+      const [detail, created] = await ProductDetail.findOrCreate({
+        where: { post_id: post.id },
+        defaults: { ...product_detail, post_id: post.id }
+      });
+      if (!created) await detail.update(product_detail);
+
+      for (const v of variations) {
+  let variant;
+  if (v.id) {
+    // Update varian lama
+    variant = await ProductVariant.findByPk(v.id);
+    if (variant) {
+      await variant.update({
+        combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+        sku: v.sku || null,
+        price: Number(v.price || 0),
+        stock: Number(v.stock || 0),
+        image: v.image || null
+      });
+    }
+  }
+  
+  if (!variant) {
+    // Buat varian baru
+    variant = await ProductVariant.create({
+      product_id: post.id,
+      combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+      sku: v.sku || null,
+      price: Number(v.price || 0),
+      stock: Number(v.stock || 0),
+      image: v.image || null
+    });
+  }
+
+  // Handle values
+  for (const val of v.values) {
+    let option = await ProductVariantOption.findOne({
+      where: { product_id: post.id, name: val.option }
+    });
+    if (!option) {
+      option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
+    }
+
+    if (val.id) {
+      // Update value lama
+      const variantValue = await ProductVariantValue.findByPk(val.id);
+      if (variantValue) {
+        await variantValue.update({
+          value: val.value,
+          option_id: option.id
+        });
+        continue;
+      }
+    }
+
+    // Buat value baru
+    await ProductVariantValue.create({
+      variant_id: variant.id,
+      option_id: option.id,
+      value: val.value
+    });
+  }
+}
+    }
+
+    // Ambil ulang post lengkap
+    const updatedPost = await Post.findOne({
+      where: { id: post.id },
+      include: [
+        { model: PostMeta, as: 'meta' },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
         {
           model: ProductDetail,
           as: 'product_detail',
           include: [
             {
-              model: ProductType,
-              as: 'product_type',
-              attributes: ['id', 'name', 'parent_id'],
+              model: ProductVariant,
+              as: 'variations',
               include: [
-                { model: ProductType, as: 'parent', attributes: ['id', 'name'] },
-                { model: ProductType, as: 'children', attributes: ['id', 'name'] }
+                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
               ]
             }
           ]
@@ -287,103 +418,16 @@ exports.getById = async (req, res) => {
       ]
     });
 
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    res.json(post);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-
-// UPDATE
-exports.update = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const {
-      website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id,
-      meta = [], product_detail = {}, category_ids = [], variations = []
-    } = req.body;
-
-    const post = await Post.findByPk(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-
-    await post.update({
-      website_id, user_id, title, slug: slug || post.slug,
-      content: content !== undefined ? content : post.content,
-      excerpt, thumbnail_url, status,
-      published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type, template, parent_id
-    });
-
-    // META
-    await PostMeta.destroy({ where: { post_id: postId } });
-    if (meta.length) {
-      const metas = meta.map(m => ({ post_id: postId, meta_key: m.meta_key, meta_value: m.meta_value }));
-      await PostMeta.bulkCreate(metas);
+    const postJSON = updatedPost.toJSON();
+    if (postJSON.product_detail?.variations) {
+      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
     }
 
-    // CATEGORY
-    if (category_ids?.length) await post.setCategories(category_ids);
-
-    // PRODUCT DETAIL + VARIANTS
-    if (type === 'product') {
-      const { variants: _variants, ...dbProductDetail } = product_detail;
-
-      const [detail, created] = await ProductDetail.findOrCreate({
-        where: { post_id: post.id },
-        defaults: { ...dbProductDetail, post_id: post.id }
-      });
-      if (!created) await detail.update(dbProductDetail);
-
-      const productVariations = Array.isArray(variations) ? variations : [];
-
-      // Hapus variant lama + value
-      const oldVariants = await ProductVariant.findAll({ where: { product_id: post.id
- } });
-      for (const oldVar of oldVariants) {
-        await ProductVariantValue.destroy({ where: { variant_id: oldVar.id } });
-      }
-      await ProductVariant.destroy({ where: { product_id: post.id
- } });
-
-      // Tambah variant baru
-      for (const v of productVariations) {
-        const variant = await ProductVariant.create({
-          product_id: post.id,
-          combination: v.values.map(i => i.value).join(','),
-          price: v.price || 0,
-          stock: v.stock || 0,
-          image: v.image || null
-        });
-
-        for (const val of v.values) {
-          const value = typeof val.value === 'object' ? val.value.value : val.value;
-
-          let option = await ProductVariantOption.findOne({
-            where: { product_id: post.id
-, name: val.option }
-          });
-          if (!option) {
-            option = await ProductVariantOption.create({ product_id: post.id
-, name: val.option });
-          }
-
-          await ProductVariantValue.create({
-            variant_id: variant.id,
-            option_id: option.id,
-            value
-          });
-        }
-      }
-    }
-
-    res.json({ message: 'Post updated successfully', post });
+    res.json({ message: 'Post updated successfully', data: postJSON });
 
   } catch (err) {
-    console.error(err);
-    res.status(400).json({ message: err.message });
+    console.error('Error updating post:', err);
+    res.status(500).json({ message: 'Error updating post', error: err.message });
   }
 };
 
@@ -406,29 +450,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-
-// controllers/postController.js
-exports.getTestimonials = async (req, res) => {
-  try {
-    const testimonials = await Post.findAll({
-      where: {
-        type: 'testimonial',
-        status: 'published'
-      },
-      order: [['created_at', 'DESC']],
-      include: [
-        { model: PostMeta, as: 'meta' },
-        { model: Category, as: 'categories', through: { attributes: [] } }
-      ]
-    });
-
-    res.json({ data: testimonials, total: testimonials.length });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch testimonials' });
-  }
-}
-
 exports.getBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -437,35 +458,16 @@ exports.getBySlug = async (req, res) => {
       where: { slug, status: 'published' },
       include: [
         { model: PostMeta, as: 'meta' },
-        {
-          model: PostCategory,
-          as: 'post_categories',
-          include: [{ model: Category, as: 'category' }]
-        },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
         {
           model: ProductDetail,
           as: 'product_detail',
           include: [
-            {
-              model: ProductType,
-              as: 'product_type',
-              attributes: ['id', 'name', 'parent_id'],
-              include: [
-                { model: ProductType, as: 'parent', attributes: ['id', 'name'] },
-                { model: ProductType, as: 'children', attributes: ['id', 'name'] }
-              ]
-            },
+            { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] },
             {
               model: ProductVariant,
               as: 'variations',
-              attributes: ['id', 'combination', 'sku', 'price', 'stock', 'image'],
-              include: [
-                {
-                  model: ProductVariantValue,
-                  as: 'values',
-                  include: [{ model: ProductVariantOption, as: 'option' }]
-                }
-              ]
+              include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }]
             }
           ]
         }
@@ -475,7 +477,7 @@ exports.getBySlug = async (req, res) => {
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     const postJSON = post.toJSON();
-    if(postJSON.product_detail?.variations){
+    if(postJSON.product_detail?.variations) {
       postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
     }
 
@@ -512,11 +514,18 @@ exports.updateBySlug = async (req, res) => {
 
     // UPDATE POST
     await post.update({
-      website_id, user_id, title, slug: newSlug || slug,
+      website_id,
+      user_id,
+      title,
+      slug: newSlug || slug,
       content: content !== undefined ? content : post.content,
-      excerpt, thumbnail_url, status,
+      excerpt,
+      thumbnail_url,
+      status,
       published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type, template, parent_id
+      type,
+      template,
+      parent_id
     });
 
     // META
@@ -526,58 +535,104 @@ exports.updateBySlug = async (req, res) => {
       await PostMeta.bulkCreate(metas);
     }
 
-    // CATEGORIES
+    // CATEGORY
     if (category_ids?.length > 0) {
       await post.setCategories(category_ids);
     }
 
     // PRODUCT DETAIL + VARIANTS
     if (type === 'product') {
+      // DETAIL
       const [detail, created] = await ProductDetail.findOrCreate({
         where: { post_id: post.id },
         defaults: { ...product_detail, post_id: post.id }
       });
       if (!created) await detail.update(product_detail);
 
-      // Hapus variant lama + values
-      const oldVariants = await ProductVariant.findAll({ where: { product_id: post.id
- } });
-      for (const oldVar of oldVariants) {
-        await ProductVariantValue.destroy({ where: { variant_id: oldVar.id } });
+      // HAPUS VARIANT LAMA + VALUES
+      const oldVariants = await ProductVariant.findAll({ where: { product_id: post.id } });
+      if (oldVariants.length) {
+        const oldVariantIds = oldVariants.map(v => v.id);
+        await ProductVariantValue.destroy({ where: { variant_id: oldVariantIds } });
+        await ProductVariant.destroy({ where: { id: oldVariantIds } });
       }
-      await ProductVariant.destroy({ where: { product_id: post.id
- } });
 
-      // Tambah ulang variant baru
-      for (const v of variations) {
-        const variant = await ProductVariant.create({
-          product_id: post.id,
-          combination: v.values.map(i => i.value).join(','),
-          price: v.price || 0,
-          stock: v.stock || 0,
-          image: v.image || null
-        });
-
-        for (const val of v.values) {
-          let option = await ProductVariantOption.findOne({ where: { product_id: post.id
-, name: val.option } });
-          if (!option) {
-            option = await ProductVariantOption.create({ product_id: post.id
-, name: val.option });
-          }
-          await ProductVariantValue.create({
-            variant_id: variant.id,
-            option_id: option.id,
-            value: val.value
+      // TAMBAH VARIANT BARU
+      if (Array.isArray(variations) && variations.length) {
+        for (const v of variations) {
+          const variant = await ProductVariant.create({
+            product_id: post.id,
+            combination: v.values.map(i => i.value).join(','),
+            sku: v.sku || null,
+            price: Number(v.price || 0),
+            stock: Number(v.stock || 0),
+            image: v.image || null
           });
+
+          for (const val of v.values) {
+            const optionName = val.option || 'Default';
+            let option = await ProductVariantOption.findOne({
+              where: { product_id: post.id, name: optionName }
+            });
+            if (!option) {
+              option = await ProductVariantOption.create({ product_id: post.id, name: optionName });
+            }
+
+            await ProductVariantValue.create({
+              variant_id: variant.id,
+              option_id: option.id,
+              value: val.value
+            });
+          }
         }
       }
     }
 
-    res.json({ message: 'Post updated successfully', post });
+    // Ambil ulang post lengkap dengan variants
+    const updatedPost = await Post.findOne({
+      where: { id: post.id },
+      include: [
+        { model: PostMeta, as: 'meta' },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+        {
+          model: ProductDetail,
+          as: 'product_detail',
+          include: [
+            {
+              model: ProductVariant,
+              as: 'variations',
+              include: [
+                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    // Format variants untuk frontend
+    const formatVariants = (variants) => variants.map(v => ({
+      id: v.id,
+      combination: v.combination,
+      sku: v.sku,
+      price: Number(v.price),
+      stock: Number(v.stock),
+      image: v.image,
+      values: (v.values || []).map(val => ({
+        value: val.value,
+        option: val.option?.name || 'Unknown'
+      }))
+    }));
+
+    const postJSON = updatedPost.toJSON();
+    if (postJSON.product_detail?.variations) {
+      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
+    }
+
+    res.json({ message: 'Post updated successfully', data: postJSON });
 
   } catch (err) {
-    console.error(err);
+    console.error('Error updating post by slug:', err);
     res.status(500).json({ message: 'Error updating post', error: err.message });
   }
 };

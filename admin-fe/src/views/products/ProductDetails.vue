@@ -103,9 +103,11 @@
       </div>
 
       <!-- Variations -->
-      <div class="md:col-span-2">
-      <ProductVariations v-model="localDetail.variants" :productId="props.modelValue.post_id || props.modelValue.id" />
-      </div>
+<ProductVariations 
+  :productId="props.modelValue.post_id || props.modelValue.id"
+  :variations="localDetail.variations"
+  @update:variations="val => localDetail.variations = val"
+/>
 
       <!-- Stock -->
       <div>
@@ -188,7 +190,7 @@
 
 
 <script setup>
-import { ref, watch } from 'vue'
+import {reactive, watch } from 'vue'
 import ProductTypeSelector from '@/views/products/ProductTypeSelector.vue'
 import ProductVariations from '@/views/products/ProductVariations.vue'
 
@@ -197,7 +199,7 @@ const props = defineProps({
   modelValue: { type: Object, required: true }
 })
 const emit = defineEmits(['update:modelValue'])
-const localDetail = ref({ ...props.modelValue })
+const localDetail = reactive({ ...props.modelValue })
 
 //  Format Rupiah helper
 const formatCurrency = (val) => {
@@ -208,17 +210,25 @@ const formatCurrency = (val) => {
 // Saat input berubah
 const onCurrencyInput = (e, field) => {
   const raw = e.target.value.replace(/[^\d]/g, '')
-  localDetail.value[field] = Number(raw || 0)
+  localDetail[field] = Number(raw || 0)
   e.target.value = formatCurrency(raw)
 }
-
+  
 // Sinkronisasi satu arah dari parent ke child
-watch(() => props.modelValue, (newVal) => {
-  Object.assign(localDetail.value, newVal)
-}, { deep: true })
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) Object.assign(localDetail, newVal)
+  },
+  { deep: true }
+)
 
 // Emit ke parent bila benar-benar ada perubahan
-watch(localDetail, (newVal) => {
-  emit('update:modelValue', newVal)
-}, { deep: true })
+watch(
+  localDetail,
+  (newVal) => {
+    emit('update:modelValue', newVal)
+  },
+  { deep: true }
+)
 </script>

@@ -123,12 +123,14 @@ app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
 app.use('/apis/admin/posts', require('./routes/postadminRoutes'));// admin
 app.use('/apis/categories', require('./routes/categoryRoutes'));
-app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
+// app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
 app.use('/apis/posts', require('./routes/postcustomerRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
 app.use('/banks', require('./routes/masterbankRoutes'));
 app.use('/company-banks', require('./routes/companybankRoutes'));
 // app.use('/customer/company-banks', require('./routes/companybankRoutes'));
+
+app.use('/customer/products', require('./routes/customer/productvariantRoutes'));
 
 // Admin
 // app.use('/company-banks', require('./routes/admin/companyBank'));
