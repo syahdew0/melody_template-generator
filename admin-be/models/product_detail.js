@@ -15,6 +15,16 @@ module.exports = (sequelize, DataTypes) => {
     minimum_qty: DataTypes.INTEGER,
     stock_integrated: DataTypes.BOOLEAN,
     stock: DataTypes.INTEGER,
+    brand_id: {
+  type: DataTypes.BIGINT.UNSIGNED,
+  allowNull: true,
+  references: {
+    model: 'brands',
+    key: 'id'
+  },
+  onUpdate: 'NO ACTION',
+  onDelete: 'SET NULL'
+},
     initial_stock: DataTypes.INTEGER,
     dp_percentage: DataTypes.DECIMAL,
     minimum_order: DataTypes.INTEGER,
@@ -38,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
     ProductDetail.belongsTo(models.ProductType, { foreignKey: 'product_type_id', as: 'product_type' });
     ProductDetail.hasMany(models.ProductVariant, { foreignKey: 'product_id', as: 'variations' });
     ProductDetail.belongsTo(models.ProductVariant, { foreignKey: 'default_variant_id', as: 'default_variant' });
+    ProductDetail.belongsTo(models.Brand, { foreignKey: 'brand_id', as: 'brand' });
   };
 
   return ProductDetail;

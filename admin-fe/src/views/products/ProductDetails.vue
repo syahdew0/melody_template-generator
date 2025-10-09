@@ -31,7 +31,10 @@
         </div>
       </div>
 
-      <!-- Product Type -->
+      <!-- Brand Selector -->
+      <BrandSelector :brands="brands" v-model="localDetail.brand_id" />
+
+      <!-- Product Type Selector -->
       <ProductTypeSelector v-model="localDetail.product_type_id" />
 
       <!-- Purchase Price -->
@@ -103,11 +106,11 @@
       </div>
 
       <!-- Variations -->
-<ProductVariations 
-  :productId="props.modelValue.post_id || props.modelValue.id"
-  :variations="localDetail.variations"
-  @update:variations="val => localDetail.variations = val"
-/>
+      <ProductVariations 
+        :productId="props.modelValue.post_id || props.modelValue.id"
+        :variations="localDetail.variations"
+        @update:variations="val => localDetail.variations = val"
+      />
 
       <!-- Stock -->
       <div>
@@ -188,11 +191,11 @@
   </div>
 </template>
 
-
 <script setup>
-import {reactive, watch } from 'vue'
+import { reactive, watch } from 'vue'
 import ProductTypeSelector from '@/views/products/ProductTypeSelector.vue'
 import ProductVariations from '@/views/products/ProductVariations.vue'
+import BrandSelector from '@/views/products/BrandSelector.vue'
 
 /*global defineEmits defineProps*/
 const props = defineProps({
@@ -201,7 +204,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const localDetail = reactive({ ...props.modelValue })
 
-//  Format Rupiah helper
+// Format Rupiah helper
 const formatCurrency = (val) => {
   if (val == null || val === '') return ''
   return new Intl.NumberFormat('id-ID').format(val)
@@ -213,8 +216,8 @@ const onCurrencyInput = (e, field) => {
   localDetail[field] = Number(raw || 0)
   e.target.value = formatCurrency(raw)
 }
-  
-// Sinkronisasi satu arah dari parent ke child
+
+// Sinkronisasi dari parent ke child
 watch(
   () => props.modelValue,
   (newVal) => {
@@ -223,7 +226,7 @@ watch(
   { deep: true }
 )
 
-// Emit ke parent bila benar-benar ada perubahan
+// Emit ke parent bila ada perubahan
 watch(
   localDetail,
   (newVal) => {

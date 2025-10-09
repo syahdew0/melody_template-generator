@@ -1,4 +1,4 @@
-const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption } = require('../models')
+const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption, Brand } = require('../models')
 const { Op } = require('sequelize')
 const cron = require('node-cron');
 
@@ -21,24 +21,27 @@ exports.index = async (req, res) => {
   try {
     const posts = await Post.findAll({
       where: { status: 'published' },
-      include: [
-        {
-          model: ProductDetail,
-          as: 'product_detail',
-          include: [
-            {
-              model: ProductType,
-              as: 'product_type',
-              attributes: ['id', 'name', 'parent_id'],
-              include: [
-                { model: ProductType, as: 'parent', attributes: ['id', 'name'] },
-                { model: ProductType, as: 'children', attributes: ['id', 'name'] }
-              ]
-            }
-          ]
-        },
-        { model: Category, as: 'categories' }
-      ]
+include: [
+  {
+    model: ProductDetail,
+    as: 'product_detail',
+    include: [
+      {
+        model: ProductType,
+        as: 'product_type',
+        attributes: ['id', 'name', 'parent_id'],
+        include: [
+          { model: ProductType, as: 'parent', attributes: ['id', 'name'] },
+          { model: ProductType, as: 'children', attributes: ['id', 'name'] }
+        ]
+      },
+      { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] } 
+    ]
+  },
+  { model: Category, as: 'categories' }
+]
+
+
     });
 
     const data = posts.map(post => {
@@ -200,32 +203,44 @@ exports.create = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-// GET ALL 
+
 exports.getAll = async (req, res) => {
   try {
-    const { slug, type, page = 1, limit = 10 } = req.query;
+    // const { slug, type, search, brand, page = 1, limit = 10 } = req.query;
+    const { slug, type, search, brand, category, page = 1, limit = 10 } = req.query;
     const where = { status: 'published' };
     if (type) where.type = type;
     if (slug) where.slug = slug;
+     if (search) where.title = { [Op.like]: `%${search}%` };
+    if (brand) where.brand_id = brand;
 
     const offset = (page - 1) * limit;
 
-    const include = [
-      { model: PostMeta, as: 'meta' },
-      { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+const include = [
+  { model: PostMeta, as: 'meta' },
+  { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] },
+  { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+  {
+    model: ProductDetail,
+    as: 'product_detail',
+    include: [
       {
-        model: ProductDetail,
-        as: 'product_detail',
+        model: ProductVariant,
+        as: 'variations',
         include: [
           {
-            model: ProductVariant,
-            as: 'variations',
-            include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }]
-          },
-          { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] }
+            model: ProductVariantValue,
+            as: 'values',
+            include: [{ model: ProductVariantOption, as: 'option' }]
+          }
         ]
-      }
-    ];
+      },
+      { model: ProductType, as: 'product_type', attributes: ['id', 'name', 'parent_id'] },
+      { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] } // ⬅️ TAMBAHKAN INI
+    ]
+  }
+];
+
 
     if (slug) {
       const post = await Post.findOne({ where, include });
@@ -236,6 +251,18 @@ exports.getAll = async (req, res) => {
         postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
       }
       return res.json({ data: [postJSON], total: 1 });
+    }
+
+     if (category) {
+      include.push({
+        model: PostCategory,
+        as: 'post_categories',
+        include: [{
+          model: Category,
+          as: 'category',
+          where: { slug: category }
+        }]
+      });
     }
 
     const { count, rows } = await Post.findAndCountAll({
@@ -268,17 +295,19 @@ exports.getById = async (req, res) => {
     const post = await Post.findOne({
       where: { id, status: 'published' },
       include: [
-        { model: PostMeta, as: 'meta' },
-        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
-        {
-          model: ProductDetail,
-          as: 'product_detail',
-          include: [
-            { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] },
-            { model: ProductVariant, as: 'variations', include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }] }
-          ]
-        }
-      ]
+  { model: PostMeta, as: 'meta' },
+  { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+  {
+    model: ProductDetail,
+    as: 'product_detail',
+    include: [
+      { model: ProductType, as: 'product_type', attributes: ['id','name','parent_id'] },
+      { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] },
+      { model: ProductVariant, as: 'variations', include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }] }
+    ]
+  }
+]
+
     });
     if (!post) return res.status(404).json({ message: 'Post not found' });
     const postJSON = post.toJSON();
@@ -657,13 +686,16 @@ exports.getPostsByCategory = async (req, res) => {
           as: 'post_categories',
           required: true, // hanya ambil post yang ada di kategori ini
           where: { category_id: category.id },
-          include: [{ model: Category, as: 'category' }],
+          include: [
+            { model: Category, as: 'category' }
+          ],
         },
        {
   model: ProductDetail,
   as: 'product_detail',
   include: [
-    { model: ProductType, as: 'product_type', attributes: ['id','name'] }
+    { model: ProductType, as: 'product_type', attributes: ['id','name']},
+    { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] }
   ]
 },
         { model: PostMeta, as: 'meta' },

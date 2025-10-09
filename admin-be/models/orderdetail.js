@@ -27,7 +27,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       defaultValue: 0
-    }
+    },
+    variant_id: DataTypes.BIGINT.UNSIGNED, 
+  variant_combination: DataTypes.STRING,
   }, {
     tableName: 'orderdetails',
     underscored: true

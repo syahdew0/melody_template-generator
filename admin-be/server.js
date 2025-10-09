@@ -205,6 +205,8 @@ app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
 
 // server.js
 app.use('/apis/contact', require('./routes/contactRoutes'));
+app.use('/apis/brands', require('./routes/brandRoutes'));
+
 
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));

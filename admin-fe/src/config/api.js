@@ -176,7 +176,14 @@ productVariants: {
   createCombinations: (productId) => `${API_URL}/api/products/${productId}/variants/combinations`,
   update: (id) => `${API_URL}/api/variants/${id}`,
   delete: (id) => `${API_URL}/api/variants/${id}`,
-
+},
+brands: {
+  list: `${API_URL}/apis/brands`,
+  detail: (id) => `${API_URL}/apis/brands/id/${id}`,
+  detailBySlug: (slug) => `${API_URL}/apis/brands/slug/${slug}`,
+  create: `${API_URL}/apis/brands`,
+  update: (id) => `${API_URL}/apis/brands/${id}`, 
+  delete: (id) => `${API_URL}/apis/brands/${id}`,
 }
 
 }

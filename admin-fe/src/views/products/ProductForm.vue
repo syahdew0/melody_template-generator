@@ -47,7 +47,7 @@
         </div>
 
         <!--  PRODUCT DETAILS -->
-        <ProductDetail v-model="form.product_detail" :productTypes="flattenedProductTypes" />
+        <ProductDetail v-model="form.product_detail" :productTypes="flattenedProductTypes"  :brands="brands"/>
       </div>
 
       <!-- SIDEBAR -->
@@ -120,6 +120,7 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const isEdit = !!route.params.id
+const brands = ref([])
 
 const form = ref({
   website_id: 1,
@@ -191,6 +192,16 @@ const fetchProductTypes = async () => {
     toast.error('Failed to load product types.')
   }
 }
+const fetchBrands = async () => {
+  try {
+    const res = await axios.get(API_ENDPOINTS.brands.list, { // <-- gunakan .list
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    brands.value = res.data.data || []
+  } catch (err) {
+    toast.error('Failed to load brands.')
+  }
+}
 
 const flattenedProductTypes = computed(() => {
   const result = []
@@ -222,6 +233,7 @@ const fetchProduct = async () => {
       product_detail: {
       ...form.value.product_detail,
       ...data.product_detail,
+      brand_id: data.product_detail?.brand_id || null,
       variations: data.product_detail?.variations || []
     }
     }
@@ -276,6 +288,7 @@ const submit = async () => {
 onMounted(async () => {
   isMediaPickerReady.value = true
   await fetchCategories()
+  await fetchBrands()
   await fetchProductTypes()
   if (isEdit) await fetchProduct()
 })

@@ -76,7 +76,10 @@ variations: {
       foreignKey: 'post_id',
       as: 'images'
     });
-    
+    Post.belongsTo(models.Brand, {
+      foreignKey: 'brand_id',
+      as: 'brand'
+    });
   };
 
   return Post;

@@ -155,17 +155,29 @@ const nextPage = () => { page.value++; fetchData() }
 const confirmDelete = async (id) => {
   if (!permissions.value.canDelete) return
   if (confirm('Delete this product?')) {
-    await api.delete(`${API_ENDPOINTS.posts}/${id}`)
-    fetchData()
+    try {
+      await api.delete(`${API_ENDPOINTS.posts}/${id}`)
+      alert('Product deleted successfully')
+      fetchData()
+    } catch (err) {
+      console.error('Delete error:', err.response?.data || err.message)
+      alert('Error deleting product: ' + (err.response?.data?.message || 'Internal Server Error'))
+    }
   }
 }
 
 const bulkDelete = async () => {
   if (!permissions.value.canDelete || !selectedIds.value.length) return
   if (confirm('Delete selected products?')) {
-    await Promise.all(selectedIds.value.map(id => api.delete(`${API_ENDPOINTS.posts}/${id}`)))
-    selectedIds.value = []
-    fetchData()
+    try {
+      await Promise.all(selectedIds.value.map(id => api.delete(`${API_ENDPOINTS.posts}/${id}`)))
+      alert('Selected products deleted successfully')
+      selectedIds.value = []
+      fetchData()
+    } catch (err) {
+      console.error('Bulk delete error:', err.response?.data || err.message)
+      alert('Error deleting selected products: ' + (err.response?.data?.message || 'Internal Server Error'))
+    }
   }
 }
 
