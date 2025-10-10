@@ -16,7 +16,7 @@ const getAll = async (req, res) => {
     const productTypes = await ProductType.findAll({
       order: [['id', 'ASC']],
       include: [
-        { model: ProductType, as: 'children', order: [['id', 'ASC']] } // eager load children
+        { model: ProductType, as: 'children', order: [['id', 'ASC']] } 
       ]
     });
 

@@ -203,68 +203,119 @@ exports.create = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
 exports.getAll = async (req, res) => {
   try {
-    // const { slug, type, search, brand, page = 1, limit = 10 } = req.query;
-    const { slug, type, search, brand, category, page = 1, limit = 10 } = req.query;
+    const {
+      type, // "post" atau "product"
+      slug,
+      search,
+      brand,
+      category,
+      'product-types': productTypes,
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    const selectedCategory = category || productTypes;
+
+    // console.log('FILTER PARAMS:', {
+    //   type,
+    //   brand,
+    //   category,
+    //   productTypes,
+    //   selectedCategory
+    // });
+
     const where = { status: 'published' };
     if (type) where.type = type;
     if (slug) where.slug = slug;
-     if (search) where.title = { [Op.like]: `%${search}%` };
-    if (brand) where.brand_id = brand;
 
+    // Pagination
     const offset = (page - 1) * limit;
 
-const include = [
-  { model: PostMeta, as: 'meta' },
-  { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] },
-  { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
-  {
-    model: ProductDetail,
-    as: 'product_detail',
-    include: [
-      {
-        model: ProductVariant,
-        as: 'variations',
+    // Include dasar
+    const include = [{ model: PostMeta, as: 'meta' }];
+
+    // Filter untuk POST biasa
+    if (!type || type === 'post') {
+      include.push({
+        model: PostCategory,
+        as: 'post_categories',
+        required: !!category, // hanya paksa join jika filter kategori ada
         include: [
           {
-            model: ProductVariantValue,
-            as: 'values',
-            include: [{ model: ProductVariantOption, as: 'option' }]
+            model: Category,
+            as: 'category',
+            where: category ? { slug: category } : undefined,
+            required: !!category
           }
         ]
-      },
-      { model: ProductType, as: 'product_type', attributes: ['id', 'name', 'parent_id'] },
-      { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] } // ⬅️ TAMBAHKAN INI
-    ]
-  }
-];
+      });
+    }
 
+    // Filter untuk PRODUCT
+    if (!type || type === 'product') {
+      include.push({
+        model: ProductDetail,
+        as: 'product_detail',
+        required: !!(brand || selectedCategory), // join wajib jika filter brand/category ada
+        include: [
+          {
+            model: ProductType,
+            as: 'product_type',
+            attributes: ['id', 'name', 'parent_id'],
+            where: selectedCategory
+              ? { name: { [Op.in]: selectedCategory.split(',') } }
+              : undefined,
+            required: !!selectedCategory
+          },
+          {
+            model: Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'slug', 'image'],
+            where: brand
+              ? { slug: { [Op.in]: brand.split(',').map(b => b.toLowerCase()) } }
+              : undefined,
+            required: !!brand
+          },
+          {
+            model: ProductVariant,
+            as: 'variations',
+            include: [
+              {
+                model: ProductVariantValue,
+                as: 'values',
+                include: [{ model: ProductVariantOption, as: 'option' }]
+              }
+            ]
+          }
+        ]
+      });
+    }
 
+    // Search di post + relasi
+    if (search) {
+      where[Op.or] = [
+        { title: { [Op.like]: `%${search}%` } },
+        { slug: { [Op.like]: `%${search}%` } }
+      ];
+
+    }
+
+    // Jika slug spesifik
     if (slug) {
       const post = await Post.findOne({ where, include });
       if (!post) return res.status(404).json({ message: 'Post not found' });
 
       const postJSON = post.toJSON();
-      if(postJSON.product_detail?.variations) {
+      if (postJSON.product_detail?.variations) {
         postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
       }
+
       return res.json({ data: [postJSON], total: 1 });
     }
 
-     if (category) {
-      include.push({
-        model: PostCategory,
-        as: 'post_categories',
-        include: [{
-          model: Category,
-          as: 'category',
-          where: { slug: category }
-        }]
-      });
-    }
-
+    // Ambil semua data
     const { count, rows } = await Post.findAndCountAll({
       where,
       include,
@@ -276,7 +327,7 @@ const include = [
 
     const data = rows.map(post => {
       const p = post.toJSON();
-      if(p.product_detail?.variations) {
+      if (p.product_detail?.variations) {
         p.product_detail.variations = formatVariants(p.product_detail.variations);
       }
       return p;
@@ -288,6 +339,8 @@ const include = [
     res.status(500).json({ message: err.message });
   }
 };
+
+
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
@@ -327,7 +380,7 @@ exports.update = async (req, res) => {
       thumbnail_url, status, type, template, parent_id,
       meta = [], product_detail = {}, category_ids = []
     } = req.body;
-    const variations = product_detail.variations || [];
+    const variations = product_detail?.variations || [];
 
     const post = await Post.findByPk(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -360,13 +413,15 @@ exports.update = async (req, res) => {
 
     // PRODUCT DETAIL + VARIANTS
     if (type === 'product') {
-      const [detail, created] = await ProductDetail.findOrCreate({
-        where: { post_id: post.id },
-        defaults: { ...product_detail, post_id: post.id }
-      });
-      if (!created) await detail.update(product_detail);
+  const [detail, created] = await ProductDetail.findOrCreate({
+    where: { post_id: post.id },
+    defaults: { ...product_detail, post_id: post.id }
+  });
 
-      for (const v of variations) {
+  if (!created) await detail.update(product_detail);
+
+  if (Array.isArray(variations) && variations.length) {
+    for (const v of variations) {
   let variant;
   if (v.id) {
     // Update varian lama
@@ -413,7 +468,7 @@ exports.update = async (req, res) => {
         });
         continue;
       }
-    }
+    
 
     // Buat value baru
     await ProductVariantValue.create({
@@ -423,7 +478,9 @@ exports.update = async (req, res) => {
     });
   }
 }
-    }
+}
+}
+}
 
     // Ambil ulang post lengkap
     const updatedPost = await Post.findOne({
@@ -458,6 +515,7 @@ exports.update = async (req, res) => {
     console.error('Error updating post:', err);
     res.status(500).json({ message: 'Error updating post', error: err.message });
   }
+
 };
 
 // DELETE
