@@ -1,0 +1,51 @@
+{
+  "name": "be-logging",
+  "version": "1.0.0",
+  "description": "Backend logging service with Bun + Elysia + TypeScript + Prisma + MariaDB",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run dist/index.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:deploy": "prisma migrate deploy",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "test": "bun test",
+    "clean": "rm -rf dist",
+    "archive:manual": "bun run scripts/manual-archive.ts",
+    "archive:backup": "curl -X POST http://localhost:3333/archive/backup",
+    "archive:status": "curl -X GET http://localhost:3333/archive/status"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/swagger": "^1.1.0",
+    "@prisma/client": "^5.19.1",
+    "elysia": "^1.1.7",
+    "mysqldump": "^3.2.0",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node-cron": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "prisma": "^5.19.1",
+    "typescript": "^5.5.4"
+  },
+  "keywords": [
+    "bun",
+    "elysia",
+    "typescript",
+    "prisma",
+    "mariadb",
+    "clean-architecture",
+    "logging"
+  ],
+  "author": "",
+  "license": "MIT"
+}

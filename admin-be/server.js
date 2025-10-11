@@ -34,10 +34,14 @@ const whitelist = [];
 if (process.env.NODE_ENV === 'production') {
   whitelist.push(
     'https://psggroup.id',
-    'https://office.psggroup.id'
+    'https://office.psggroup.id',
+    'https://melodyv2.phisoft.co.id/ecommerce1',
+    'https://adminecommerce1.phisoft.co.id',
+    
   );
 } else if (process.env.NODE_ENV === 'staging') {
   whitelist.push(
+    
     'https://compro.pasifiksgroup.com:8443',
   );
 } else {
