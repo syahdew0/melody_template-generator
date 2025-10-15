@@ -43,6 +43,9 @@ const {
 
 // ====================== GET ALL ====================== //
 // Bisa pakai query ?type=post|product|page
+
+router.get('/types', postController.getTypes)
+
 router.get(
   '/',
   requireAuth,
@@ -88,5 +91,6 @@ router.put('/slug/:slug', requireAuth, requireModulePermission("Post", "canEdit"
 // ====================== DELETE ====================== //
 router.delete('/:id', requireAuth, requireModulePermission("Post", "canDelete"), postController.remove);
 router.delete('/slug/:slug', requireAuth, requireModulePermission("Post", "canDelete"), postController.deleteBySlug);
+
 
 module.exports = router;

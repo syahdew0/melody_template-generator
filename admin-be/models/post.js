@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     excerpt: DataTypes.TEXT,
     thumbnail_url: DataTypes.STRING,
     type: DataTypes.ENUM('post', 'page', 'product', 'testimonial'),
+    type_id: DataTypes.INTEGER,
     status: DataTypes.ENUM('draft', 'published', 'trash'),
     template: DataTypes.STRING,
     parent_id: DataTypes.INTEGER,

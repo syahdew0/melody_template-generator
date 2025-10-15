@@ -129,12 +129,22 @@ exports.requireOtherModule = (moduleName) => {
 //   };
 // };
 
+// middleware/auth.js
 exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
   return async (req, res, next) => {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ message: "Unauthorized" });
 
+      // Ambil tipe post dari body atau default 'post'
+      const type = req.body.type || req.query.type || 'post';
+
+      // Jika type bukan 'post', skip cek category
+      if (type !== 'post') {
+        return next();
+      }
+
+      // Ambil categoryIds dari body atau params
       let categoryIds = req.params[categoryIdParam] || req.body[categoryIdParam];
 
       // dukung array category_ids
@@ -147,9 +157,7 @@ exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
       }
 
       // pastikan array
-      if (!Array.isArray(categoryIds)) {
-        categoryIds = [categoryIds];
-      }
+      if (!Array.isArray(categoryIds)) categoryIds = [categoryIds];
 
       // cek apakah semua category boleh diakses
       const blocked = await RoleCategory.findAll({

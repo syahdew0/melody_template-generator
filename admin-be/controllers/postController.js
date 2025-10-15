@@ -100,14 +100,16 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-
-// CREATE
+exports.getTypes = (req, res) => {
+  const types = ['post','page','product','testimonial','custom_page']
+  res.json(types)
+}
 exports.create = async (req, res) => {
   try {
     const {
       website_id, user_id, title, slug, content, excerpt,
       thumbnail_url, status, type, template, parent_id,
-      meta = [], product_detail = {}, category_ids = [], variations = []
+      meta = [], product_detail = {}, variations = []
     } = req.body;
 
     // Buat slug unik
@@ -120,11 +122,31 @@ exports.create = async (req, res) => {
       counter++;
     }
 
+const typeMap = {
+  post: 1,
+  page: 2,
+  product: 3,
+  testimonial: 4,
+  custom_page: 5
+};
+
+const type_id = typeMap[type] || null;
+
     // CREATE POST
     const post = await Post.create({
-      website_id, user_id, title, slug: finalSlug, content, excerpt,
-      thumbnail_url, status, published_at: status === 'published' ? new Date() : null,
-      type, template, parent_id
+      website_id,
+      user_id,
+      title,
+      slug: finalSlug,
+      content,
+      excerpt,
+      thumbnail_url,
+      status,
+      published_at: status === 'published' ? new Date() : null,
+      type,
+      type_id, 
+      template,
+      parent_id
     });
 
     // META
@@ -132,9 +154,6 @@ exports.create = async (req, res) => {
       const metas = meta.map(m => ({ post_id: post.id, meta_key: m.meta_key, meta_value: m.meta_value }));
       await PostMeta.bulkCreate(metas);
     }
-
-    // CATEGORY
-    if (category_ids.length) await post.setCategories(category_ids);
 
     // PRODUCT DETAIL + VARIANTS
     if (type === 'product') {
@@ -169,12 +188,11 @@ exports.create = async (req, res) => {
       }
     }
 
-    // Ambil ulang post lengkap dengan variants
+    // Ambil ulang post lengkap dengan variants & meta
     const createdPost = await Post.findOne({
       where: { id: post.id },
       include: [
         { model: PostMeta, as: 'meta' },
-        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
         {
           model: ProductDetail,
           as: 'product_detail',
@@ -203,6 +221,166 @@ exports.create = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+exports.update = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const {
+      website_id, user_id, title, slug, content, excerpt,
+      thumbnail_url, status, type, template, parent_id,
+      meta = [], product_detail = {}, category_ids = []
+    } = req.body;
+
+    const typeMap = {
+  post: 1,
+  page: 2,
+  product: 3,
+  testimonial: 4,
+  custom_page: 5
+};
+
+const type_id = typeMap[type] || null;
+
+    const variations = product_detail?.variations || [];
+
+    const post = await Post.findByPk(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+
+    // UPDATE POST
+    await post.update({
+      website_id,
+      user_id,
+      title,
+      slug: slug || post.slug,
+      content: content !== undefined ? content : post.content,
+      excerpt,
+      thumbnail_url,
+      status,
+      published_at: status === 'published' ? (post.published_at || new Date()) : null,
+      type,
+      type_id, 
+      template,
+      parent_id
+    });
+
+    // META
+    await PostMeta.destroy({ where: { post_id: postId } });
+    if (meta.length > 0) {
+      const metas = meta.map(m => ({ post_id: postId, meta_key: m.meta_key, meta_value: m.meta_value }));
+      await PostMeta.bulkCreate(metas);
+    }
+
+    // CATEGORY
+    if (category_ids?.length > 0) await post.setCategories(category_ids);
+
+    // PRODUCT DETAIL + VARIANTS
+    if (type === 'product') {
+  const [detail, created] = await ProductDetail.findOrCreate({
+    where: { post_id: post.id },
+    defaults: { ...product_detail, post_id: post.id }
+  });
+
+  if (!created) await detail.update(product_detail);
+
+  if (Array.isArray(variations) && variations.length) {
+    for (const v of variations) {
+  let variant;
+  if (v.id) {
+    // Update varian lama
+    variant = await ProductVariant.findByPk(v.id);
+    if (variant) {
+      await variant.update({
+        combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+        sku: v.sku || null,
+        price: Number(v.price || 0),
+        stock: Number(v.stock || 0),
+        image: v.image || null
+      });
+    }
+  }
+  
+  if (!variant) {
+    // Buat varian baru
+    variant = await ProductVariant.create({
+      product_id: post.id,
+      combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+      sku: v.sku || null,
+      price: Number(v.price || 0),
+      stock: Number(v.stock || 0),
+      image: v.image || null
+    });
+  }
+
+  // Handle values
+  for (const val of v.values) {
+    let option = await ProductVariantOption.findOne({
+      where: { product_id: post.id, name: val.option }
+    });
+    if (!option) {
+      option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
+    }
+
+    if (val.id) {
+      // Update value lama
+      const variantValue = await ProductVariantValue.findByPk(val.id);
+      if (variantValue) {
+        await variantValue.update({
+          value: val.value,
+          option_id: option.id
+        });
+        continue;
+      }
+    
+
+    // Buat value baru
+    await ProductVariantValue.create({
+      variant_id: variant.id,
+      option_id: option.id,
+      value: val.value
+    });
+  }
+}
+}
+}
+}
+
+    // Ambil ulang post lengkap
+    const updatedPost = await Post.findOne({
+      where: { id: post.id },
+      include: [
+        { model: PostMeta, as: 'meta' },
+        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
+        {
+          model: ProductDetail,
+          as: 'product_detail',
+          include: [
+            {
+              model: ProductVariant,
+              as: 'variations',
+              include: [
+                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    const postJSON = updatedPost.toJSON();
+    if (postJSON.product_detail?.variations) {
+      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
+    }
+
+    res.json({ message: 'Post updated successfully', data: postJSON });
+
+  } catch (err) {
+    console.error('Error updating post:', err);
+    res.status(500).json({ message: 'Error updating post', error: err.message });
+  }
+
+};
+
 exports.getAll = async (req, res) => {
   try {
     const {
@@ -340,7 +518,6 @@ exports.getAll = async (req, res) => {
   }
 };
 
-
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
@@ -372,151 +549,7 @@ exports.getById = async (req, res) => {
   }
 };
 
-exports.update = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const {
-      website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id,
-      meta = [], product_detail = {}, category_ids = []
-    } = req.body;
-    const variations = product_detail?.variations || [];
 
-    const post = await Post.findByPk(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-
-    // UPDATE POST
-    await post.update({
-      website_id,
-      user_id,
-      title,
-      slug: slug || post.slug,
-      content: content !== undefined ? content : post.content,
-      excerpt,
-      thumbnail_url,
-      status,
-      published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type,
-      template,
-      parent_id
-    });
-
-    // META
-    await PostMeta.destroy({ where: { post_id: postId } });
-    if (meta.length > 0) {
-      const metas = meta.map(m => ({ post_id: postId, meta_key: m.meta_key, meta_value: m.meta_value }));
-      await PostMeta.bulkCreate(metas);
-    }
-
-    // CATEGORY
-    if (category_ids?.length > 0) await post.setCategories(category_ids);
-
-    // PRODUCT DETAIL + VARIANTS
-    if (type === 'product') {
-  const [detail, created] = await ProductDetail.findOrCreate({
-    where: { post_id: post.id },
-    defaults: { ...product_detail, post_id: post.id }
-  });
-
-  if (!created) await detail.update(product_detail);
-
-  if (Array.isArray(variations) && variations.length) {
-    for (const v of variations) {
-  let variant;
-  if (v.id) {
-    // Update varian lama
-    variant = await ProductVariant.findByPk(v.id);
-    if (variant) {
-      await variant.update({
-        combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
-        sku: v.sku || null,
-        price: Number(v.price || 0),
-        stock: Number(v.stock || 0),
-        image: v.image || null
-      });
-    }
-  }
-  
-  if (!variant) {
-    // Buat varian baru
-    variant = await ProductVariant.create({
-      product_id: post.id,
-      combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
-      sku: v.sku || null,
-      price: Number(v.price || 0),
-      stock: Number(v.stock || 0),
-      image: v.image || null
-    });
-  }
-
-  // Handle values
-  for (const val of v.values) {
-    let option = await ProductVariantOption.findOne({
-      where: { product_id: post.id, name: val.option }
-    });
-    if (!option) {
-      option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
-    }
-
-    if (val.id) {
-      // Update value lama
-      const variantValue = await ProductVariantValue.findByPk(val.id);
-      if (variantValue) {
-        await variantValue.update({
-          value: val.value,
-          option_id: option.id
-        });
-        continue;
-      }
-    
-
-    // Buat value baru
-    await ProductVariantValue.create({
-      variant_id: variant.id,
-      option_id: option.id,
-      value: val.value
-    });
-  }
-}
-}
-}
-}
-
-    // Ambil ulang post lengkap
-    const updatedPost = await Post.findOne({
-      where: { id: post.id },
-      include: [
-        { model: PostMeta, as: 'meta' },
-        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
-        {
-          model: ProductDetail,
-          as: 'product_detail',
-          include: [
-            {
-              model: ProductVariant,
-              as: 'variations',
-              include: [
-                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
-              ]
-            }
-          ]
-        }
-      ]
-    });
-
-    const postJSON = updatedPost.toJSON();
-    if (postJSON.product_detail?.variations) {
-      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
-    }
-
-    res.json({ message: 'Post updated successfully', data: postJSON });
-
-  } catch (err) {
-    console.error('Error updating post:', err);
-    res.status(500).json({ message: 'Error updating post', error: err.message });
-  }
-
-};
 
 // DELETE
 exports.remove = async (req, res) => {
@@ -595,6 +628,13 @@ exports.updateBySlug = async (req, res) => {
       excerpt, thumbnail_url, status, type, template, parent_id,
       meta = [], product_detail = {}, category_ids = [], variations = []
     } = req.body;
+        const typeMap = {
+  post: 1,
+  page: 2,
+  product: 3,
+  testimonial: 4,
+  custom_page: 5
+};
 
     const post = await Post.findOne({ where: { slug } });
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -611,6 +651,7 @@ exports.updateBySlug = async (req, res) => {
       status,
       published_at: status === 'published' ? (post.published_at || new Date()) : null,
       type,
+      type_id,
       template,
       parent_id
     });
