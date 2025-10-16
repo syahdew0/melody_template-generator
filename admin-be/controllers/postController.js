@@ -122,15 +122,9 @@ exports.create = async (req, res) => {
       counter++;
     }
 
-const typeMap = {
-  post: 1,
-  page: 2,
-  product: 3,
-  testimonial: 4,
-  custom_page: 5
-};
-
-const type_id = typeMap[type] || null;
+    const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5 };
+    const type_id = typeMap[type] || null;
+    // const product_type_id = type_id; // untuk product_detail
 
     // CREATE POST
     const post = await Post.create({
@@ -144,7 +138,7 @@ const type_id = typeMap[type] || null;
       status,
       published_at: status === 'published' ? new Date() : null,
       type,
-      type_id, 
+      type_id,
       template,
       parent_id
     });
@@ -157,13 +151,13 @@ const type_id = typeMap[type] || null;
 
     // PRODUCT DETAIL + VARIANTS
     if (type === 'product') {
-      const detail = await ProductDetail.create({ ...product_detail, post_id: post.id });
+      const detail = await ProductDetail.create({ ...product_detail, post_id: post.id,  });
 
       if (Array.isArray(variations) && variations.length) {
         for (const v of variations) {
           const variant = await ProductVariant.create({
             product_id: post.id,
-            combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
+            combination: v.values.map(i => `${i.option}:${i.value}`).join(','),
             sku: v.sku || null,
             price: Number(v.price || 0),
             stock: Number(v.stock || 0),
@@ -171,12 +165,8 @@ const type_id = typeMap[type] || null;
           });
 
           for (const val of v.values) {
-            let option = await ProductVariantOption.findOne({
-              where: { product_id: post.id, name: val.option }
-            });
-            if (!option) {
-              option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
-            }
+            let option = await ProductVariantOption.findOne({ where: { product_id: post.id, name: val.option } });
+            if (!option) option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
 
             await ProductVariantValue.create({
               variant_id: variant.id,
@@ -188,7 +178,7 @@ const type_id = typeMap[type] || null;
       }
     }
 
-    // Ambil ulang post lengkap dengan variants & meta
+    // Ambil ulang post lengkap dengan variants
     const createdPost = await Post.findOne({
       where: { id: post.id },
       include: [
@@ -200,19 +190,25 @@ const type_id = typeMap[type] || null;
             {
               model: ProductVariant,
               as: 'variations',
-              include: [
-                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
-              ]
+              include: [{ model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }]
             }
           ]
         }
       ]
     });
 
+    const formatVariants = (variants) => variants.map(v => ({
+      id: v.id,
+      combination: v.combination,
+      sku: v.sku,
+      price: Number(v.price),
+      stock: Number(v.stock),
+      image: v.image,
+      values: (v.values || []).map(val => ({ value: val.value, option: val.option?.name || val.option }))
+    }));
+
     const postJSON = createdPost.toJSON();
-    if (postJSON.product_detail?.variations) {
-      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
-    }
+    if (postJSON.product_detail?.variations) postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
 
     res.status(201).json({ message: 'Post created successfully', data: postJSON });
 
@@ -281,7 +277,7 @@ const type_id = typeMap[type] || null;
     defaults: { ...product_detail, post_id: post.id }
   });
 
-  if (!created) await detail.update(product_detail);
+  if (!created) await detail.update(product_detail, );
 
   if (Array.isArray(variations) && variations.length) {
     for (const v of variations) {
@@ -331,7 +327,22 @@ const type_id = typeMap[type] || null;
         });
         continue;
       }
-    
+    if (req.query.discount === 'true') {
+  if (!where[Op.or]) where[Op.or] = [];
+  where[Op.or].push({
+    is_discount_active: true
+  });
+  include.push({
+    model: ProductDetail,
+    as: 'product_detail',
+    required: true,
+    where: {
+      isDiscountActive: true,
+      discount_until: { [Op.gt]: new Date() }
+    }
+  });
+}
+
 
     // Buat value baru
     await ProductVariantValue.create({
@@ -383,70 +394,47 @@ const type_id = typeMap[type] || null;
 
 exports.getAll = async (req, res) => {
   try {
-    const {
-      type, // "post" atau "product"
-      slug,
-      search,
-      brand,
-      category,
-      'product-types': productTypes,
-      page = 1,
-      limit = 10
-    } = req.query;
-
-    const selectedCategory = category || productTypes;
-
-    // console.log('FILTER PARAMS:', {
-    //   type,
-    //   brand,
-    //   category,
-    //   productTypes,
-    //   selectedCategory
-    // });
+    const { type, slug, search, brand, category, page = 1, limit = 10, discount } = req.query;
 
     const where = { status: 'published' };
     if (type) where.type = type;
     if (slug) where.slug = slug;
 
-    // Pagination
     const offset = (page - 1) * limit;
 
-    // Include dasar
-    const include = [{ model: PostMeta, as: 'meta' }];
+    // Base include
+    const include = [
+      { model: PostMeta, as: 'meta' }
+    ];
 
-    // Filter untuk POST biasa
-    if (!type || type === 'post') {
+    // Filter kategori via belongsToMany
+    if (category) {
       include.push({
-        model: PostCategory,
-        as: 'post_categories',
-        required: !!category, // hanya paksa join jika filter kategori ada
-        include: [
-          {
-            model: Category,
-            as: 'category',
-            where: category ? { slug: category } : undefined,
-            required: !!category
-          }
-        ]
+        model: Category,
+        as: 'categories',
+        attributes: ['id', 'name', 'slug', 'display_in', 'parent_id'],
+        where: { slug: { [Op.in]: category.split(',') } },
+        through: { attributes: [] },
+        required: true
+      });
+    } else {
+      include.push({
+        model: Category,
+        as: 'categories',
+        attributes: ['id', 'name', 'slug', 'display_in', 'parent_id'],
+        through: { attributes: [] },
+        required: false
       });
     }
 
-    // Filter untuk PRODUCT
+    // Product detail include (brand, variant, discount)
     if (!type || type === 'product') {
-      include.push({
+      const productDetailInclude = {
         model: ProductDetail,
         as: 'product_detail',
-        required: !!(brand || selectedCategory), // join wajib jika filter brand/category ada
+        required: !!brand || discount === 'true',
+        where: {},
         include: [
-          {
-            model: ProductType,
-            as: 'product_type',
-            attributes: ['id', 'name', 'parent_id'],
-            where: selectedCategory
-              ? { name: { [Op.in]: selectedCategory.split(',') } }
-              : undefined,
-            required: !!selectedCategory
-          },
           {
             model: Brand,
             as: 'brand',
@@ -468,16 +456,23 @@ exports.getAll = async (req, res) => {
             ]
           }
         ]
-      });
+      };
+
+      // Filter diskon
+      if (discount === 'true') {
+        productDetailInclude.where.isDiscountActive = true;
+        productDetailInclude.where.discount_until = { [Op.gt]: new Date() };
+      }
+
+      include.push(productDetailInclude);
     }
 
-    // Search di post + relasi
+    // Search
     if (search) {
       where[Op.or] = [
         { title: { [Op.like]: `%${search}%` } },
         { slug: { [Op.like]: `%${search}%` } }
       ];
-
     }
 
     // Jika slug spesifik
@@ -493,7 +488,7 @@ exports.getAll = async (req, res) => {
       return res.json({ data: [postJSON], total: 1 });
     }
 
-    // Ambil semua data
+    // Paginate
     const { count, rows } = await Post.findAndCountAll({
       where,
       include,
@@ -517,7 +512,6 @@ exports.getAll = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
@@ -629,12 +623,12 @@ exports.updateBySlug = async (req, res) => {
       meta = [], product_detail = {}, category_ids = [], variations = []
     } = req.body;
         const typeMap = {
-  post: 1,
-  page: 2,
-  product: 3,
-  testimonial: 4,
-  custom_page: 5
-};
+        post: 1,
+        page: 2,
+        product: 3,
+        testimonial: 4,
+        custom_page: 5
+      };
 
     const post = await Post.findOne({ where: { slug } });
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -675,7 +669,7 @@ exports.updateBySlug = async (req, res) => {
         where: { post_id: post.id },
         defaults: { ...product_detail, post_id: post.id }
       });
-      if (!created) await detail.update(product_detail);
+      if (!created) await detail.update(product_detail,);
 
       // HAPUS VARIANT LAMA + VALUES
       const oldVariants = await ProductVariant.findAll({ where: { product_id: post.id } });

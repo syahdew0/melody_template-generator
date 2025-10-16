@@ -147,7 +147,7 @@ const form = ref({
     admin_info: '',
     formula_price: '',
     is_preorder: false,
-    product_type_id: null,
+    // product_type_id: null,
     minimum_qty: null,
     stock_integrated: false,
     stock: 0,
@@ -177,11 +177,13 @@ const selectImage = (url) => {
 const fetchCategories = async () => {
   try {
     const { data } = await axios.get(API_ENDPOINTS.categories)
-    categories.value = data
+    // filter kategori yang display_in = 3 (product)
+    categories.value = data.filter(cat => cat.display_in === 3)
   } catch {
     toast.error('Failed to load categories.')
   }
 }
+
 
 const fetchProductTypes = async () => {
   try {

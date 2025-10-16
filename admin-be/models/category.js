@@ -7,7 +7,9 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.TEXT,
     website_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     parent_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    parent_ids: { type: DataTypes.JSON, allowNull: true },
     display_in: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true } // sudah integer
+    
   }, {
     tableName: 'categories',
     underscored: true,

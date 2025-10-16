@@ -138,6 +138,8 @@ export default {
         title: '',
         slug: '',
         excerpt: '',
+         type: 'post',      
+          type_id: 1,  
         content: '',
         status: 'draft',
         thumbnail_url: '',
@@ -197,14 +199,21 @@ async fetchPost() {
 },
 
 async fetchCategories() {
-  const res = await axios.get(API_ENDPOINTS.categories)
-  this.categories = res.data
+  try {
+    const res = await axios.get(API_ENDPOINTS.categories)
+    // Hanya ambil kategori pertama atau kategori tertentu, misal display_in = 1
+    const filtered = res.data.filter(cat => cat.display_in === 1) // sesuaikan display_in
+    this.categories = filtered
 
-  // kalau create post baru, set default ke kategori pertama (misal Uncategorized)
-  if (!this.isEdit && this.categories.length > 0 && this.form.category_ids.length === 0) {
-    this.form.category_ids = [this.categories[0].id]
+    // Kalau create post baru, set default ke kategori pertama
+    if (!this.isEdit && this.categories.length > 0) {
+      this.form.category_ids = [this.categories[0].id]
+    }
+  } catch (error) {
+    console.error('Failed to fetch categories:', error)
   }
-},
+}
+,
 async savePost() {
   const meta = [
     { meta_key: 'meta_title', meta_value: this.seo.meta_title },

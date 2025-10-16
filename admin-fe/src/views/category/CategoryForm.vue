@@ -35,19 +35,19 @@
         </select>
       </div>
 
- <!-- Display In -->
-<div>
-  <label class="block font-semibold mb-1">Display In</label>
-  <select v-model="form.display_in" class="w-full border p-2 rounded">
-  <option value="">— None —</option>
-<option v-for="type in postTypes" :key="type.id" :value="type.id">
-  {{ type.name }}
-</option>
-</select>
-  <p class="text-xs text-gray-500 mt-1">
-    Tentukan di mana kategori ini akan ditampilkan.
-  </p>
-</div>
+      <!-- Display In -->
+      <div>
+        <label class="block font-semibold mb-1">Display In</label>
+        <select v-model.number="form.display_in" class="w-full border p-2 rounded">
+          <option value="">— None —</option>
+          <option v-for="type in postTypes" :key="type.id" :value="type.id">
+            {{ type.name }}
+          </option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">
+          Tentukan di mana kategori ini akan ditampilkan.
+        </p>
+      </div>
 
       <!-- Buttons -->
       <div class="flex gap-3 pt-4">
@@ -72,11 +72,12 @@ export default {
         slug: '',
         description: '',
         parent_id: '',
+         parent_ids: [],
         display_in: ''
       },
       isEdit: false,
       categories: [],
-      postTypes: [] // <-- ambil dari API nanti
+      postTypes: []
     }
   },
   async mounted() {
@@ -89,9 +90,10 @@ export default {
 
       // Ambil daftar post types dari endpoint
       const resTypes = await axios.get(API_ENDPOINTS.postTypes);
-// Jika backend mengembalikan array string, ubah ke array object
-this.postTypes = resTypes.data.map((name, index) => ({ id: index + 1, name }));
 
+      // Mapping id sesuai database
+      const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5 };
+      this.postTypes = resTypes.data.map(name => ({ id: typeMap[name], name }));
 
       // Jika edit mode, ambil data kategori
       if (id) {
@@ -108,25 +110,32 @@ this.postTypes = resTypes.data.map((name, index) => ({ id: index + 1, name }));
     }
   },
   methods: {
-    async handleSubmit() {
-      if (!this.form.slug && this.form.name) {
-        this.form.slug = this.form.name
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]/g, '');
-      }
+  async handleSubmit() {
+    if (!this.form.slug && this.form.name) {
+      this.form.slug = this.form.name
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]/g, '');
+    }
 
-      try {
-        if (this.isEdit) {
-          await axios.put(`${API_ENDPOINTS.categories}/${this.$route.params.id}`, this.form);
-        } else {
-          await axios.post(API_ENDPOINTS.categories, this.form);
-        }
-        this.$router.push('/admin/categories');
-      } catch (err) {
-        console.error('Error submitting form:', err);
+    // Pastikan parent_ids selalu array
+    if (this.form.parent_id) {
+      this.form.parent_ids = [Number(this.form.parent_id)];
+    } else {
+      this.form.parent_ids = [];
+    }
+
+    try {
+      if (this.isEdit) {
+        await axios.put(`${API_ENDPOINTS.categories}/${this.$route.params.id}`, this.form);
+      } else {
+        await axios.post(API_ENDPOINTS.categories, this.form);
       }
+      this.$router.push('/admin/categories');
+    } catch (err) {
+      console.error('Error submitting form:', err.response?.data || err);
     }
   }
+}
 }
 </script>
