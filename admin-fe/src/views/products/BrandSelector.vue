@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 bg-white rounded-2xl shadow-md w-full max-w-full mx-auto">
+  <div class="p-6 bg-white w-full max-w-full mx-auto">
     <h2 class="text-2xl font-bold mb-6">{{ isEdit ? 'Edit Brand' : 'Add / Select Brand' }}</h2>
 
     <!-- Dropdown pilih brand -->

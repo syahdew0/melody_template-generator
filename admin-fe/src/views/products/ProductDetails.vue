@@ -2,7 +2,17 @@
   <div class="border border-gray-300 p-6 rounded-2xl shadow-md bg-white">
     <h3 class="text-xl font-semibold mb-4">Product Details</h3>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+     <!-- Brand Selector -->
+      <BrandSelector :brands="brands" v-model="localDetail.brand_id" />
+
+          <!-- Variations -->
+      <ProductVariations 
+        :productId="props.modelValue.post_id || props.modelValue.id"
+        :variations="localDetail.variations"
+        @update:variations="val => localDetail.variations = val"
+      />
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
       <!-- Price -->
       <div>
         <label class="block mb-1 font-medium text-gray-700">Price</label>
@@ -41,10 +51,7 @@
   />
 </div>
 
-
-      <!-- Brand Selector -->
-      <BrandSelector :brands="brands" v-model="localDetail.brand_id" />
-
+     
       <!-- Product Type Selector -->
       <!-- <ProductTypeSelector v-model="localDetail.product_type_id" /> -->
 
@@ -116,12 +123,7 @@
         <span class="text-gray-700 font-medium">Is Preorder?</span>
       </div>
 
-      <!-- Variations -->
-      <ProductVariations 
-        :productId="props.modelValue.post_id || props.modelValue.id"
-        :variations="localDetail.variations"
-        @update:variations="val => localDetail.variations = val"
-      />
+  
 
       <!-- Stock -->
       <div>
@@ -203,8 +205,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue'
-// import ProductTypeSelector from '@/views/products/ProductTypeSelector.vue'
+import { reactive, watch, onMounted } from 'vue'
 import ProductVariations from '@/views/products/ProductVariations.vue'
 import BrandSelector from '@/views/products/BrandSelector.vue'
 
@@ -215,29 +216,51 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const localDetail = reactive({ ...props.modelValue })
 
-// Format Rupiah helper
+//  Helper untuk ubah ke YYYY-MM-DD
+const formatDateForInput = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d)) return ''
+  return d.toISOString().split('T')[0]
+}
+
+//  Helper format rupiah
 const formatCurrency = (val) => {
   if (val == null || val === '') return ''
   return new Intl.NumberFormat('id-ID').format(val)
 }
 
-// Saat input berubah
+//  Saat input angka berubah
 const onCurrencyInput = (e, field) => {
   const raw = e.target.value.replace(/[^\d]/g, '')
   localDetail[field] = Number(raw || 0)
   e.target.value = formatCurrency(raw)
 }
 
-// Sinkronisasi dari parent ke child
+//  Saat komponen pertama kali dimuat
+onMounted(() => {
+  if (localDetail.discount_until) {
+    localDetail.discount_until = formatDateForInput(localDetail.discount_until)
+  }
+})
+
+//  Sinkronisasi data dari parent → child
 watch(
   () => props.modelValue,
   (newVal) => {
-    if (newVal) Object.assign(localDetail, newVal)
+    if (newVal) {
+      Object.assign(localDetail, newVal)
+
+      // pastikan format tanggal valid untuk input date
+      if (newVal.discount_until) {
+        localDetail.discount_until = formatDateForInput(newVal.discount_until)
+      }
+    }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
-// Emit ke parent bila ada perubahan
+// 🔹 Emit ke parent setiap ada perubahan
 watch(
   localDetail,
   (newVal) => {

@@ -7,11 +7,11 @@ module.exports = {
     // =====================
 await queryInterface.bulkInsert('websites', [
   {
-    name: 'Ecommerce Website',
+    name: 'PSG Website',
     user_id: null,
     subdomain: null,
-    site_title: 'Ecommerce Website',
-    site_description: 'Ecommerce Website',
+    site_title: 'PSG Website',
+    site_description: 'PSG Website',
     admin_email: null,
     logo: null,
     seo_keywords: null,
@@ -19,16 +19,16 @@ await queryInterface.bulkInsert('websites', [
     rate: null,
     created_at: new Date(),
     updated_at: new Date(),
-    title: 'Ecommerce Website',
+    title: 'PSG Website',
   }
 ], {});
 
 await queryInterface.bulkInsert('themes', [
   {
     website_id: 1, 
-    name: 'Ecommerce Default Theme',
-    slug: 'ecommerce-default-theme',
-    description: 'Default theme for ecommerce website',
+    name: 'PSG Default Theme',
+    slug: 'PSG-default-theme',
+    description: 'Default theme for PSG website',
     schema: JSON.stringify({}),
     is_active: 1,
     created_at: new Date(),

@@ -9,6 +9,12 @@ require('dotenv').config({
   path: '.env'
 });
 
+process.env.API_URL =
+  process.env.NODE_ENV === 'production'
+    ? process.env.API_URL || 'https://adminecommerce1.phisoft.co.id'
+    : `http://localhost:${process.env.PORT || 3001}`;
+
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -35,13 +41,12 @@ if (process.env.NODE_ENV === 'production') {
   whitelist.push(
     'https://psggroup.id',
     'https://office.psggroup.id',
-    'https://melodyv2.phisoft.co.id/ecommerce1',
     'https://adminecommerce1.phisoft.co.id',
+    'https://melodyv2.phisoft.co.id',
     
   );
 } else if (process.env.NODE_ENV === 'staging') {
   whitelist.push(
-    
     'https://compro.pasifiksgroup.com:8443',
   );
 } else {
@@ -53,6 +58,7 @@ if (process.env.NODE_ENV === 'production') {
     'http://localhost:8082',
     'http://localhost:8083',
     'http://localhost:8084',
+    'http://localhost:8085',
     'http://localhost:1234',
   );
 }
@@ -210,6 +216,8 @@ app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
 // server.js
 app.use('/apis/contact', require('./routes/contactRoutes'));
 app.use('/apis/brands', require('./routes/brandRoutes'));
+
+
 
 
 

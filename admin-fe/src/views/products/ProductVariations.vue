@@ -254,7 +254,39 @@ const fetchVariants = async () => {
 const saveCombinations = async () => {
   if (!props.productId) return
   try {
-    const payload = combinations.value.map(c => ({
+    // Ambil data lama dulu dari server untuk dibandingkan
+    const resOld = await axios.get(API_ENDPOINTS.productVariants.list(props.productId), {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    const oldVariants = resOld.data?.data || []
+
+    // Buat map cepat dari data lama
+    const oldMap = new Map(oldVariants.map(v => [
+      v.values.map(val => val.value).join('|'),
+      { price: Number(v.price || 0), stock: Number(v.stock || 0), image: v.image }
+    ]))
+
+    // Filter hanya yang baru atau berubah
+    const changedOrNew = combinations.value.filter(c => {
+      const key = c.values.map(v => v.value).join('|')
+      const old = oldMap.get(key)
+
+      if (!old) return true // kombinasi baru
+
+      // cek apakah ada perubahan di harga, stok, atau gambar
+      return (
+        Number(old.price) !== Number(c.price) ||
+        Number(old.stock) !== Number(c.stock) ||
+        (old.image || '') !== (c.image || '')
+      )
+    })
+
+    if (changedOrNew.length === 0) {
+      alert('Tidak ada perubahan untuk disimpan.')
+      return
+    }
+
+    const payload = changedOrNew.map(c => ({
       id: c.id || null,
       values: c.values.map(v => ({ option: v.option, value: v.value })),
       price: c.price,
@@ -271,6 +303,7 @@ const saveCombinations = async () => {
         }
       }
     )
+
     console.log('Variants saved:', res.data)
     await fetchVariants() // reload data setelah simpan
     alert('Variants berhasil disimpan')
@@ -279,6 +312,7 @@ const saveCombinations = async () => {
     alert(err.response?.data?.message || err.message)
   }
 }
+
 
 onMounted(fetchVariants)
 watch(() => props.productId, (newId) => { if (newId) fetchVariants() })

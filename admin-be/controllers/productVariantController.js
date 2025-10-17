@@ -57,7 +57,6 @@ async createCombinations(req, res) {
     const { productId } = req.params
     const { variants } = req.body
 
-    // Validasi awal
     if (!Array.isArray(variants) || variants.length === 0) {
       return res.status(400).json({ message: 'Variants harus berupa array dan tidak boleh kosong' })
     }
@@ -66,25 +65,41 @@ async createCombinations(req, res) {
     const product = await Post.findByPk(productId)
     if (!product) return res.status(404).json({ message: 'Product not found' })
 
-    const savedVariants = []
+    // Ambil semua varian lama (untuk mendeteksi duplikat)
+    const oldVariants = await ProductVariant.findAll({
+      where: { product_id: productId },
+      include: [
+        {
+          model: ProductVariantValue,
+          as: 'values',
+          include: [{ model: ProductVariantOption, as: 'option' }]
+        }
+      ]
+    })
 
-    // Loop setiap kombinasi varian
+    const oldMap = new Map(
+      oldVariants.map(v => [
+        v.values.map(val => val.value).join('|'),
+        v
+      ])
+    )
+
+    const savedVariants = []
+    const receivedKeys = new Set()
+
     for (const combo of variants) {
       if (!combo.values || !Array.isArray(combo.values)) continue
 
+      // Normalisasi value & option
       const valueObjects = []
-
-      // Loop tiap value (misal Warna: Merah, Ukuran: XL)
       for (const val of combo.values) {
         const optionName = val.option?.trim()
         const valueName = val.value?.trim()
         if (!optionName || !valueName) continue
 
-        // Cari atau buat option (misal: Warna, Ukuran)
         let option = await ProductVariantOption.findOne({
           where: { product_id: productId, name: optionName }
         })
-
         if (!option) {
           option = await ProductVariantOption.create({
             product_id: productId,
@@ -97,24 +112,39 @@ async createCombinations(req, res) {
 
       if (!valueObjects.length) continue
 
-      // Gabungkan nilai-nilai (misal: Merah,XL)
-      const combinationStr = valueObjects.map(v => v.value).join(', ')
+      const combinationStr = valueObjects.map(v => v.value).join('|')
+      receivedKeys.add(combinationStr)
 
-      // Simpan variant utama
-      const variant = await ProductVariant.create({
-        product_id: productId,
-        combination: combinationStr,
-        sku: combo.sku || null,
-        price: combo.price || 0,
-        stock: combo.stock || 0,
-        image: combo.image || null
-      })
+      const existing = oldMap.get(combinationStr)
 
-      // Simpan hubungan value (ProductVariantValue)
+      let variant
+      if (existing) {
+        // Update variant lama
+        await existing.update({
+          price: combo.price ?? existing.price,
+          stock: combo.stock ?? existing.stock,
+          image: combo.image ?? existing.image,
+          sku: combo.sku ?? existing.sku
+        })
+        variant = existing
+      } else {
+        //  Buat variant baru
+        variant = await ProductVariant.create({
+          product_id: productId,
+          combination: combinationStr,
+          sku: combo.sku || null,
+          price: combo.price || 0,
+          stock: combo.stock || 0,
+          image: combo.image || null
+        })
+      }
+
+      // Hapus dan simpan ulang values agar konsisten
+      await ProductVariantValue.destroy({ where: { variant_id: variant.id } })
       for (const vo of valueObjects) {
         await ProductVariantValue.create({
           variant_id: variant.id,
-          option_id: vo.option.id, 
+          option_id: vo.option.id,
           value: vo.value
         })
       }
@@ -136,7 +166,7 @@ async createCombinations(req, res) {
     })
 
     res.status(201).json({
-      message: 'Combinations saved successfully',
+      message: 'Combinations processed successfully',
       data: allVariants
     })
   } catch (err) {
@@ -144,7 +174,6 @@ async createCombinations(req, res) {
     res.status(500).json({ message: 'Internal server error', error: err.message })
   }
 },
-
   async createVariant(req, res) {
     try {
       const { productId } = req.params
@@ -188,62 +217,69 @@ async createCombinations(req, res) {
     }
   },
 
-  async updateVariant(req, res) {
-    try {
-      const { id } = req.params
-      const { combination, sku, price, stock, image } = req.body
+async updateVariant(req, res) {
+  try {
+    const { id } = req.params
+    const { combination, sku, price, stock, image } = req.body
 
-      const variant = await ProductVariant.findByPk(id)
-      if (!variant) return res.status(404).json({ message: 'Variant not found' })
+    const variant = await ProductVariant.findByPk(id)
+    if (!variant) return res.status(404).json({ message: 'Variant not found' })
 
-      const combinationStr = Array.isArray(combination)
-        ? combination.map(c => (typeof c === 'object' ? c.value : c)).join(',')
-        : variant.combination
+    // Buat kombinasi string baru (jika dikirim array)
+    const combinationStr = Array.isArray(combination)
+      ? combination.map(c => (typeof c === 'object' ? c.value : c)).join(',')
+      : variant.combination
 
-      await variant.update({
-        combination: combinationStr,
-        sku: sku || variant.sku,
-        price: price ?? variant.price,
-        stock: stock ?? variant.stock,
-        image: image || variant.image
-      })
+    await variant.update({
+      combination: combinationStr,
+      sku: sku ?? variant.sku,
+      price: price ?? variant.price,
+      stock: stock ?? variant.stock,
+      image: image ?? variant.image
+    })
 
-      // Hapus values lama
-      await ProductVariantValue.destroy({ where: { product_variant_id: variant.id } })
+    // Hapus value lama
+    await ProductVariantValue.destroy({ where: { variant_id: variant.id } })
 
-      if (Array.isArray(combination)) {
-        for (const item of combination) {
-          const optionName = item.option || item.value
-          let option = await ProductVariantOption.findOne({
-            where: { product_id: variant.product_id, name: optionName }
-          })
-          if (!option) {
-            option = await ProductVariantOption.create({
-              product_id: variant.product_id,
-              name: optionName
-            })
-          }
+    // Tambahkan ulang value baru
+    if (Array.isArray(combination)) {
+      for (const item of combination) {
+        const optionName = item.option || item.value
+        let option = await ProductVariantOption.findOne({
+          where: { product_id: variant.product_id, name: optionName }
+        })
 
-          await ProductVariantValue.create({
-            variant_id: variant.id,
-            variant_option_id: option.id,
-            value: item.value
+        if (!option) {
+          option = await ProductVariantOption.create({
+            product_id: variant.product_id,
+            name: optionName
           })
         }
+
+        await ProductVariantValue.create({
+          variant_id: variant.id,
+          variant_option_id: option.id,
+          value: item.value
+        })
       }
-
-      const updatedVariant = await ProductVariant.findByPk(variant.id, {
-        include: [
-          { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
-        ]
-      })
-
-      res.json({ data: updatedVariant })
-    } catch (err) {
-      console.error('Error updateVariant:', err)
-      res.status(500).json({ message: 'Internal server error' })
     }
-  },
+
+    const updatedVariant = await ProductVariant.findByPk(variant.id, {
+      include: [
+        {
+          model: ProductVariantValue,
+          as: 'values',
+          include: [{ model: ProductVariantOption, as: 'option' }]
+        }
+      ]
+    })
+
+    res.json({ data: updatedVariant })
+  } catch (err) {
+    console.error('Error updateVariant:', err)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+},
 
  
   async deleteVariant(req, res) {
@@ -299,10 +335,11 @@ async createCombinations(req, res) {
       const option = await ProductVariantOption.findByPk(optionId)
       if (!option) return res.status(404).json({ message: 'Option not found' })
 
-      const variantValue = await ProductVariantValue.create({
-        product_variant_option_id: optionId,
-        value
-      })
+await ProductVariantValue.create({
+  variant_option_id: optionId,
+  value
+})
+
       res.status(201).json({ data: variantValue })
     } catch (err) {
       console.error('Error createValue:', err)
