@@ -106,7 +106,8 @@ export default {
         .post(API_ENDPOINTS.mediaUpload, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
+            // 'Content-Type': 'multipart/form-data',
+            withCredentials: true,
           },
         })
         .then((res) => {

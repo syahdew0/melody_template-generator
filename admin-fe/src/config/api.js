@@ -3,7 +3,9 @@ import axios from 'axios';
 // export const API_URL = 'http://localhost:3001'
 // export const API_URL = process.env.VUE_APP_API_URL;
 // export const API_URL = 'compro.pasifiksgroup.com:8443'
-export const API_URL = process.env.VUE_APP_API_URL;
+// export const API_URL = process.env.VUE_APP_API_URL;
+export const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3001';
+
 
 
 export const API_ENDPOINTS = {
@@ -95,9 +97,14 @@ postTypes: `${API_URL}/apis/admin/posts/types`,
   DELETE_MENU_GROUP: (id) => `${API_URL}/api/menu-groups/${id}`,   
 
   siteSettings: (id) => `${API_URL}/api/admin/websites/${id}/settings`,
-  favicon: `${API_URL}/apis/icons/favicon`,
-  icons: `${API_URL}/apis/icons/upload`,
-  saveFavicon: `${API_URL}/apis/icons/save`,     
+  // favicon: `${API_URL}/apis/icons/favicon`,
+  // icons: `${API_URL}/apis/icons/upload`,
+  // saveFavicon: `${API_URL}/apis/icons/save`,     
+
+  favicon: `${API_URL}/apis/icons/favicon`, // GET favicon
+  uploadFavicon: `${API_URL}/apis/icons/upload`, // POST upload
+  saveFavicon: `${API_URL}/apis/icons/save`, // POST save
+
 
   // Transaksi
   topup: {

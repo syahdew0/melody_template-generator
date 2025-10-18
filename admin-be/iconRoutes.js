@@ -28,8 +28,8 @@ router.get('/favicon', iconController.getFavicon);
 //   upload.single('file'),
 //   iconController.uploadFavicon
 // );
-
 router.post('/upload', upload.single('file'), iconController.uploadFavicon);
+
 
 // Set / save favicon
 router.post(

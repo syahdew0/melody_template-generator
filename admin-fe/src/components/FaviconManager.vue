@@ -2,6 +2,7 @@
   <div class="bg-white p-6 rounded-xl shadow max-w-full mx-auto">
     <h1 class="text-xl font-bold text-gray-800 mb-4">Manajemen Favicon</h1>
 
+    <!-- Preview -->
     <div class="mb-4">
       <label class="block font-medium text-sm text-gray-700 mb-1">Preview Favicon</label>
       <img
@@ -13,23 +14,30 @@
       <p v-else class="text-gray-500 text-sm">Belum ada favicon</p>
     </div>
 
+    <!-- Upload -->
     <div class="flex items-center gap-4 mb-4">
-      <input type="file" @change="handleFileChange" accept=".ico,.png,.jpg,.jpeg" />
+      <input
+        type="file"
+        @change="handleFileChange"
+        accept=".ico,.png,.jpg,.jpeg"
+      />
       <button
         @click="uploadFavicon"
-        :disabled="!selectedFile"
+        :disabled="!selectedFile || isUploading"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
       >
-        Upload
+        {{ isUploading ? 'Uploading...' : 'Upload' }}
       </button>
     </div>
 
+    <!-- Simpan -->
     <div class="flex justify-end">
       <button
         @click="saveFavicon"
+        :disabled="!form.favicon || isSaving"
         class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
       >
-        Simpan
+        {{ isSaving ? 'Menyimpan...' : 'Simpan' }}
       </button>
     </div>
   </div>
@@ -44,10 +52,10 @@ export default {
 
   data() {
     return {
-      form: {
-        favicon: '',
-      },
+      form: { favicon: '' },
       selectedFile: null,
+      isUploading: false,
+      isSaving: false,
     }
   },
 
@@ -55,69 +63,61 @@ export default {
     async fetchFavicon() {
       try {
         const res = await axios.get(API_ENDPOINTS.favicon)
-        let url = res.data.value || res.data || '/uploads/default-favicon.ico'
-
-        // Pakai HTTPS untuk domain live, HTTP untuk localhost
-        if (url.includes('localhost')) {
-          this.form.favicon = url
-        } else {
-          this.form.favicon = url.replace(/^http:\/\//, 'https://')
-        }
+        const url = res.data.value || res.data.url || '/uploads/default-favicon.ico'
+        this.form.favicon = url.includes('localhost') ? url : url.replace(/^http:\/\//, 'https://')
       } catch (err) {
         console.warn('Gagal mengambil favicon:', err)
       }
     },
 
-    handleFileChange(event) {
-      this.selectedFile = event.target.files[0] || null
+    handleFileChange(e) {
+      this.selectedFile = e.target.files[0] || null
     },
 
-async uploadFavicon() {
-  if (!this.selectedFile) return
+    async uploadFavicon() {
+      if (!this.selectedFile) return
+      this.isUploading = true
 
-  const formData = new FormData()
-  formData.append('file', this.selectedFile)
+      try {
+        const formData = new FormData()
+        formData.append('file', this.selectedFile)
 
-  try {
-    const token = localStorage.getItem('token')
-    const res = await axios.post(API_ENDPOINTS.icons, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+        const res = await axios.post(API_ENDPOINTS.uploadFavicon, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+        })
 
-    let url = res.data.value || res.data.url || '/uploads/default-favicon.ico'
-    if (url.includes('localhost')) {
-      this.form.favicon = url
-    } else {
-      this.form.favicon = url.replace(/^http:\/\//, 'https://')
-    }
+        const url = res.data.value || res.data.url || '/uploads/default-favicon.ico'
+        this.form.favicon = url.includes('localhost') ? url : url.replace(/^http:\/\//, 'https://')
+        this.selectedFile = null
 
-    this.selectedFile = null
-    alert('Favicon berhasil di-upload.')
-  } catch (err) {
-    console.error('Gagal upload favicon:', err)
-    alert('Gagal upload favicon. Pastikan Anda login sebagai admin.')
-  }
-},
+        alert('Favicon berhasil di-upload.')
+      } catch (err) {
+        console.error('Gagal upload favicon:', err)
+        alert('Gagal upload favicon. Periksa koneksi atau CORS.')
+      } finally {
+        this.isUploading = false
+      }
+    },
 
     async saveFavicon() {
+      if (!this.form.favicon) return
+      this.isSaving = true
+
       try {
-        const token = localStorage.getItem('token')
-        await axios.post(
-          API_ENDPOINTS.saveFavicon,
-          { value: this.form.favicon },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        )
+        await axios.post(API_ENDPOINTS.saveFavicon, { value: this.form.favicon }, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+        })
         alert('Favicon berhasil disimpan.')
       } catch (err) {
         console.error('Gagal menyimpan favicon:', err)
         alert('Terjadi kesalahan saat menyimpan favicon.')
+      } finally {
+        this.isSaving = false
       }
     },
   },
