@@ -60,6 +60,10 @@
   <label class="block mb-2">Path (Link)</label>
   <input type="text" v-model="form.path" class="border rounded w-full mb-2 p-1" />
 </div>
+<label class="block mb-2">
+  <input type="checkbox" v-model="form.openInNewTab" class="mr-2" />
+  Buka di tab baru
+</label>
 
       <button class="bg-green-600 text-white px-4 py-1 rounded mr-2" @click="submitForm">
         Simpan
@@ -98,6 +102,7 @@ const form = ref({
   slug: '',
   path: '',
   parent_id: null,
+  openInNewTab: false,
 });
 
 const pages = ref([]);
@@ -155,6 +160,15 @@ const submitForm = async () => {
     });
   }
 
+  if (form.value.id) {
+  await axios.put(API_ENDPOINTS.UPDATE_MENU_ITEM(form.value.id), form.value);
+} else {
+  await axios.post(API_ENDPOINTS.CREATE_MENU_ITEM, {
+    ...form.value,
+    menu_group_id: groupId,
+  });
+}
+
   await loadPages(); 
   await loadItems(); // Refresh daftar menu
 
@@ -182,6 +196,7 @@ const editItem = async (item) => {
     slug: item.slug || '',
     path: item.path || '',
     parent_id: item.parent_id || null,
+      openInNewTab: item.open_in_new_tab || false,
   };
 
   showForm.value = true;

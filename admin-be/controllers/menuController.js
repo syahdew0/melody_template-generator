@@ -57,12 +57,16 @@ exports.getMenuItemsByGroup = async (req, res) => {
   const { groupId } = req.params;
 
   try {
-    const items = await menu_item.findAll({ where: { menu_group_id: groupId } });
+    const items = await menu_item.findAll({ 
+      where: { menu_group_id: groupId },
+      order: [['parent_id', 'ASC'], ['id', 'ASC']],
+    });
     res.json(items);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil menu items', error: error.message });
   }
 };
+
 
 // Get menu items by query ?groupId=...
 exports.getMenuItemsByQuery = async (req, res) => {
@@ -87,7 +91,12 @@ exports.getMenuItemsByQuery = async (req, res) => {
 // Create new menu item
 exports.createMenuItem = async (req, res) => {
   try {
-    const item = await menu_item.create(req.body);
+    const data = {
+      ...req.body,
+      open_in_new_tab: req.body.openInNewTab || false, // <-- mapping
+    };
+
+    const item = await menu_item.create(data);
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambahkan menu', error: error.message });
@@ -99,7 +108,12 @@ exports.updateMenuItem = async (req, res) => {
   const { id } = req.params;
 
   try {
-    await menu_item.update(req.body, { where: { id } });
+    const data = {
+      ...req.body,
+      open_in_new_tab: req.body.openInNewTab || false, // <-- mapping
+    };
+
+    await menu_item.update(data, { where: { id } });
     const updated = await menu_item.findByPk(id);
     res.json(updated);
   } catch (error) {
@@ -167,10 +181,6 @@ exports.getMenuBySlug = async (req, res) => {
   if (!group) {
     return res.status(400).json({ message: 'Parameter group diperlukan' });
   }
-  
-  if (group.toLowerCase() === 'footer') {
-    return res.status(403).json({ message: 'Akses ke menu footer tidak diizinkan dari endpoint ini' });
-  }
 
   try {
     const groupData = await menu_group.findOne({
@@ -181,9 +191,24 @@ exports.getMenuBySlug = async (req, res) => {
       },
       include: [{
         model: menu_item,
-        as: 'items',
+        as: 'items',            // pastikan sama seperti relasi di model
+        attributes: [
+          'id', 'title', 'path', 'parent_id', 'order', 'is_active', 'open_in_new_tab'
+        ],
         required: false,
+        include: [{
+          model: menu_item,
+          as: 'children',       // pastikan relasi hasMany alias 'children' di model
+          attributes: [
+            'id', 'title', 'path', 'parent_id', 'order', 'is_active', 'open_in_new_tab'
+          ],
+          required: false,
+        }]
       }],
+      order: [
+        ['items', 'order', 'ASC'],
+        [{ model: menu_item, as: 'items' }, { model: menu_item, as: 'children' }, 'order', 'ASC']
+      ]
     });
 
     if (!groupData) {
@@ -192,10 +217,10 @@ exports.getMenuBySlug = async (req, res) => {
 
     res.json(groupData.items);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Gagal mengambil menu', error: error.message });
   }
 };
-
 
 exports.getFooterMenus = async (req, res) => {
   try {
@@ -289,24 +314,35 @@ exports.deleteMenuGroupHandler = async (req, res) => {
 };
 
 exports.getMenuByGroup = async (req, res) => {
-  try {
-    const { group } = req.query;
+  const { group } = req.query;
 
-    const menuGroup = await MenuGroup.findOne({
+  if (!group) {
+    return res.status(400).json({ success: false, message: 'Parameter group diperlukan' });
+  }
+
+  try {
+    const menuGroup = await menu_group.findOne({
       where: { slug: group },
       include: [{
-        model: MenuItem,
+        model: menu_item,
+        as: 'menu_items',
+        attributes: [
+          'id', 'title', 'path', 'parent_id', 'order', 'is_active', 'open_in_new_tab'
+        ],
         where: { parent_id: null },
         required: false,
         include: [{
-          model: MenuItem,
+          model: menu_item,
           as: 'children',
+          attributes: [
+            'id', 'title', 'path', 'parent_id', 'order', 'is_active', 'open_in_new_tab'
+          ],
           required: false
         }]
       }],
       order: [
         ['menu_items', 'order', 'ASC'],
-        [{ model: MenuItem, as: 'menu_items' }, { model: MenuItem, as: 'children' }, 'order', 'ASC']
+        [{ model: menu_item, as: 'menu_items' }, { model: menu_item, as: 'children' }, 'order', 'ASC']
       ]
     });
 
@@ -314,9 +350,9 @@ exports.getMenuByGroup = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Menu group not found' });
     }
 
-    return res.json({ success: true, data: menuGroup.menu_items });
+    res.json({ success: true, data: menuGroup.menu_items });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
