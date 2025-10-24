@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-gray-800">Testimonial</h1>
       <router-link
-        to="/admin/testimonials/new"
+        to="/admin/testimonials/create"
         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md"
       >
         + Tambah Baru

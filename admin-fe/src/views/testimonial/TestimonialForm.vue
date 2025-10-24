@@ -1,236 +1,238 @@
 <template>
-    <div class="max-w-7xl mx-auto space-y-6 px-6 py-12">
-      <h1 class="text-3xl font-semibold text-gray-800 tracking-tight">
-        {{ isEdit ? 'Edit' : 'Tambah' }} Testimoni
-      </h1>
-  
-      <form @submit.prevent="save" class="flex flex-col lg:flex-row gap-6">
-        <!-- Main Editor -->
-        <div class="flex-1 space-y-6">
-          <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-5">
-            <!-- Judul -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Judul</label>
-              <input
-                v-model="form.title"
-                type="text"
-                class="w-full border border-gray-300 rounded-md shadow-sm text-sm px-3 py-2"
-                placeholder="Masukkan judul testimonial"
-                required
-              />
-            </div>
-  
-            <!-- Excerpt -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
-              <textarea
-                v-model="form.excerpt"
-                rows="3"
-                class="w-full border border-gray-300 rounded-md shadow-sm text-sm px-3 py-2"
-                placeholder="Ringkasan singkat testimoni"
-              ></textarea>
-            </div>
-  
-            <!-- Konten -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Konten</label>
-              <div class="border border-gray-300 rounded-md overflow-hidden">
-                <QuillEditor
-                  v-model:content="form.content"
-                  contentType="html"
-                  theme="snow"
-                  style="min-height: 250px;"
-                />
-              </div>
-            </div>
-  
-            <!-- Nama Klien -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nama Klien</label>
-              <input
-                v-model="form.author_name"
-                type="text"
-                class="w-full border border-gray-300 rounded-md shadow-sm text-sm px-3 py-2"
-                placeholder="Nama pemberi testimoni"
-              />
-            </div>
-  
-            <!-- Jabatan -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Jabatan / Perusahaan</label>
-              <input
-                v-model="form.author_position"
-                type="text"
-                class="w-full border border-gray-300 rounded-md shadow-sm text-sm px-3 py-2"
-                placeholder="Jabatan atau perusahaan"
-              />
-            </div>
-  
-            <!-- Foto Klien -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Foto Klien</label>
-              <button
-                class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
-                @click.prevent="showMediaPicker = true"
-              >
-                Pilih Foto
-              </button>
-  
-              <div v-if="form.image" class="mt-2">
-                <img :src="form.image" class="w-24 h-24 object-cover rounded border" />
-                <button
-                  @click="form.image = ''"
-                  class="text-xs text-red-600 hover:underline mt-1 block"
-                >
-                  Hapus Foto
-                </button>
-              </div>
-  
-              <!-- Modal Media Picker -->
-              <MediaPickerModal
-                :show="showMediaPicker"
-                @close="showMediaPicker = false"
-                @select="selectImage"
-              />
-            </div>
-          </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 font-['Poppins']">
+    <!-- Konten Utama -->
+    <div class="lg:col-span-2 space-y-5">
+      <!-- Judul -->
+      <div>
+        <label class="block font-semibold text-gray-700 mb-1">Judul Testimoni</label>
+        <input
+          v-model="form.title"
+          @input="generateSlug"
+          placeholder="Masukkan judul testimonial"
+          class="w-full text-3xl font-bold border-none focus:ring-0 placeholder-gray-400"
+        />
+      </div>
+
+      <!-- Ringkasan -->
+      <div>
+        <label class="block font-semibold text-gray-700 mb-1">Ringkasan</label>
+        <textarea
+          v-model="form.excerpt"
+          placeholder="Tulis ringkasan singkat testimoni"
+          class="w-full text-sm text-gray-600 border border-dashed rounded p-3"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <!-- Isi -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <label class="block font-semibold text-gray-700 mb-2">Isi Testimoni</label>
+        <QuillEditor
+          v-model:content="form.content"
+          contentType="html"
+          class="min-h-[250px] bg-white border rounded"
+        />
+      </div>
+
+      <!-- Nama & Jabatan -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Nama Klien</label>
+          <input
+            v-model="form.author_name"
+            placeholder="Nama pemberi testimoni"
+            class="w-full border rounded p-2 text-sm"
+          />
         </div>
-  
-        <!-- Sidebar -->
-        <div class="w-full lg:w-72 space-y-6">
-          <!-- Status -->
-          <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-            <h2 class="text-sm font-semibold text-gray-700 mb-2">Status</h2>
-            <select
-              v-model="form.status"
-              class="w-full border border-gray-300 rounded-md text-sm px-3 py-2"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-  
-          <!-- Tombol -->
-          <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex justify-between items-center">
-            <button
-              type="button"
-              @click="router.push('/admin/testimonials')"
-              class="text-sm text-gray-600 hover:text-gray-800 hover:underline"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md"
-            >
-              {{ isEdit ? 'Update' : 'Simpan' }}
-            </button>
-          </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Jabatan / Perusahaan</label>
+          <input
+            v-model="form.author_position"
+            placeholder="Jabatan atau perusahaan"
+            class="w-full border rounded p-2 text-sm"
+          />
         </div>
-      </form>
+      </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref, onMounted } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
-  import axios from 'axios'
-  import { API_ENDPOINTS } from '@/config/api'
-  import { QuillEditor } from '@vueup/vue-quill'
-  import MediaPickerModal from '@/views/MediaPicker.vue'
-  import '@vueup/vue-quill/dist/vue-quill.snow.css'
-  
-  const route = useRoute()
-  const router = useRouter()
-  const id = route.params.id
-  const isEdit = !!id
-  
-  const form = ref({
-    title: '',
-    slug: '',
-    excerpt: '',
-    content: '',
-    image: '',
-    author_name: '',
-    author_position: '',
-    status: 'published',
-    type: 'testimonial'
-  })
-  
-  const showMediaPicker = ref(false)
-  const selectImage = (url) => {
-    form.value.image = url
-    showMediaPicker.value = false
-  }
-  
-  // Meta key mapping
-  const metaKeys = ['image', 'author_name', 'author_position']
-  
-  const metaToForm = (meta = []) => {
-    meta.forEach(({ meta_key, meta_value }) => {
-      if (metaKeys.includes(meta_key)) {
-        form.value[meta_key] = meta_value
-      }
-    })
-  }
-  
-  const formToMeta = () => {
-    return metaKeys.map((key) => ({
-      meta_key: key,
-      meta_value: form.value[key]
-    }))
-  }
-  
-  const loadData = async () => {
-    if (!isEdit) return
-    try {
-      const res = await axios.get(`${API_ENDPOINTS.posts}/${id}`)
-      const post = res.data
-      form.value = {
-        ...form.value,
-        ...post
-      }
-      if (post.meta) {
-        metaToForm(post.meta)
-      }
-    } catch (err) {
-      console.error('Gagal memuat data:', err)
-    }
-  }
-  const save = async () => {
-  const user = JSON.parse(localStorage.getItem('user'))
-  form.value.website_id = user?.website_id || 1
-  form.value.user_id = user?.id || 1 
 
-  try {
-    const payload = {
-      ...form.value,
-      meta: formToMeta()
-    }
-    
+    <!-- Sidebar -->
+    <div class="space-y-5">
+      <!-- Status -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">Status</h3>
+        <select v-model="form.status" class="w-full border p-2 rounded">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+      </div>
 
-    if (isEdit) {
-      await axios.put(`${API_ENDPOINTS.posts}/${id}`, payload)
-    } else {
-      await axios.post(API_ENDPOINTS.posts, payload)
-    }
+      <!-- Foto Klien -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">Foto Klien</h3>
+        <button
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
+          @click="showMediaPicker = true"
+        >
+          Pilih Foto
+        </button>
+        <div v-if="form.image" class="mt-3">
+          <img
+            :src="getImageUrl(form.image)"
+            alt="Foto Klien"
+            class="rounded shadow max-h-40 object-cover w-full"
+          />
+          <button
+            @click="form.image=''"
+            class="mt-2 text-sm text-red-600 hover:underline"
+          >
+            Hapus Foto
+          </button>
+        </div>
+        <MediaPickerModal
+          :show="showMediaPicker"
+          @close="showMediaPicker=false"
+          @select="selectImage"
+        />
+      </div>
 
-    router.push('/admin/testimonials')
-  } catch (err) {
-    console.error('Gagal menyimpan testimoni:', err)
+      <!-- SEO -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">SEO</h3>
+        <label class="block text-sm font-medium mb-1">Meta Title</label>
+        <input
+          v-model="seo.meta_title"
+          placeholder="Meta Title"
+          class="w-full p-2 border rounded mb-2"
+        />
+        <label class="block text-sm font-medium mb-1">Meta Description</label>
+        <textarea
+          v-model="seo.meta_description"
+          placeholder="Meta Description"
+          class="w-full p-2 border rounded"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <!-- Tombol -->
+      <div class="text-right">
+        <button
+          type="button"
+          @click="saveTestimonial"
+          class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
+        >
+          {{ isEdit ? 'Update' : 'Publish' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import axios from 'axios'
+import { API_ENDPOINTS } from '@/config/api'
+import MediaPickerModal from '@/views/MediaPicker.vue'
+
+export default {
+  props: {
+    id: { type: [String, Number], default: null }
+  },
+  components: { QuillEditor, MediaPickerModal },
+  data() {
+    return {
+      form: {
+        id: null,
+        title: '',
+        slug: '',
+        excerpt: '',
+        content: '',
+        author_name: '',
+        author_position: '',
+        status: 'draft',
+        image: '',
+        type: 'testimonial',
+        type_id: 4,
+        website_id: 1,
+        user_id: 1
+      },
+      seo: {
+        meta_title: '',
+        meta_description: ''
+      },
+      isEdit: false,
+      showMediaPicker: false
+    }
+  },
+mounted() {
+  if (this.id) {
+    this.fetchTestimonial(this.id)
+  }
+},
+  methods: {
+    generateSlug() {
+      if (this.form.title) {
+        this.form.slug = this.form.title
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+      }
+    },
+    getImageUrl(path) {
+      return path?.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`
+    },
+    selectImage(url) {
+      this.form.image = url
+      this.showMediaPicker = false
+    },
+    async fetchTestimonial(id) {
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.posts}/${id}`)
+        const data = res.data
+        this.form = {
+          ...data,
+          id: data.id,
+          type: 'testimonial',
+          type_id: 4,
+          image: data.thumbnail_url || ''
+        }
+        if (data.meta?.length) {
+          data.meta.forEach(m => {
+            if (m.meta_key === 'meta_title') this.seo.meta_title = m.meta_value
+            if (m.meta_key === 'meta_description')
+              this.seo.meta_description = m.meta_value
+          })
+        }
+        this.isEdit = true
+      } catch (err) {
+        console.error('Gagal fetch testimonial:', err)
+      }
+    },
+    async saveTestimonial() {
+      const meta = [
+        { meta_key: 'meta_title', meta_value: this.seo.meta_title },
+        { meta_key: 'meta_description', meta_value: this.seo.meta_description }
+      ]
+      const payload = {
+        ...this.form,
+        type: 'testimonial',
+        type_id: 4,
+        thumbnail_url: this.form.image,
+        meta
+      }
+
+      try {
+        if (this.isEdit && this.form.id) {
+          await axios.put(`${API_ENDPOINTS.posts}/${this.form.id}`, payload)
+        } else {
+          await axios.post(API_ENDPOINTS.posts, payload)
+        }
+        alert('Testimonial berhasil disimpan')
+        this.$router.push('/admin/testimonials')
+      } catch (err) {
+        console.error('Gagal simpan testimonial:', err.response?.data || err)
+      }
+    }
   }
 }
-
-
-
-  onMounted(() => {
-  const user = JSON.parse(localStorage.getItem('user'))
-  if (user?.website_id) {
-    form.value.website_id = user.website_id
-  }
-
-  loadData()
-})
-
-  </script>
-  
+</script>

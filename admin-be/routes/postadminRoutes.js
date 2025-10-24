@@ -92,5 +92,18 @@ router.put('/slug/:slug', requireAuth, requireModulePermission("Post", "canEdit"
 router.delete('/:id', requireAuth, requireModulePermission("Post", "canDelete"), postController.remove);
 router.delete('/slug/:slug', requireAuth, requireModulePermission("Post", "canDelete"), postController.deleteBySlug);
 
+// ====================== TESTIMONIAL ====================== //
+router.get(
+  '/testimonials',
+  requireAuth,
+  requireModulePermission("Post", "canView"),
+  postController.getTestimonials
+);
+router.get(
+  '/testimonials/:slug',
+  requireAuth,
+  requireModulePermission("Post", "canView"),
+  postController.getTestimonialBySlug
+);
 
 module.exports = router;

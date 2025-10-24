@@ -45,13 +45,19 @@ const routes = [
   { path: '/admin/products', name: 'ProductList', component: ProductList },
   { path: '/admin/products/create', name: 'ProductCreate', component: ProductForm },
   { path: '/admin/products/:id', name: 'ProductEdit', component: () => import('@/views/products/ProductForm.vue'), props: true },
+  {
+  path: '/admin/testimonials/:id',
+  name: 'TestimonialEdit',
+  component: TestimonialForm,
+  props: route => ({ id: Number(route.params.id) }) // Edit
+},
 
   { path: '/admin/categories', name: 'CategoryList', component: CategoryList },
   { path: '/admin/categories/create', name: 'CategoryCreate', component: CategoryForm },
   { path: '/admin/categories/:id', name: 'CategoryEdit', component: () => import('@/views/category/CategoryForm.vue'), props: true },
 
   { path: '/admin/testimonials', name: 'TestimonialList', component: TestimonialList },
-  { path: '/admin/testimonials/create', name: 'TestimonialCreate', component: TestimonialForm },
+  { path: '/admin/testimonials/create', name: 'TestimonialCreate', component: TestimonialForm,  props: { id: null } },
   { path: '/admin/testimonials/:id', name: 'TestimonialEdit', component: () => import('@/views/testimonial/TestimonialForm.vue'), props: true },
 
   { path: '/admin/custom-pages', name: 'CustomPageManager', component: () => import('@/views/pages/CustomPageManager.vue'), meta: { requiresAuth: true } },

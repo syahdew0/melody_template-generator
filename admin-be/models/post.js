@@ -28,6 +28,16 @@ module.exports = (sequelize, DataTypes) => {
     slug: DataTypes.STRING,
     content: DataTypes.TEXT,
     excerpt: DataTypes.TEXT,
+
+     author_name: {                
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    author_position: {            
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+
     thumbnail_url: DataTypes.STRING,
     type: DataTypes.ENUM('post', 'page', 'product', 'testimonial'),
     type_id: DataTypes.INTEGER,

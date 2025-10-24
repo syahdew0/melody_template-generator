@@ -21,4 +21,8 @@ router.get('/category/:slug', postController.getPostsByCategory);
 router.get('/slug/:slug', postController.getBySlug);
 router.get('/:slug', postController.getBySlug);
 
+// ====================== TESTIMONIAL PUBLIC ====================== //
+router.get('/testimonials', postController.getTestimonials);
+router.get('/testimonials/:slug', postController.getTestimonialBySlug);
+
 module.exports = router;

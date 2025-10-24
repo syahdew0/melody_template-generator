@@ -45,9 +45,9 @@
           <td class="p-2 border">{{ post.title }}</td>
           <td class="p-2 border capitalize">{{ post.status }}</td>
           <td class="p-2 border">
-            <span v-if="post.post_categories && post.post_categories.length">
-              {{ post.post_categories.map(pc => pc.category.name).join(', ') }}
-            </span>
+           <span v-if="post.categories && post.categories.length">
+  {{ post.categories.map(cat => cat.name).join(', ') }}
+</span>
             <span v-else>-</span>
           </td>
           <td class="p-2 border">

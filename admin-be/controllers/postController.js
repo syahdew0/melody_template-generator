@@ -100,15 +100,21 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
+// exports.getTypes = (req, res) => {
+//  const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5 };
+// const type_id = req.body.type_id || typeMap[type] || null;
+//   res.json(types)
+// }
 exports.getTypes = (req, res) => {
-  const types = ['post','page','product','testimonial','custom_page']
-  res.json(types)
+  const types = ['post', 'page', 'product', 'testimonial', 'custom_page'];
+  res.json(types);
 }
+
 exports.create = async (req, res) => {
   try {
     const {
       website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id,
+      thumbnail_url, status, type, template, parent_id, author_name, author_position,
       meta = [], product_detail = {}, variations = []
     } = req.body;
 
@@ -140,7 +146,9 @@ exports.create = async (req, res) => {
       type,
       type_id,
       template,
-      parent_id
+      parent_id,
+      author_name,
+      author_position
     });
 
     // META
@@ -223,7 +231,7 @@ exports.update = async (req, res) => {
     const postId = req.params.id;
     const {
       website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id,
+      thumbnail_url, status, type, template, parent_id, author_name, author_position,
       meta = [], product_detail = {}, category_ids = []
     } = req.body;
 
@@ -257,7 +265,9 @@ const type_id = typeMap[type] || null;
       type,
       type_id, 
       template,
-      parent_id
+      parent_id,
+      author_name,
+      author_position
     });
 
     // META
@@ -355,7 +365,6 @@ const type_id = typeMap[type] || null;
 }
 }
 }
-
     // Ambil ulang post lengkap
     const updatedPost = await Post.findOne({
       where: { id: post.id },
@@ -394,26 +403,22 @@ const type_id = typeMap[type] || null;
 
 exports.getAll = async (req, res) => {
   try {
-    const { type, slug, search, brand, category, page = 1, limit = 10, discount } = req.query;
+    const { type, slug, search, brand, category, page = 1, limit = 'all', discount } = req.query;
 
-    const where = { status: 'published' };
+    const where = { status: { [Op.in]: ['published', 'draft'] } };
     if (type) where.type = type;
     if (slug) where.slug = slug;
 
-    const offset = (page - 1) * limit;
+    const include = [{ model: PostMeta, as: 'meta' }];
 
-    // Base include
-    const include = [
-      { model: PostMeta, as: 'meta' }
-    ];
+    const categoryParam = category ? category.toLowerCase() : '';
 
-    // Filter kategori via belongsToMany
-    if (category) {
+    if (categoryParam && categoryParam !== 'all' && categoryParam !== 'all product') {
       include.push({
         model: Category,
         as: 'categories',
         attributes: ['id', 'name', 'slug', 'display_in', 'parent_id'],
-        where: { slug: { [Op.in]: category.split(',') } },
+        where: { slug: { [Op.in]: category.split(',').map(s => s.toLowerCase()) } },
         through: { attributes: [] },
         required: true
       });
@@ -439,26 +444,19 @@ exports.getAll = async (req, res) => {
             model: Brand,
             as: 'brand',
             attributes: ['id', 'name', 'slug', 'image'],
-            where: brand
-              ? { slug: { [Op.in]: brand.split(',').map(b => b.toLowerCase()) } }
-              : undefined,
+            where: brand ? { slug: { [Op.in]: brand.split(',').map(b => b.toLowerCase()) } } : undefined,
             required: !!brand
           },
           {
             model: ProductVariant,
             as: 'variations',
             include: [
-              {
-                model: ProductVariantValue,
-                as: 'values',
-                include: [{ model: ProductVariantOption, as: 'option' }]
-              }
+              { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
             ]
           }
         ]
       };
 
-      // Filter diskon
       if (discount === 'true') {
         productDetailInclude.where.isDiscountActive = true;
         productDetailInclude.where.discount_until = { [Op.gt]: new Date() };
@@ -488,21 +486,23 @@ exports.getAll = async (req, res) => {
       return res.json({ data: [postJSON], total: 1 });
     }
 
-    // Paginate
+    // Tentukan offset & limit
+    const usePagination = limit !== 'all';
+    const offset = usePagination ? (page - 1) * limit : null;
+    const finalLimit = usePagination ? parseInt(limit) : null;
+
     const { count, rows } = await Post.findAndCountAll({
       where,
       include,
       offset,
-      limit: parseInt(limit),
+      limit: finalLimit,
       distinct: true,
       order: [['created_at', 'DESC']]
     });
 
     const data = rows.map(post => {
       const p = post.toJSON();
-      if (p.product_detail?.variations) {
-        p.product_detail.variations = formatVariants(p.product_detail.variations);
-      }
+      if (p.product_detail?.variations) p.product_detail.variations = formatVariants(p.product_detail.variations);
       return p;
     });
 
@@ -512,12 +512,16 @@ exports.getAll = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 // GET BY ID
 exports.getById = async (req, res) => {
   try {
     const { id } = req.params;
     const post = await Post.findOne({
-      where: { id, status: 'published' },
+     where: { 
+        id,
+        status: { [Op.in]: ['published', 'draft'] }
+      },
       include: [
   { model: PostMeta, as: 'meta' },
   { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
@@ -569,7 +573,10 @@ exports.getBySlug = async (req, res) => {
     const { slug } = req.params;
 
     const post = await Post.findOne({
-      where: { slug, status: 'published' },
+      where: { 
+        slug,
+        status: { [Op.in]: ['published', 'draft'] } 
+      },
       include: [
         { model: PostMeta, as: 'meta' },
         { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
@@ -619,7 +626,7 @@ exports.updateBySlug = async (req, res) => {
     const { slug } = req.params;
     const {
       website_id, user_id, title, slug: newSlug, content,
-      excerpt, thumbnail_url, status, type, template, parent_id,
+      excerpt, thumbnail_url, status, type, template, parent_id,author_name, author_position,
       meta = [], product_detail = {}, category_ids = [], variations = []
     } = req.body;
         const typeMap = {
@@ -647,7 +654,9 @@ exports.updateBySlug = async (req, res) => {
       type,
       type_id,
       template,
-      parent_id
+      parent_id,
+      author_name,
+      author_position
     });
 
     // META
@@ -771,30 +780,31 @@ exports.getPostsByCategory = async (req, res) => {
     }
 
     // Ambil semua post published yang termasuk kategori ini
-    const posts = await Post.findAll({
-      where: { status: 'published' },
-      include: [
-        {
-          model: PostCategory,
-          as: 'post_categories',
-          required: true, // hanya ambil post yang ada di kategori ini
-          where: { category_id: category.id },
-          include: [
-            { model: Category, as: 'category' }
-          ],
-        },
-       {
-  model: ProductDetail,
-  as: 'product_detail',
+ const posts = await Post.findAll({
+  where: { 
+    status: { [Op.in]: ['published', 'draft'] } 
+  },
   include: [
-    { model: ProductType, as: 'product_type', attributes: ['id','name']},
-    { model: Brand, as: 'brand', attributes: ['id', 'name', 'slug', 'image'] }
-  ]
-},
-        { model: PostMeta, as: 'meta' },
-      ],
-      order: [['created_at', 'DESC']],
-    });
+    {
+      model: PostCategory,
+      as: 'post_categories',
+      required: true, // hanya ambil post yang ada di kategori ini
+      where: { category_id: category.id },
+      include: [{ model: Category, as: 'category' }],
+    },
+    {
+      model: ProductDetail,
+      as: 'product_detail',
+      include: [
+        { model: ProductType, as: 'product_type', attributes: ['id','name'] },
+        { model: Brand, as: 'brand', attributes: ['id','name','slug','image'] }
+      ]
+    },
+    { model: PostMeta, as: 'meta' }
+  ],
+  order: [['created_at', 'DESC']]
+});
+
 
     return res.json({ category, posts });
   } catch (error) {
@@ -802,3 +812,62 @@ exports.getPostsByCategory = async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil postingan' });
   }
 };
+
+// ======================= TESTIMONIAL =======================
+
+// Get all published testimonials
+exports.getTestimonials = async (req, res) => {
+  try {
+    const { limit = 10, page = 1 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Post.findAndCountAll({
+      where: { type: 'testimonial', status: 'published' },
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    res.json({
+      total: count,
+      data: rows.map(r => ({
+        id: r.id,
+        title: r.title,
+        content: r.content,
+        author_name: r.author_name,
+        author_position: r.author_position,
+        image: r.thumbnail_url,
+        created_at: r.created_at
+      }))
+    });
+  } catch (err) {
+    console.error('Error getTestimonials:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get testimonial detail by slug
+exports.getTestimonialBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const testimonial = await Post.findOne({
+      where: { slug, type: 'testimonial', status: 'published' }
+    });
+
+    if (!testimonial) return res.status(404).json({ message: 'Testimonial not found' });
+
+    res.json({
+      id: testimonial.id,
+      title: testimonial.title,
+      content: testimonial.content,
+      author_name: testimonial.author_name,
+      author_position: testimonial.author_position,
+      image: testimonial.thumbnail_url,
+      created_at: testimonial.created_at
+    });
+  } catch (err) {
+    console.error('Error getTestimonialBySlug:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+

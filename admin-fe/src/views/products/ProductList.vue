@@ -117,15 +117,19 @@ const formatCurrency = (value) => value ? 'Rp ' + Number(value).toLocaleString('
 const fetchData = async () => {
   if (!permissions.value.canView) return
   try {
-    const { data } = await api.get(API_ENDPOINTS.posts, {
-      params: {
-        type: 'product',
-        page: page.value,
-        limit,
-        search: search.value,
-        status: statusFilter.value
-      }
-    })
+    const params = {
+      type: 'product',
+      page: page.value,
+      limit,
+      search: search.value
+    }
+
+    // Hanya tambahkan status jika ada filter dipilih
+    if (statusFilter.value) {
+      params.status = statusFilter.value
+    }
+
+    const { data } = await api.get(API_ENDPOINTS.posts, { params })
     items.value = data.data || []
     hasNextPage.value = page.value * limit < data.total
   } catch (err) {

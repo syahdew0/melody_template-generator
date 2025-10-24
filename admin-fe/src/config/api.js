@@ -81,8 +81,8 @@ postTypes: `${API_URL}/apis/admin/posts/types`,
   websiteSchema: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
   deleteByTag: (tag) => `${API_URL}/api/custom-pages/deleteByTag/${encodeURIComponent(tag)}`,
 
-  testimonials: `${API_URL}/api/admin/posts?type=testimonial`,
-  testimonialDetail: (id) => `${API_URL}/api/admin/posts/${id}`,
+  testimonials: `${API_URL}/apis/admin/posts?type=testimonial`,
+  testimonialDetail: (id) => `${API_URL}/apis/admin/posts/${id}`,
 
   MENU_GROUPS: `${API_URL}/api/menu-groups`,
   ASSIGN_MENU: (id) => `${API_URL}/api/menu-groups/${id}/assign`,
