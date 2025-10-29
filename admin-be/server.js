@@ -11,7 +11,7 @@ require('dotenv').config({
 
 process.env.API_URL =
   process.env.NODE_ENV === 'production'
-    ? process.env.API_URL || 'https://adminecommerce1.phisoft.co.id'
+    ? process.env.API_URL || 'https://apicompro.phisoft.co.id'
     : `http://localhost:${process.env.PORT || 3001}`;
 
 

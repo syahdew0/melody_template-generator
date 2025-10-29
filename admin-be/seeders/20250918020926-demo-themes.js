@@ -7,10 +7,10 @@ module.exports = {
     // =====================
 await queryInterface.bulkInsert('websites', [
   {
-    name: 'PSG Website',
+    name: 'Phisoft Website',
     user_id: null,
     subdomain: null,
-    site_title: 'PSG Website',
+    site_title: 'Phisoft Website',
     site_description: 'PSG Website',
     admin_email: null,
     logo: null,
