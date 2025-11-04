@@ -27,7 +27,9 @@ const MlmRegistration = sequelize.define('MlmRegistration', {
 }, {
   tableName: 'mlm_registrations',
   underscored: true,
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
   MlmRegistration.associate = (models) => {

@@ -9,12 +9,6 @@ require('dotenv').config({
   path: '.env'
 });
 
-process.env.API_URL =
-  process.env.NODE_ENV === 'production'
-    ? process.env.API_URL || 'https://apicompro.phisoft.co.id'
-    : `http://localhost:${process.env.PORT || 3001}`;
-
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -40,10 +34,7 @@ const whitelist = [];
 if (process.env.NODE_ENV === 'production') {
   whitelist.push(
     'https://psggroup.id',
-    'https://office.psggroup.id',
-    'https://adminecommerce1.phisoft.co.id',
-    'https://melodyv2.phisoft.co.id',
-    
+    'https://office.psggroup.id'
   );
 } else if (process.env.NODE_ENV === 'staging') {
   whitelist.push(
@@ -58,9 +49,6 @@ if (process.env.NODE_ENV === 'production') {
     'http://localhost:8082',
     'http://localhost:8083',
     'http://localhost:8084',
-    'http://localhost:8085',
-    'http://localhost:8086',
-    'http://localhost:8087',
     'http://localhost:1234',
   );
 }
@@ -135,15 +123,12 @@ app.use('/apis/custom-pages', require('./routes/customPagesRoutes'));
 app.use('/api/setting-logo', require('./routes/settingLogoRoutes'));
 app.use('/apis/admin/posts', require('./routes/postadminRoutes'));// admin
 app.use('/apis/categories', require('./routes/categoryRoutes'));
-// app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
+app.use('/apis/testimonials', require('./routes/TestimonialRoutes'));
 app.use('/apis/posts', require('./routes/postcustomerRoutes')); // publik
 app.use('/apis', require('./routes/menuRoutes'));
 app.use('/banks', require('./routes/masterbankRoutes'));
 app.use('/company-banks', require('./routes/companybankRoutes'));
 // app.use('/customer/company-banks', require('./routes/companybankRoutes'));
-
-app.use('/customer/products', require('./routes/customer/productvariantRoutes'));
-
 // Admin
 // app.use('/company-banks', require('./routes/admin/companyBank'));
 
@@ -151,7 +136,6 @@ app.use('/customer/products', require('./routes/customer/productvariantRoutes'))
 app.use('/customer/company-banks', require('./routes/customer/companybankRoutes'));
 app.use('/api/company-banks', require('./routes/companybankRoutes'));
 
-app.use('/api/admin/product-types', require('./routes/productTypeRoutes'));
 
 // === Protected Routes (Require Auth) ===
 app.use('/api', requireAuth);
@@ -194,7 +178,7 @@ app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
 // app.use('/api/public/banks', require('./routes/masterbankRoutes'));
 
-app.use('/api', require('./routes/productVariantRoutes'));
+
 
 // Setting Transaksi (tetap pakai tabel Setting)
 app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoutes'));
@@ -217,10 +201,6 @@ app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
 
 // server.js
 app.use('/apis/contact', require('./routes/contactRoutes'));
-app.use('/apis/brands', require('./routes/brandRoutes'));
-
-
-
 
 
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));

@@ -25,7 +25,7 @@
 
           <!-- Text -->
           <input
-            v-if="field.type === 'text' && key !== 'image'"
+            v-if="field.type === 'text' && key !== 'image' && key !== 'icon'"
             v-model="formData[key]"
             type="text"
             class="w-full border p-2 rounded"
@@ -41,30 +41,42 @@
             :required="field.required || false"
           />
 
-          <!-- Image Field with Media Picker -->
+          <!-- Image / Icon Field -->
           <div v-else-if="field.type === 'image'">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
               <input
                 v-model="formData[key]"
                 type="text"
+                placeholder="Masukkan URL gambar atau klik Pilih Media"
                 class="flex-1 border p-2 rounded"
                 :required="field.required || false"
-                readonly
               />
               <button
                 type="button"
                 class="bg-blue-600 text-white px-3 py-1 rounded"
                 @click="openMediaPicker(key)"
               >
-                Pilih Media
+                Pilih
+              </button>
+              <button
+                v-if="formData[key]"
+                type="button"
+                class="bg-red-500 text-white px-3 py-1 rounded"
+                @click="removeImage(key)"
+              >
+                Hapus
               </button>
             </div>
-            <div v-if="formData[key]" class="mt-2">
+
+            <div v-if="formData[key]" class="mt-2 flex items-center gap-2">
               <img
                 :src="formData[key]"
                 alt="Preview"
-                class="w-32 h-32 object-cover border rounded"
+                class="w-24 h-24 object-cover border rounded"
               />
+              <span class="text-xs text-gray-500 break-all">{{
+                formData[key]
+              }}</span>
             </div>
           </div>
 
@@ -79,6 +91,7 @@
         </div>
       </div>
 
+      <!-- Tombol Simpan -->
       <div class="mt-6 flex gap-4">
         <button
           @click="submitForm"
@@ -129,24 +142,20 @@ const formData = ref({})
 const showMediaPicker = ref(false)
 const activeImageFieldKey = ref('')
 
-// Buat field default jika tidak tersedia
+// Schema default
 const fields = computed(() => {
   if (!sectionSchema.value) return {}
-
   const result = { ...sectionSchema.value }
   result.title = result.title || { type: 'text', required: true }
-  result.content = result.content || { type: 'content html', required: true }
+  result.content = result.content || { type: 'html', required: false }
   result.image = result.image || { type: 'image', required: false }
-  result.link = result.link || { type: 'text', required: false }
   result.icon = result.icon || { type: 'image', required: false }
+  result.link = result.link || { type: 'text', required: false }
   delete result.label
   return result
 })
 
-
-const goBack = () => {
-  router.back()
-}
+const goBack = () => router.back()
 
 // Ambil schema
 const fetchSchema = async () => {
@@ -154,46 +163,36 @@ const fetchSchema = async () => {
     const res = await axios.get(API_ENDPOINTS.websiteSchema(websiteId))
     const schemaRaw = res.data.schema || res.data.theme?.schema
     themeId.value = res.data.theme?.id || 1
-    console.log('Raw schema:', schemaRaw)
 
     const parsed = typeof schemaRaw === 'string' ? JSON.parse(schemaRaw) : schemaRaw
     const allSchemas = parsed?.custom_page || {}
-
-    console.log('Parsed schema:', allSchemas)
-    console.log('Page:', page.value, 'Section:', section.value)
-    console.log('Page schema keys:', Object.keys(allSchemas[page.value] || {}))
-
     sectionSchema.value = allSchemas[page.value]?.[section.value] || null
   } catch (err) {
     console.error('Gagal ambil schema:', err)
-    alert('Gagal memuat schema tema')
+    toast.error('Gagal memuat schema tema')
   }
 }
 
-
-// Ambil data jika edit
+// Ambil data untuk edit
 const fetchItemData = async () => {
   if (!editId.value) return
-
   try {
     const res = await axios.get(`${API_ENDPOINTS.customPages}/${editId.value}`)
     const item = res.data
-    const parsed = typeof item.items === 'string'
-      ? JSON.parse(item.items)
-      : item.items
+    const parsed =
+      typeof item.items === 'string' ? JSON.parse(item.items) : item.items
     formData.value = parsed || {}
   } catch (err) {
     console.warn('Gagal parse item:', err)
   }
 }
 
-// Buka modal media picker
+// Media Picker
 const openMediaPicker = (key) => {
   activeImageFieldKey.value = key
   showMediaPicker.value = true
 }
 
-// Saat gambar dipilih
 const selectImage = (url) => {
   if (activeImageFieldKey.value) {
     formData.value[activeImageFieldKey.value] = url
@@ -201,9 +200,14 @@ const selectImage = (url) => {
   showMediaPicker.value = false
 }
 
+// Hapus gambar/icon
+const removeImage = (key) => {
+  formData.value[key] = ''
+  toast.info(`Field ${key} dihapus`)
+}
+
 onMounted(async () => {
   await fetchSchema()
-
   if (!sectionSchema.value) {
     loading.value = false
     return
@@ -212,7 +216,6 @@ onMounted(async () => {
   if (editId.value) {
     await fetchItemData()
   } else {
-    // default create
     const copy = { ...sectionSchema.value }
     delete copy.label
     formData.value = {}
@@ -220,12 +223,10 @@ onMounted(async () => {
       formData.value[key] = ''
     }
   }
-
   loading.value = false
 })
 
-
-// Simpan
+// Simpan data
 const submitForm = async () => {
   const payload = {
     title: formData.value.title || 'Untitled',
@@ -236,7 +237,7 @@ const submitForm = async () => {
     image: formData.value.image || null,
     is_active: true,
     created_by: 'admin',
-    items: { ...formData.value }
+    items: { ...formData.value },
   }
 
   try {
@@ -245,8 +246,7 @@ const submitForm = async () => {
     } else {
       await axios.post(API_ENDPOINTS.customPages, payload)
     }
-
-toast.success('Berhasil disimpan')
+    toast.success('Berhasil disimpan')
     router.back()
   } catch (err) {
     console.error('Gagal menyimpan:', err)

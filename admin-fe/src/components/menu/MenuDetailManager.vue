@@ -83,11 +83,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted,  watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import MenuTree from './MenuTree.vue';
-import { API_ENDPOINTS } from '@/config/api'; 
+import { API_ENDPOINTS } from '@/config/api';
 
 const route = useRoute();
 const groupId = route.params.id;
@@ -96,7 +96,9 @@ const group = ref({});
 const menuItems = ref([]);
 const treeData = ref([]);
 const showForm = ref(false);
+
 const form = ref({
+  id: null,
   title: '',
   type: 'custom',
   slug: '',
@@ -127,7 +129,6 @@ const loadPages = async () => {
   }
 };
 
-
 const loadItems = async () => {
   const res = await axios.get(API_ENDPOINTS.MENU_ITEMS(groupId));
   menuItems.value = res.data;
@@ -146,39 +147,33 @@ const buildTree = (items, parentId = null) => {
 const submitForm = async () => {
   // Generate path otomatis
   if (form.value.type === 'page') {
-    form.value.path = `/pages/${form.value.slug}`
+    form.value.path = `/pages/${form.value.slug}`;
   } else if (form.value.type === 'category') {
-    form.value.path = `/category/${form.value.slug}`
+    form.value.path = `/category/${form.value.slug}`;
   }
 
-  if (form.value.id) {
-    await axios.put(API_ENDPOINTS.UPDATE_MENU_ITEM(form.value.id), form.value);
-  } else {
-    await axios.post(API_ENDPOINTS.CREATE_MENU_ITEM, {
-      ...form.value,
-      menu_group_id: groupId,
-    });
+  try {
+    if (form.value.id) {
+      // 🔹 Edit data (PUT)
+      await axios.put(API_ENDPOINTS.UPDATE_MENU_ITEM(form.value.id), form.value);
+    } else {
+      // 🔹 Tambah data baru (POST)
+      await axios.post(API_ENDPOINTS.CREATE_MENU_ITEM, {
+        ...form.value,
+        menu_group_id: groupId,
+      });
+    }
+
+    await loadItems();
+    resetForm();
+  } catch (err) {
+    console.error('Gagal menyimpan menu:', err);
   }
-
-  if (form.value.id) {
-  await axios.put(API_ENDPOINTS.UPDATE_MENU_ITEM(form.value.id), form.value);
-} else {
-  await axios.post(API_ENDPOINTS.CREATE_MENU_ITEM, {
-    ...form.value,
-    menu_group_id: groupId,
-  });
-}
-
-  await loadPages(); 
-  await loadItems(); // Refresh daftar menu
-
-  resetForm();       // Reset form setelah submit
 };
 
 const editItem = async (item) => {
-  await loadPages(); // Pastikan pages sudah dimuat dulu
+  await loadPages();
 
-  // Tambahkan title dummy jika page tidak ada
   if (item.type === 'page' && item.slug) {
     const exists = pages.value.some(p => p.slug === item.slug);
     if (!exists) {
@@ -196,31 +191,10 @@ const editItem = async (item) => {
     slug: item.slug || '',
     path: item.path || '',
     parent_id: item.parent_id || null,
-      openInNewTab: item.open_in_new_tab || false,
+    openInNewTab: item.open_in_new_tab || false,
   };
 
   showForm.value = true;
-};
-
-const loadPagesIfNeeded = async (item) => {
-  try {
-    const res = await axios.get(`${API_ENDPOINTS.posts}`, {
-      params: { type: 'page', status: 'published', limit: 1000 },
-    });
-    pages.value = res.data.data || res.data;
-
-    if (item?.type === 'page' && item.slug) {
-      const exists = pages.value.some(p => p.slug === item.slug);
-      if (!exists) {
-        pages.value.unshift({
-          slug: item.slug,
-          title: `(Halaman tidak ditemukan: ${item.slug})`,
-        });
-      }
-    }
-  } catch (err) {
-    console.error('Gagal ambil daftar halaman:', err);
-  }
 };
 
 const deleteItem = async (item) => {
@@ -232,11 +206,13 @@ const deleteItem = async (item) => {
 
 const resetForm = () => {
   form.value = {
+    id: null,
     title: '',
     type: 'custom',
     slug: '',
     path: '',
     parent_id: null,
+    openInNewTab: false,
   };
   showForm.value = false;
 };
@@ -250,11 +226,9 @@ watch(() => form.value.type, async (newType) => {
   }
 });
 
-
 onMounted(() => {
   loadGroup();
   loadItems();
   loadPages();
-   loadPagesIfNeeded();
 });
 </script>

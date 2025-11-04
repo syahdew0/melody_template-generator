@@ -21,4 +21,3 @@ module.exports = {
     await queryInterface.removeColumn('posts', 'author_position')
   }
 }
-

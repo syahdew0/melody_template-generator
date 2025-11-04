@@ -34,19 +34,19 @@ exports.getTree = async (req, res) => {
     const rootId = req.query.rootId ? parseInt(req.query.rootId) : req.customer.id;
 
     // Ambil semua registrasi aktif beserta data customer dan paket
-    const registrations = await MlmRegistration.findAll({
-      where: { status: 'active' },
-      include: [
-        { model: Customer, as: 'customer', attributes: ['id', 'username', 'referral'] },
-        { model: MLMPackage, as: 'package', attributes: ['MLMPackageName'] },
-      ]
-    });
+const registrations = await MlmRegistration.findAll({
+  where: { status: 'active' },
+  include: [
+    { model: Customer, as: 'Customer', attributes: ['id', 'username', 'referral'] },
+    { model: MLMPackage, as: 'package', attributes: ['MLMPackageName'] },
+  ]
+});
 
     // Mapping ke array sederhana
     const users = registrations.map(r => ({
       customer_id: r.customer_id,
-      username: r.customer.username,
-      package: r.package ? r.package.MLMPackageName : '',
+      username: r.Customer?.username || 'Unknown',
+      package: r.package?.MLMPackageName || '',
       upline_id: r.upline_id,
       placement_pos: r.placement_pos
     }));
@@ -58,7 +58,6 @@ exports.getTree = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Root user tidak ditemukan' });
     }
 
-    // 🔹 Bangun tree + inject total_downline root
     const tree = [{
       id: rootReg.customer_id,
       username: rootReg.username,

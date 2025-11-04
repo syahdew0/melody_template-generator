@@ -69,33 +69,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { API_ENDPOINTS } from '@/config/api'
 import { useToast } from 'vue-toastification'
 
-
 const toast = useToast()
-// Router
 const route = useRoute()
 const router = useRouter()
 const page = route.params.page
 
-// Data
 const customPages = ref({})
 const items = ref([])
 
-// Ambil websiteId dari localStorage user
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 const websiteId = user?.website_id || 1
 
-// Fungsi kembali
 function goBack() {
   router.push('/admin/custom-pages')
 }
 
-// Ambil schema dari theme aktif
+// === Tambahan: simpan dan restore posisi scroll ===
+function saveScrollPosition() {
+  localStorage.setItem('customPageScroll', window.scrollY)
+}
+
+async function restoreScrollPosition() {
+  const y = Number(localStorage.getItem('customPageScroll') || 0)
+  await nextTick() // tunggu DOM selesai render
+  window.scrollTo({ top: y, behavior: 'smooth' })
+}
+
 const fetchSchema = async () => {
   try {
     const res = await axios.get(API_ENDPOINTS.activeTheme(websiteId))
@@ -113,7 +118,6 @@ const fetchSchema = async () => {
   }
 }
 
-// Ambil semua item konten
 const fetchItems = async () => {
   try {
     const res = await axios.get(API_ENDPOINTS.customPages)
@@ -127,29 +131,22 @@ const fetchItems = async () => {
   }
 }
 
-// Items per section
 const getSectionItems = (sectionKey) => {
   return items.value.filter((i) => i.tag === `${page}-${sectionKey}`)
 }
 
-// Dapatkan section dari halaman ini
-const pageSections = computed(() => {
-  return customPages.value?.[page] || {}
-})
+const pageSections = computed(() => customPages.value?.[page] || {})
 
-// Aksi
 const addItem = (sectionKey) => {
+  saveScrollPosition()
   router.push({ name: 'CustomPageSection', params: { page, section: sectionKey } })
 }
 
 const editItem = (item, sectionKey) => {
+  saveScrollPosition()
   router.push({
     name: 'CustomPageSection',
-    params: {
-      page,
-      section: sectionKey,
-      id: item.id
-    }
+    params: { page, section: sectionKey, id: item.id }
   })
 }
 
@@ -158,7 +155,7 @@ const deleteItem = async (item) => {
   try {
     await axios.delete(`${API_ENDPOINTS.customPages}/${item.id}`)
     await fetchItems()
-  toast.success('Berhasil dihapus')
+    toast.success('Berhasil dihapus')
   } catch (err) {
     console.error('Gagal menyimpan:', err)
     toast.error('Gagal menyimpan')
@@ -168,6 +165,7 @@ const deleteItem = async (item) => {
 onMounted(async () => {
   await fetchSchema()
   await fetchItems()
+  await restoreScrollPosition()
 })
 </script>
 

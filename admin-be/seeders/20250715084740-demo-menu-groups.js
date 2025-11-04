@@ -18,7 +18,7 @@ module.exports = {
         slug: 'footer',
         is_main: 0,
         is_footer: 1,
-        is_top: 0,
+        is_top: 0, 
         type: 'default',
         created_at: new Date(),
         updated_at: new Date()
