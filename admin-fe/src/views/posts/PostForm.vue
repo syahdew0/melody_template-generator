@@ -6,7 +6,7 @@
         <label class="block font-semibold text-gray-700 mb-1">Title</label>
         <input v-model="form.title" @input="generateSlug"
           placeholder="Add Title"
-          class="w-full text-4xl font-bold border-none focus:ring-0 placeholder-gray-400"
+          class="w-full text-4xl font-bold border border-gray-300 focus:ring-0 placeholder-gray-400"
         />
       </div>
 
@@ -28,6 +28,22 @@
           class="min-h-[300px] bg-white border rounded"
         />
       </div>
+      <!-- Additional Kolom (Fixed 5 Fields) -->
+<div class="bg-white border rounded shadow-sm p-4">
+  <h3 class="font-semibold mb-2">Additional Fields</h3>
+
+  <div v-for="n in 5" :key="n" class="mb-3">
+    <label class="block text-sm font-medium mb-1">
+      Additional Kolom {{ n }}
+    </label>
+    <input
+      v-model="form.additional[n - 1]"
+      :placeholder="'Isi Additional Kolom ' + n"
+      class="w-full p-2 border rounded"
+    />
+  </div>
+</div>
+
     </div>
 
     <!-- Sidebar -->
@@ -43,12 +59,13 @@
 
       <div class="bg-white border rounded shadow-sm p-4">
         <h3 class="font-semibold mb-2">Featured Image</h3>
-        <button
-          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
-          @click="showMediaPicker = true"
-        >
-          Select Image
-        </button>
+<button
+  class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
+  @click="showMediaPicker = true; pickerTarget = 'thumbnail'"
+>
+  Select Image
+</button>
+
 
         <div v-if="form.thumbnail_url" class="mt-3">
           <img
@@ -70,6 +87,36 @@
           @select="selectImage"
         />
       </div>
+      <!-- Other Images -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">Other Images</h3>
+        <button
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
+          @click="showMediaPicker = true; pickerTarget = 'other_images'"
+        >
+          Add Images
+        </button>
+
+        <div v-if="form.other_images.length" class="mt-3 grid grid-cols-3 gap-2">
+          <div
+            v-for="(img, index) in form.other_images"
+            :key="index"
+            class="relative group"
+          >
+            <img
+              :src="getImageUrl(img)"
+              alt="Other Image"
+              class="rounded shadow object-cover w-full h-24"
+            />
+            <button
+              @click="removeOtherImage(index)"
+              class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div class="bg-white border rounded shadow-sm p-4">
         <h3 class="font-semibold mb-2">Categories</h3>
@@ -88,6 +135,8 @@
           </div>
         </div>
       </div>
+
+  
 
       <div class="bg-white border rounded shadow-sm p-4">
         <h3 class="font-semibold mb-2">SEO</h3>
@@ -143,9 +192,11 @@ export default {
         content: '',
         status: 'draft',
         thumbnail_url: '',
+        other_images:[],
         website_id: 1,
         user_id: 1,
-        category_ids: []
+        category_ids: [],
+        additional: [''],
       },
       seo: {
         meta_title: '',
@@ -153,7 +204,8 @@ export default {
       },
       categories: [],
       isEdit: false,
-      showMediaPicker: false
+      showMediaPicker: false,
+      pickerTarget: 'thumbnail'
     }
   },
   methods: {
@@ -165,13 +217,34 @@ export default {
       .replace(/[^\w-]+/g, '')
   }
 },
-    getImageUrl(path) {
-      return path.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`
-    },
-    selectImage(url) {
-      this.form.thumbnail_url = url
-      this.showMediaPicker = false
-    },
+  getImageUrl(path) {
+  return path.startsWith('http') ? path : API_ENDPOINTS.media(path)
+},
+    // selectImage(url) {
+    //   this.form.thumbnail_url = url
+    //   this.showMediaPicker = false
+    // },
+selectImage(url) {
+  if (this.pickerTarget === 'thumbnail') {
+    this.form.thumbnail_url = url
+  } else if (this.pickerTarget === 'other_images') {
+    if (!this.form.other_images.includes(url)) {
+      this.form.other_images.push(url)
+    }
+  }
+  this.showMediaPicker = false
+  this.pickerTarget = 'thumbnail' // reset ke default
+},
+
+  removeOtherImage(index) {
+    this.form.other_images.splice(index, 1)
+  },
+
+  addAdditionalField() {
+  if (this.form.additional.length < 5) {
+    this.form.additional.push('')
+  }
+},
 async fetchPost() {
   try {
     const slug = this.$route.params.slug;
@@ -180,9 +253,16 @@ async fetchPost() {
 
     this.form = {
       ...post,
-      category_ids: post.post_categories?.map(c => c.category.id) || [],  // sesuaikan struktur response backend
-      id: post.id
+      category_ids: post.post_categories?.map(c => c.category.id) || [], 
+      other_images: Array.isArray(post.other_images) ? post.other_images : [],
     };
+    this.form.additional = [
+    post.additional_kolom1,
+    post.additional_kolom2,
+    post.additional_kolom3,
+    post.additional_kolom4,
+    post.additional_kolom5
+  ].filter(v => v && v.trim() !== '');
 
     // Ambil meta dari post.meta
     if (post.meta?.length > 0) {
@@ -222,8 +302,14 @@ async savePost() {
 
   const payload = {
     ...this.form,
-    category_ids: [...this.form.category_ids], // ubah Proxy jadi array
+    other_images: this.form.other_images,
+    category_ids: [...this.form.category_ids], 
     type: 'post',
+    additional_kolom1: this.form.additional[0] || '',
+    additional_kolom2: this.form.additional[1] || '',
+    additional_kolom3: this.form.additional[2] || '',
+    additional_kolom4: this.form.additional[3] || '',
+    additional_kolom5: this.form.additional[4] || '',
     meta
   };
 

@@ -26,7 +26,7 @@ const user = ref({});
 const registration = ref({});
 const downlines = ref([]);
 
-const customerId = 1; // contoh ID, bisa diambil dari login
+const customerId = 1; 
 
 onMounted(async () => {
   const res = await axios.get(`/api/mlm/network/${customerId}`);

@@ -173,6 +173,10 @@ app.use('/api/admin/custom-pages', require('./routes/customPagesRoutes'));
 
 app.use('/api/admin/themes', require('./routes/themeRoutes'));
 
+app.use('/api', require('./routes/productVariantRoutes'));
+app.use('/customer', require('./routes/productVariantRoutes'));
+app.use('/api/admin/product-types', require('./routes/productTypeRoutes'));
+
 // Transaksi routes (Topup, Withdraw, Adjust)
 app.use('/api/transaksi', require('./routes/transaksiadminRoutes'));
 app.use('/customer/transaksi', require('./routes/transaksicustomerRoutes'));
@@ -186,6 +190,7 @@ app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoute
 app.use('/customer/settings-transaksi', require('./routes/customer/settingTransaksiRoutes'))
 
 app.use('/customer/address', require('./routes/customer/customerAddressRoutes'));
+// app.use('/api/address', require('./routes/customer/customerAddressRoutes'));
 // app.use('/customer/rajaongkir', require('./routes/customer/rajaongkirRoutes'));
 app.use('/customer/orders', require('./routes/customer/orderRoutes'));
 // server.js
@@ -197,12 +202,13 @@ app.use('/apis/comments', require('./routes/customer/commentRoutes'));
 // Admin (butuh auth)
 app.use('/apis/comments', require('./routes/admin/commentAdminRoutes'));
 
+app.use('/apis/brands', require('./routes/brandRoutes'));
 
 
 // server.js
 app.use('/apis/contact', require('./routes/contactRoutes'));
 
-
+app.use('/apis/admin', require('./routes/listing/listingRoutes'));
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));
 
 // app.use('/api/menu-groups', require('./routes/menuGroupRoutes'));

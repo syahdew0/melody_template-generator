@@ -1,4 +1,4 @@
-const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption, Brand } = require('../models')
+const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption, Brand, Listing, listing_type } = require('../models')
 const { Op } = require('sequelize')
 const cron = require('node-cron');
 
@@ -114,10 +114,31 @@ exports.create = async (req, res) => {
   try {
     const {
       website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id, author_name, author_position,
-      meta = [], product_detail = {}, variations = []
+      thumbnail_url, other_images = [], status, type, template, parent_id, author_name, author_position,
+      meta = [], product_detail = {}, variations = [],
+      additional_kolom1,
+      additional_kolom2,
+      additional_kolom3,
+      additional_kolom4,
+      additional_kolom5
     } = req.body;
 
+    const {
+      listing_type,
+      price,
+      kondisi,
+      latitude,
+      longitude,
+      provinsi,
+      kabupaten,
+      kecamatan,
+      kelurahan,
+      listing_values = [],
+    } = req.body;
+
+      // LISTING VALUES
+    let fixed_listing_values = Array.isArray(listing_values) ? listing_values : [];
+    
     // Buat slug unik
     const slugify = (text) => text.toString().toLowerCase().trim().replace(/[\s\W-]+/g, '-');
     let baseSlug = slug && slug !== '' ? slugify(slug) : slugify(title || 'untitled');
@@ -141,6 +162,7 @@ exports.create = async (req, res) => {
       content,
       excerpt,
       thumbnail_url,
+      other_images,
       status,
       published_at: status === 'published' ? new Date() : null,
       type,
@@ -148,9 +170,40 @@ exports.create = async (req, res) => {
       template,
       parent_id,
       author_name,
-      author_position
+      author_position,
+      additional_kolom1,
+      additional_kolom2,
+      additional_kolom3,
+      additional_kolom4,
+      additional_kolom5
     });
 
+if (listing_type || (Array.isArray(listing_values) && listing_values.length > 0)) {
+  await Listing.create({
+    post_id: post.id,
+    listing_type,
+    price,
+    kondisi,
+    latitude,
+    longitude,
+    provinsi,
+    kabupaten,
+    kecamatan,
+    kelurahan
+  })
+
+  if (Array.isArray(fixed_listing_values) && fixed_listing_values.length > 0) {
+    const values = fixed_listing_values.map(v => ({
+      post_id: post.id,
+      tag_name: v.tag_name,
+      language_id: v.language_id || 1,
+      value: v.value
+    }));
+    
+    await ListingValue.bulkCreate(values);
+  }
+}
+    
     // META
     if (meta.length > 0) {
       const metas = meta.map(m => ({ post_id: post.id, meta_key: m.meta_key, meta_value: m.meta_value }));
@@ -231,19 +284,24 @@ exports.update = async (req, res) => {
     const postId = req.params.id;
     const {
       website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url, status, type, template, parent_id, author_name, author_position,
-      meta = [], product_detail = {}, category_ids = []
+      thumbnail_url,other_images = [], status, type, template, parent_id, author_name, author_position,
+      meta = [], product_detail = {}, category_ids = [],
+      additional_kolom1,
+      additional_kolom2,
+      additional_kolom3,
+      additional_kolom4,
+      additional_kolom5
     } = req.body;
 
     const typeMap = {
-  post: 1,
-  page: 2,
-  product: 3,
-  testimonial: 4,
-  custom_page: 5
-};
+    post: 1,
+    page: 2,
+    product: 3,
+    testimonial: 4,
+    custom_page: 5
+  };
 
-const type_id = typeMap[type] || null;
+    const type_id = typeMap[type] || null;
 
     const variations = product_detail?.variations || [];
 
@@ -261,15 +319,22 @@ const type_id = typeMap[type] || null;
       excerpt,
       thumbnail_url,
       status,
+      other_images,
       published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      type,
+      ...(type ? { type } : {}),
       type_id, 
       template,
       parent_id,
       author_name,
-      author_position
+      author_position,
+      additional_kolom1,
+      additional_kolom2,
+      additional_kolom3,
+      additional_kolom4,
+      additional_kolom5
     });
 
+    
     // META
     await PostMeta.destroy({ where: { post_id: postId } });
     if (meta.length > 0) {
@@ -626,7 +691,7 @@ exports.updateBySlug = async (req, res) => {
     const { slug } = req.params;
     const {
       website_id, user_id, title, slug: newSlug, content,
-      excerpt, thumbnail_url, status, type, template, parent_id,author_name, author_position,
+      excerpt, thumbnail_url, other_images = [], status, type, template, parent_id,author_name, author_position,
       meta = [], product_detail = {}, category_ids = [], variations = []
     } = req.body;
         const typeMap = {
@@ -649,6 +714,7 @@ exports.updateBySlug = async (req, res) => {
       content: content !== undefined ? content : post.content,
       excerpt,
       thumbnail_url,
+      other_images,
       status,
       published_at: status === 'published' ? (post.published_at || new Date()) : null,
       type,

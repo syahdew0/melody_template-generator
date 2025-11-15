@@ -5,7 +5,7 @@ exports.getJoinMLMTransactions = async (req, res) => {
   try {
     const regs = await MlmRegistration.findAll({
       include: [
-        { model: Customer, as: 'customer', attributes: ['id', 'username', 'email'] },
+        { model: Customer, as: 'Customer', attributes: ['id', 'username', 'email'] },
         { model: MLMPackage, as: 'package', attributes: ['MLMPackageID', 'MLMPackageName'] },
         { model: Customer, as: 'upline', attributes: ['id', 'username'] },
         { model: Customer, as: 'referrer', attributes: ['id', 'username'] },
@@ -15,7 +15,7 @@ exports.getJoinMLMTransactions = async (req, res) => {
 
     const formatted = regs.map((r) => ({
       id: r.id,
-      username: r.customer?.username || '-',
+      username: r.Customer?.username || '-',
       package: r.package?.MLMPackageName || '-',
       upline: r.upline?.username || '-',
       referrer: r.referrer?.username || '-',

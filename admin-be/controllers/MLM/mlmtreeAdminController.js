@@ -4,11 +4,11 @@ async function buildTree(customerId, depth = 3) {
   if (depth <= 0) return null;
 
   const node = await MlmRegistration.findOne({
-    where: { customer_id: customerId },   
+    where: { customer_id: customerId },
     include: [
       {
         model: Customer,
-        as: 'customer',
+        as: 'Customer', 
         attributes: ['id', 'username', 'email']
       },
       {
@@ -39,10 +39,10 @@ async function buildTree(customerId, depth = 3) {
     id: node.id,
     placement_pos: node.placement_pos,
     level: node.mlm_level,
-    customer: node.customer ? {
-      id: node.customer.id,
-      username: node.customer.username,
-      email: node.customer.email
+    customer: node.Customer ? { // ✅ huruf besar
+      id: node.Customer.id,
+      username: node.Customer.username,
+      email: node.Customer.email
     } : null,
     upline: node.upline ? { id: node.upline.id, username: node.upline.username } : null,
     referrer: node.referrer ? { id: node.referrer.id, username: node.referrer.username } : null,
@@ -59,7 +59,7 @@ async function buildTree(customerId, depth = 3) {
     where: { upline_id: node.customer_id },
     attributes: ['id', 'customer_id', 'placement_pos', 'mlm_level'],
     include: [
-      { model: Customer, as: 'customer', attributes: ['id', 'username'] },
+      { model: Customer, as: 'Customer', attributes: ['id', 'username'] },
       { model: MLMPackage, as: 'package', attributes: [['MLMPackageID', 'id'], 'MLMPackageName', 'PackageValue'] }
     ]
   });
@@ -81,13 +81,13 @@ exports.getAdminTree = async (req, res) => {
     if (rootCustomerId) {
       root = await MlmRegistration.findOne({
         where: { customer_id: rootCustomerId },
-        include: [{ model: Customer, as: 'customer', attributes: ['id', 'username'] }]
+        include: [{ model: Customer, as: 'Customer', attributes: ['id', 'username'] }] 
       });
     } else {
       // default: founder MLM (upline_id = NULL)
       root = await MlmRegistration.findOne({
         where: { upline_id: null },
-        include: [{ model: Customer, as: 'customer', attributes: ['id', 'username'] }]
+        include: [{ model: Customer, as: 'Customer', attributes: ['id', 'username'] }] 
       });
     }
 
@@ -95,10 +95,10 @@ exports.getAdminTree = async (req, res) => {
       return res.status(404).json({ message: 'Tidak ada data MLM' });
     }
 
-    const tree = await buildTree(root.customer_id, 5); 
+    const tree = await buildTree(root.customer_id, 5);
     res.json({ success: true, data: tree });
   } catch (err) {
     console.error('Error getAdminTree:', err);
-    res.status(500).json({ success: false, message: 'Gagal load MLM tree' });
+    res.status(500).json({ success: false, message: err.message });
   }
 };

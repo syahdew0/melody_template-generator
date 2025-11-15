@@ -12,28 +12,6 @@
     <nav class="flex-1 px-4 py-6 overflow-y-auto max-h-[calc(100vh-100px)]">
       <ul class="space-y-2">
 
-        <!-- Static -->
-        <!-- <li>
-          <router-link 
-            to="/admin/menus" 
-            class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200"
-             :class="{ 'bg-slate-700/70 text-amber-400': isActivePath('/admin/menus') }"
-          >
-            <span class="font-medium">Navbar Menu</span>
-          </router-link>
-        </li> -->
-
-        <!-- Footer -->
-        <!-- <li>
-          <router-link 
-              to="/admin/adminfooter" 
-              class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 hover:text-amber-400 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg text-slate-200"
-              :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActivePath('/admin/adminfooter') }"
-            >
-              <span class="font-medium">Footer</span>
-            </router-link>
-        </li> -->
-
     <li class="relative">
       <div 
         @click.stop="toggleSubDropdown('dashboard')" 
@@ -88,6 +66,39 @@
           </ul>
         </transition>
       </li>
+
+      <li class="relative">
+  <div
+    @click.stop="toggleSubDropdown('listing')"
+    class="dropdown-btn flex items-center gap-2"
+    :class="subDropdownOpen === 'listing' ? 'text-amber-400 bg-slate-700/50' : ''"
+  >
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M4 4h16v2H4zm0 6h16v2H4zm0 6h16v2H4z"/>
+    </svg>
+    <span class="font-regular">Listing</span>
+    <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'listing' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd"
+        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+        clip-rule="evenodd"/>
+    </svg>
+  </div>
+
+  <!-- LISTING TYPE DROPDOWN -->
+  <transition>
+    <ul v-show="subDropdownOpen === 'listing'" class="dropdown-submenu">
+   <li v-for="type in listingTypes" :key="type.id">
+  <router-link
+    :to="{ name: 'ListingForm', params: { listingTypeId: type.id } }"
+    class="px-4 py-2 block hover:bg-slate-700"
+    :class="{ 'bg-slate-700 text-amber-400': isActiveListing(type.id) }"
+  >
+    {{ type.name }}
+  </router-link>
+</li>
+    </ul>
+  </transition>
+</li>
 
       <!-- Media -->
       <li class="relative">
@@ -175,13 +186,7 @@
            
             </li> 
               <li>
-                <!-- <router-link
-                  to="/admin/adminfooter"
-                  class="submenu-link"
-                  :class="{ 'bg-slate-700/70 text-amber-400 font-regular': isActivePath('/adminfooter') }"
-                >
-                  Menu Footer
-                </router-link> -->
+
               </li>
             </ul>
           </transition>
@@ -350,43 +355,6 @@
   </transition>
 </li>
 
-      <!-- <li class="relative">
-        <router-link
-          :to="{ name: 'SiteSetting' }"
-          class="dropdown-btn flex items-center gap-2"
-          :class="{ 'text-amber-400 bg-slate-700/50': isActiveName('SiteSetting') }"
-        >
-     
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M11.983 2.25c.621 0 1.198.385 1.405.978l.347.98a1.162 1.162 0 001.494.723l.962-.321a1.374 1.374 0 011.61.628l.28.488a1.375 1.375 0 01-.268 1.684l-.77.77a1.125 1.125 0 000 1.59l.77.77a1.375 1.375 0 01.268 1.684l-.28.488a1.374 1.374 0 01-1.61.628l-.962-.321a1.162 1.162 0 00-1.494.723l-.347.98a1.417 1.417 0 01-1.405.978h-.002a1.417 1.417 0 01-1.405-.978l-.347-.98a1.162 1.162 0 00-1.494-.723l-.962.321a1.374 1.374 0 01-1.61-.628l-.28-.488a1.375 1.375 0 01.268-1.684l.77-.77a1.125 1.125 0 000-1.59l-.77-.77a1.375 1.375 0 01-.268-1.684l.28-.488a1.374 1.374 0 011.61-.628l.962.321a1.162 1.162 0 001.494-.723l.347-.98c.207-.593.784-.978 1.405-.978z" />
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span class="font-regular text-md">Site Setting</span>
-        </router-link>
-      </li> -->
-
-
-      <!-- Testimonials -->
-      <!-- <li class="relative">
-        <div @click.stop="toggleSubDropdown('testimonials')" class="dropdown-btn flex items-center gap-2" :class="subDropdownOpen === 'testimonials' ? 'text-amber-400 bg-slate-700/50' : ''">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
-          <span>Testimonials</span>
-          <svg class="w-3 h-3 ml-auto" :class="subDropdownOpen === 'testimonials' ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <transition>
-          <ul v-show="subDropdownOpen === 'testimonials'" class="dropdown-submenu">
-            <router-link :to="{ name: 'TestimonialList' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialList') }">All Testimonials</router-link>
-            <router-link :to="{ name: 'TestimonialCreate' }" class="submenu-link" :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TestimonialCreate') }">Add Testimonials</router-link>
-          </ul>
-        </transition>
-      </li> -->
-
       <!-- Transaksi -->
         <li class="relative">
             <!-- Toggle Button -->
@@ -427,15 +395,6 @@
                   :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('Adjust') }">
                   Adjust
                 </router-link>
-
-                
-
-                 <!-- <router-link 
-                  :to="{ name: 'TransaksiHistory' }" 
-                  class="submenu-link" 
-                  :class="{ 'bg-slate-700/70 text-amber-400 font-semibold': isActiveName('TransaksiHistory') }">
-                  Transaksi History
-                </router-link> -->
 
                 <router-link 
                   :to="{ name: 'TransaksiHistoryPage' }" 
@@ -620,39 +579,6 @@
               </router-link>
             </li>
 
-      <!-- Paket (hanya toggle, tidak bisa di-route langsung) -->
-      <!-- <li>
-        <div
-          class="submenu-link flex items-center justify-between cursor-pointer"
-          @click="toggleSubDropdown('paket')"
-          :class="subDropdownOpen === 'paket' ? 'text-amber-400 bg-slate-700/50' : ''"
-        >
-          <span>Paket</span>
-          <svg
-            class="w-3 h-3 ml-2 transition-transform"
-            :class="subDropdownOpen === 'paket' ? 'rotate-180' : ''"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M5.293 7.293a1 1 0 011.414 0L10 
-                 10.586l3.293-3.293a1 1 0 
-                 111.414 1.414l-4 4a1 1 0 
-                 01-1.414 0l-4-4a1 1 0 
-                 010-1.414z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </div> -->
-
-        <!-- Submenu Paket -->
-        <!-- <transition>
-          <ul v-show="subDropdownOpen === 'paket'" class="dropdown-submenu pl-4">
-           
-          </ul>
-        </transition> -->
-      <!-- </li> -->
     </ul>
   </transition>
 </li>
@@ -670,16 +596,20 @@
 </template>
 
 <script>
+import { API_ENDPOINTS } from '@/config/api'
+import axios from 'axios'
+
 export default {
   props: {
     isOpen: Boolean
   },
-  emits: ['update:isOpen'],
+  emits: ['update:isOpen', 'select-listing-type'],
   data() {
     return {
       sidebarOpen: true,
       dropdownOpen: '',
-      subDropdownOpen: ''
+      subDropdownOpen: '',
+       listingTypes: []
     }
   },
   created() {
@@ -696,8 +626,13 @@ export default {
   } else {
     this.subDropdownOpen = ''
   }
+
+  this.fetchListingTypes() 
 },
   methods: {
+     isActiveListing(id) {
+    return this.$route.name === 'ListingForm' && this.$route.params.listingTypeId == id
+  },
     toggleDropdown(name) {
       const newState = this.dropdownOpen === name ? '' : name
       this.dropdownOpen = newState
@@ -712,6 +647,15 @@ export default {
   const newSubState = this.subDropdownOpen === name ? '' : name
   this.subDropdownOpen = newSubState
   localStorage.setItem('sidebar_subDropdownOpen', newSubState)
+},
+async fetchListingTypes() {
+  try {
+    const res = await axios.get(API_ENDPOINTS.listingType.list)
+    console.log('Listing types response:', res.data)
+    this.listingTypes = res.data.data ?? res.data
+  } catch (err) {
+    console.error("Failed to load listing types:", err)
+  }
 },
     closeDropdown() {
       this.dropdownOpen = ''

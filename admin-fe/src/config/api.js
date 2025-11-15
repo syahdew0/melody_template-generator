@@ -194,7 +194,27 @@ brands: {
   create: `${API_URL}/apis/brands`,
   update: (id) => `${API_URL}/apis/brands/${id}`, 
   delete: (id) => `${API_URL}/apis/brands/${id}`,
-}
+},
+listing: {
+  list: `${API_URL}/apis/admin/listing`,
+  create: `${API_URL}/apis/admin/listing`,
+  detail: (post_id) => `${API_URL}/apis/admin/listing/${post_id}`,
+  update: (post_id) => `${API_URL}/apis/admin/listing/${post_id}`,
+  delete: (post_id) => `${API_URL}/apis/admin/listing/${post_id}`,
+
+  // LISTING VALUES
+  listValues: (post_id) => `${API_URL}/apis/admin/listing/${post_id}/values`,
+},
+
+listingType: {
+  list: `${API_URL}/apis/admin/listing-type`,
+
+},
+ districts: `${API_URL}/apis/address/districts`,
+  provinces: `${API_URL}/apis/address/provinces`,
+  regencies: `${API_URL}/apis/address/regencies`,
+  villages: `${API_URL}/apis/address/villages`,
+
 
 }
 

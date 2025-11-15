@@ -121,6 +121,17 @@ const routes = [
   props: true,
 },
 
+{
+  path: '/admin/listing/:listingTypeId',
+  name: 'ListingForm',
+  component: () => import('@/views/listing/ListingForm.vue')
+},
+{
+  path: '/admin/listing',
+  name: 'ListingList',
+  component: () => import('@/views/listing/ListingList.vue')
+},
+
 
 ]
 

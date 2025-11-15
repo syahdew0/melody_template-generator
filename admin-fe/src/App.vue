@@ -1,7 +1,15 @@
 <template>
   <div>
     <div v-if="!isLoginPage" class="flex min-h-screen relative">
-      <SidebarPage :isOpen="sidebarOpen" @closeSidebar="sidebarOpen = false" class="z-50" />
+      <!-- <SidebarPage :isOpen="sidebarOpen" @closeSidebar="sidebarOpen = false" class="z-50" /> -->
+      <SidebarPage 
+  :isOpen="sidebarOpen" 
+  @closeSidebar="sidebarOpen = false"
+  @select-listing-type="onSelectListingType"
+/>
+<ListingForm
+  ref="listingForm"
+/>
       <div class="flex-1 transition-all duration-300 min-h-screen" :class="{ 'ml-0': isMobile, 'ml-52': !isMobile && sidebarOpen }">
         <NavbarPage @toggleSidebar="sidebarOpen = !sidebarOpen" />
         <router-view />
@@ -16,15 +24,17 @@
 <script setup>
 import SidebarPage from './components/SidebarPage.vue'
 import NavbarPage from './components/NavbarPage.vue'
-import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
+import { onMounted, onBeforeUnmount, computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import store from './store'
 
 const router = useRouter()
 const route = useRoute()
+const listingFormRef = ref(null)
 
-const sidebarOpen = ref(false)
+// ambil nilai dari localStorage, default true kalau belum ada
+const sidebarOpen = ref(localStorage.getItem('sidebarOpen') === 'false' ? false : true)
 const isMobile = ref(false)
 const isLoginPage = computed(() => route.name === 'LoginPage')
 
@@ -36,31 +46,39 @@ function logout() {
   localStorage.removeItem('user')
   router.push('/login')
 }
-
+function onSelectListingType(typeId) {
+  if (listingFormRef.value) {
+    listingFormRef.value.selectListingType(typeId)
+  }
+}
 // Setup Interceptor: inject token dan refresh otomatis
 function setupAxiosInterceptors() {
-  axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  }, (error) => Promise.reject(error))
+  axios.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token')
+      if (token) config.headers.Authorization = `Bearer ${token}`
+      return config
+    },
+    (error) => Promise.reject(error)
+  )
 
-  axios.interceptors.response.use((response) => {
-    const newToken = response.headers['x-refreshed-token']
-    if (newToken) {
-      localStorage.setItem('token', newToken)
-      console.log('[Axios] Token diperbarui otomatis.')
+  axios.interceptors.response.use(
+    (response) => {
+      const newToken = response.headers['x-refreshed-token']
+      if (newToken) {
+        localStorage.setItem('token', newToken)
+        console.log('[Axios] Token diperbarui otomatis.')
+      }
+      return response
+    },
+    (error) => {
+      if (error.response?.status === 401) {
+        console.warn('[Axios] Token tidak valid. Logout...')
+        logout()
+      }
+      return Promise.reject(error)
     }
-    return response
-  }, (error) => {
-    if (error.response?.status === 401) {
-      console.warn('[Axios] Token tidak valid. Logout...')
-      logout()
-    }
-    return Promise.reject(error)
-  })
+  )
 }
 
 //  Cek token expired setiap 5 detik
@@ -69,15 +87,8 @@ function startTokenCheckLoop() {
     const token = localStorage.getItem('token')
     if (!token) return
 
-    let payload = null 
     try {
-      if (token && token.split('.').length === 3) {
-        payload = JSON.parse(atob(token.split('.')[1]))
-      } else {
-        console.warn('[Token] Tidak valid:', token)
-        return
-      }
-
+      const payload = JSON.parse(atob(token.split('.')[1]))
       const now = Math.floor(Date.now() / 1000)
       if (payload.exp < now) {
         console.warn('[Token] Sudah expired. Auto logout...')
@@ -90,12 +101,14 @@ function startTokenCheckLoop() {
   }, 5000)
 }
 
-
 //  Cek lebar layar untuk sidebar
 function checkMobile() {
   isMobile.value = window.innerWidth < 768
+  // kalau mobile, selalu tutup sidebar
   if (isMobile.value) sidebarOpen.value = false
 }
+
+// Patch fetch untuk token
 function patchGlobalFetch() {
   const originalFetch = window.fetch
   window.fetch = async (...args) => {
@@ -125,7 +138,6 @@ function patchGlobalFetch() {
 }
 
 onMounted(() => {
-  
   const init = async () => {
     setupAxiosInterceptors()
     patchGlobalFetch()
@@ -135,9 +147,13 @@ onMounted(() => {
     window.addEventListener('resize', checkMobile)
   }
 
-  init() // panggil async function
+  init()
 })
 
+// simpan status setiap kali berubah
+watch(sidebarOpen, (val) => {
+  localStorage.setItem('sidebarOpen', val)
+})
 
 onBeforeUnmount(() => {
   if (checkInterval) clearInterval(checkInterval)

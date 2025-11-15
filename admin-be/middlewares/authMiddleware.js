@@ -137,12 +137,10 @@ exports.requireCategoryAccess = (categoryIdParam = "categoryId") => {
       if (!user) return res.status(401).json({ message: "Unauthorized" });
 
       // Ambil tipe post dari body atau default 'post'
-      const type = req.body.type || req.query.type || 'post';
-
-      // Jika type bukan 'post', skip cek category
-      if (type !== 'post') {
-        return next();
-      }
+ const type = req.body.type || req.query.type;
+if (type !== 'post') {
+  return next(); // hanya cek category kalau type post
+}
 
       // Ambil categoryIds dari body atau params
       let categoryIds = req.params[categoryIdParam] || req.body[categoryIdParam];

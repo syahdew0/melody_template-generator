@@ -29,6 +29,26 @@ module.exports = (sequelize, DataTypes) => {
     content: DataTypes.TEXT,
     excerpt: DataTypes.TEXT,
 
+     additional_kolom1: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    additional_kolom2: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    additional_kolom3: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    additional_kolom4: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    additional_kolom5: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
      author_name: {                
       type: DataTypes.STRING,
       allowNull: true
@@ -39,6 +59,27 @@ module.exports = (sequelize, DataTypes) => {
     },
 
     thumbnail_url: DataTypes.STRING,
+    other_images: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+      get() {
+        const rawValue = this.getDataValue('other_images');
+        try {
+          return rawValue ? JSON.parse(rawValue) : [];
+        } catch (e) {
+          return [];
+        }
+      },
+      set(value) {
+        if (Array.isArray(value)) {
+          this.setDataValue('other_images', JSON.stringify(value));
+        } else if (typeof value === 'string') {
+          this.setDataValue('other_images', value);
+        } else {
+          this.setDataValue('other_images', JSON.stringify([]));
+        }
+      }
+    },  
     type: DataTypes.ENUM('post', 'page', 'product', 'testimonial'),
     type_id: DataTypes.INTEGER,
     status: DataTypes.ENUM('draft', 'published', 'trash'),

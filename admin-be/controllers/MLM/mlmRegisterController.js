@@ -4,8 +4,29 @@ exports.joinMLM = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const customer_id = req.customer.id;
-    const username = req.customer.username; // pastikan ini benar
+    const username = req.customer.username;
+    const email = req.customer.email; // ambil email dari token user
     const { mlm_package_id, placement_pos, parentId } = req.body;
+
+    // 🔒 Cek apakah sudah ada user lain (atau dirinya sendiri) dengan email yang sama sudah join MLM
+    const existingByEmail = await MlmRegistration.findOne({
+      include: [
+        {
+          model: Customer,
+          as: 'Customer',
+          where: { email }, // cocokkan email di tabel Customer
+        }
+      ],
+      transaction: t
+    });
+
+    if (existingByEmail) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Email ini sudah digunakan untuk join MLM."
+      });
+    }
 
     // Ambil paket MLM
     const mlmPackage = await MLMPackage.findByPk(mlm_package_id, { transaction: t });
@@ -51,7 +72,7 @@ exports.joinMLM = async (req, res) => {
 
     const balanceAfter = balanceBefore - packageValue;
 
-    // Buat MLM registration dulu agar reference_id bisa dipakai
+    // Buat MLM registration
     const reg = await MlmRegistration.create({
       customer_id,
       mlm_package_id,
@@ -89,7 +110,6 @@ exports.joinMLM = async (req, res) => {
 
       const uplineUser = await Customer.findByPk(parentId, { transaction: t });
       if (!uplineWallet) {
-        // Buat wallet upline jika belum ada
         uplineWallet = await MlmUserWallet.create({
           customer_id: parentId,
           wallet_type_id: 1,
@@ -123,7 +143,7 @@ exports.joinMLM = async (req, res) => {
     await t.commit();
     return res.json({
       success: true,
-      message: "Saldo diperbarui dan join MLM berhasil",
+      message: "Join MLM berhasil.",
       data: { registration: reg, history }
     });
 

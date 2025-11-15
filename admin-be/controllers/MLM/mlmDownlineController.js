@@ -16,22 +16,29 @@ exports.addDownline = async (req, res) => {
     const loginUser = req.customer;
 
     // Validasi parentId berdasarkan mlm_registrations
-   const uplineReg = await MlmRegistration.findOne({
-  where: { customer_id: parentId },
-  transaction: t
-});
-if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemukan' });
+    const uplineReg = await MlmRegistration.findOne({
+      where: { customer_id: parentId },
+      transaction: t
+    });
+    if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemukan' });
 
     // Ambil data customer dari upline
     const uplineCustomer = await Customer.findByPk(uplineReg.customer_id, { transaction: t });
 
-    // Validasi username unik
-    const exist = await Customer.findOne({ where: { username }, transaction: t });
-    if (exist) return res.status(400).json({ message: 'Username sudah terpakai' });
+    // 🔒 Validasi username unik
+    const existUsername = await Customer.findOne({ where: { username }, transaction: t });
+    if (existUsername)
+      return res.status(400).json({ message: 'Username sudah terpakai' });
+
+    // 🔒 Validasi email unik
+    const existEmail = await Customer.findOne({ where: { email }, transaction: t });
+    if (existEmail)
+      return res.status(400).json({ message: 'Email sudah digunakan oleh akun lain' });
 
     // Validasi paket MLM
     const pkg = await MLMPackage.findByPk(mlm_package_id, { transaction: t });
-    if (!pkg || pkg.IsSuspend) return res.status(400).json({ message: 'Paket MLM tidak valid' });
+    if (!pkg || pkg.IsSuspend)
+      return res.status(400).json({ message: 'Paket MLM tidak valid' });
 
     const packageValue = parseFloat(pkg.PackageValue || 0);
 
@@ -42,12 +49,20 @@ if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemuk
       transaction: t
     });
     const currentBalance = lastHistory ? lastHistory.balance_after : 0;
-    if (currentBalance < packageValue) return res.status(400).json({ message: 'Saldo tidak cukup untuk join paket' });
+    if (currentBalance < packageValue)
+      return res.status(400).json({ message: 'Saldo tidak cukup untuk join paket' });
 
     // Ambil atau buat wallet user login
-    let userWallet = await MlmUserWallet.findOne({ where: { customer_id: loginUser.id, wallet_type_id: 1 }, transaction: t });
+    let userWallet = await MlmUserWallet.findOne({
+      where: { customer_id: loginUser.id, wallet_type_id: 1 },
+      transaction: t
+    });
     if (!userWallet) {
-      userWallet = await MlmUserWallet.create({ customer_id: loginUser.id, wallet_type_id: 1, balance: currentBalance }, { transaction: t });
+      userWallet = await MlmUserWallet.create({
+        customer_id: loginUser.id,
+        wallet_type_id: 1,
+        balance: currentBalance
+      }, { transaction: t });
     }
 
     // Kurangi saldo user login
@@ -66,17 +81,24 @@ if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemuk
       status: 'success'
     }, { transaction: t });
 
-    // Buat akun downline
+    // 🔐 Buat akun downline (email dan username sudah dipastikan unik)
     const hashed = await bcrypt.hash(password, 10);
     const newDownline = await Customer.create({
-      username, email, password: hashed, bank, no_rekening, nama_rekening, no_hp, referral: loginUser.id
+      username,
+      email,
+      password: hashed,
+      bank,
+      no_rekening,
+      nama_rekening,
+      no_hp,
+      referral: loginUser.id
     }, { transaction: t });
 
     // Registrasi MLM untuk downline
     const reg = await MlmRegistration.create({
       customer_id: newDownline.id,
       mlm_package_id,
-      upline_id: uplineReg.id, 
+      upline_id: uplineReg.id,
       placement_pos: placement_pos || 'left',
       status: 'active',
       start_date: new Date()
@@ -94,7 +116,7 @@ if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemuk
     for (const w of walletsConfig) {
       if (w.active) {
         const typeId = walletTypeMap[w.name];
-        if (!typeId) continue; // skip jika name tidak valid
+        if (!typeId) continue;
         const uw = await MlmUserWallet.create({
           customer_id: newDownline.id,
           wallet_type_id: typeId,
@@ -104,26 +126,55 @@ if (!uplineReg) return res.status(400).json({ message: 'Parent MLM tidak ditemuk
       }
     }
 
-    // Pastikan upline punya wallet sebelum bonus
+    // Pastikan semua upline punya wallet aktif
     let currentUplineId = uplineCustomer.id;
     while (currentUplineId) {
-      const walletExists = await MlmUserWallet.findOne({ where: { customer_id: currentUplineId, wallet_type_id: 1 }, transaction: t });
-      if (!walletExists) await MlmUserWallet.create({ customer_id: currentUplineId, wallet_type_id: 1, balance: 0 }, { transaction: t });
+      const walletExists = await MlmUserWallet.findOne({
+        where: { customer_id: currentUplineId, wallet_type_id: 1 },
+        transaction: t
+      });
+      if (!walletExists) {
+        await MlmUserWallet.create({
+          customer_id: currentUplineId,
+          wallet_type_id: 1,
+          balance: 0
+        }, { transaction: t });
+      }
 
-      const regUpline = await MlmRegistration.findOne({ where: { customer_id: currentUplineId }, transaction: t });
+      const regUpline = await MlmRegistration.findOne({
+        where: { customer_id: currentUplineId },
+        transaction: t
+      });
       currentUplineId = regUpline ? regUpline.upline_id : null;
     }
 
     // Jalankan bonus
-    await giveReferralBonus({ newUserId: newDownline.id, packageValue, packageId: mlm_package_id, transaction: t });
-    await giveMatchingBonus({ newUserId: newDownline.id, packageValue, packageId: mlm_package_id, transaction: t });
+    await giveReferralBonus({
+      newUserId: newDownline.id,
+      packageValue,
+      packageId: mlm_package_id,
+      transaction: t
+    });
+    await giveMatchingBonus({
+      newUserId: newDownline.id,
+      packageValue,
+      packageId: mlm_package_id,
+      transaction: t
+    });
 
     await t.commit();
-    res.json({ success: true, message: 'Downline berhasil ditambahkan', data: { downline: newDownline, registration: reg, wallets: downlineWallets } });
+    res.json({
+      success: true,
+      message: 'Downline berhasil ditambahkan',
+      data: { downline: newDownline, registration: reg, wallets: downlineWallets }
+    });
 
   } catch (err) {
     await t.rollback();
     console.error(err);
-    res.status(500).json({ message: 'Gagal tambah downline', error: err.message });
+    res.status(500).json({
+      message: 'Gagal tambah downline',
+      error: err.message
+    });
   }
 };

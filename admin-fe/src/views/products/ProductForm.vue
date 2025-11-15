@@ -4,17 +4,19 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- MAIN FORM -->
-      <div class="md:col-span-2 space-y-4">
-        <!-- Title -->
-        <div>
-          <label class="block mb-1 font-medium">Product Title</label>
-          <input v-model="form.title" @input="generateSlug" type="text" class="input border border-gray-400" />
-        </div>
+   <div class="lg:col-span-2 space-y-4">
+      <div>
+        <label class="block font-semibold text-gray-700 mb-1">Title</label>
+        <input v-model="form.title" @input="generateSlug"
+          placeholder="Add Title"
+          class="w-full text-4xl font-bold border border-gray-300 focus:ring-0 placeholder-gray-400"
+        />
+      </div>
 
         <!-- Slug -->
         <div>
-          <label class="block mb-1 font-medium">Slug</label>
-          <input v-model="form.slug" type="text" class="input border border-gray-400" />
+          <label class="block mb-1 font-medium ">Slug</label>
+          <input v-model="form.slug" type="text" class="input border border-gray-300 w-full" />
         </div>
 
         <!-- Content -->
@@ -26,25 +28,34 @@
             class="min-h-[300px] bg-white border rounded"
           />
         </div>
-
-        <!-- Excerpt -->
-        <div>
-          <label class="block mb-1 font-medium">Excerpt</label>
-          <textarea v-model="form.excerpt" rows="3" class="input"></textarea>
-        </div>
+                <!-- Excerpt -->
+      <div>
+        <label class="block font-semibold text-gray-700 mb-1">Excerpt</label>
+        <textarea
+          v-model="form.excerpt"
+          placeholder="Write an excerpt..."
+          class="w-full text-sm text-gray-600 border border-dashed rounded p-3"
+          rows="2"
+        ></textarea>
+      </div>
 
         <!-- SEO Settings -->
-        <div class="border p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">SEO Settings</h3>
-          <label class="block text-sm">Meta Title</label>
-          <input v-model="seo.meta_title" type="text" class="input mb-2" />
-
-          <label class="block text-sm">Meta Description</label>
-          <input v-model="seo.meta_description" type="text" class="input mb-2" />
-
-          <label class="block text-sm">Meta Keywords</label>
-          <input v-model="seo.meta_keywords" type="text" class="input" />
-        </div>
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">SEO</h3>
+        <label class="block text-sm font-medium mb-1">Meta Title</label>
+        <input
+          v-model="seo.meta_title"
+          placeholder="Meta Title"
+          class="w-full p-2 border rounded mb-2"
+        />
+        <label class="block text-sm font-medium mb-1">Meta Description</label>
+        <textarea
+          v-model="seo.meta_description"
+          placeholder="Meta Description"
+          class="w-full p-2 border rounded"
+          rows="2"
+        ></textarea>
+      </div>
 
         <!--  PRODUCT DETAILS -->
         <ProductDetail v-model="form.product_detail" :productTypes="flattenedProductTypes"  :brands="brands"/>
@@ -80,6 +91,36 @@
             @select="selectImage"
           />
         </div>
+      <!-- Other Images -->
+      <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">Other Images</h3>
+        <button
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
+          @click="showMediaPicker = true; pickerTarget = 'other_images'"
+        >
+          Add Images
+        </button>
+
+        <div v-if="form.other_images.length" class="mt-3 grid grid-cols-3 gap-2">
+          <div
+            v-for="(img, index) in form.other_images"
+            :key="index"
+            class="relative group"
+          >
+            <img
+              :src="getImageUrl(img)"
+              alt="Other Image"
+              class="rounded shadow object-cover w-full h-24"
+            />
+            <button
+              @click="removeOtherImage(index)"
+              class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
 
         <!-- Category -->
         <div class="border p-4 rounded shadow">
@@ -97,13 +138,16 @@
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
-          <button @click="submit" class="btn-primary w-full">
+          <button @click="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold">
             {{ isEdit ? 'Update' : 'Publish' }}
           </button>
         </div>
       </div>
+      
     </div>
+    
   </div>
+  
 </template>
 
 <script setup>
@@ -119,8 +163,15 @@ import ProductDetail from '@/views/products/ProductDetails.vue'
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
+
 const isEdit = !!route.params.id
 const brands = ref([])
+const categories = ref([])
+const productTypes = ref([])
+
+const showMediaPicker = ref(false)
+const isMediaPickerReady = ref(false)
+const pickerTarget = ref('thumbnail')
 
 const form = ref({
   website_id: 1,
@@ -130,9 +181,10 @@ const form = ref({
   content: '',
   excerpt: '',
   thumbnail_url: '',
+  other_images: [],
   status: 'draft',
-   type: 'product',      
-  type_id: 3,    
+  type: 'product',
+  type_id: 3,
   template: '',
   parent_id: null,
   category_ids: [],
@@ -147,7 +199,6 @@ const form = ref({
     admin_info: '',
     formula_price: '',
     is_preorder: false,
-    // product_type_id: null,
     minimum_qty: null,
     stock_integrated: false,
     stock: 0,
@@ -157,33 +208,47 @@ const form = ref({
   }
 })
 
-const seo = ref({ meta_title: '', meta_description: '', meta_keywords: '' })
-const categories = ref([])
-const productTypes = ref([])
-const showMediaPicker = ref(false)
-const isMediaPickerReady = ref(false)
+const seo = ref({
+  meta_title: '',
+  meta_description: '',
+  meta_keywords: ''
+})
 
 const generateSlug = () => {
-  form.value.slug = form.value.title.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-')
+  form.value.slug = form.value.title
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-')
 }
 
-const getImageUrl = (path) => (path.startsWith('http') ? path : `${API_ENDPOINTS.media}${path}`)
+const getImageUrl = (path) => {
+  return path.startsWith('http') ? path : API_ENDPOINTS.media(path)
+}
+
 const selectImage = (url) => {
-  form.value.thumbnail_url = url
+  if (pickerTarget.value === 'thumbnail') {
+    form.value.thumbnail_url = url
+  } else if (pickerTarget.value === 'other_images') {
+    if (!form.value.other_images.includes(url)) {
+      form.value.other_images.push(url)
+    }
+  }
   showMediaPicker.value = false
+  pickerTarget.value = 'thumbnail' // reset ke default
 }
 
-// FETCH DATA
+const removeOtherImage = (index) => {
+  form.value.other_images.splice(index, 1)
+}
+
 const fetchCategories = async () => {
   try {
     const { data } = await axios.get(API_ENDPOINTS.categories)
-    // filter kategori yang display_in = 3 (product)
-    categories.value = data.filter(cat => cat.display_in === 3)
+    categories.value = data.filter((cat) => cat.display_in === 3)
   } catch {
     toast.error('Failed to load categories.')
   }
 }
-
 
 const fetchProductTypes = async () => {
   try {
@@ -195,13 +260,14 @@ const fetchProductTypes = async () => {
     toast.error('Failed to load product types.')
   }
 }
+
 const fetchBrands = async () => {
   try {
-    const res = await axios.get(API_ENDPOINTS.brands.list, { // <-- gunakan .list
+    const res = await axios.get(API_ENDPOINTS.brands.list, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
     brands.value = res.data.data || []
-  } catch (err) {
+  } catch {
     toast.error('Failed to load brands.')
   }
 }
@@ -231,14 +297,15 @@ const fetchProduct = async () => {
       content: data.content || '',
       excerpt: data.excerpt || '',
       thumbnail_url: data.thumbnail_url || '',
+      other_images: data.other_images || [],
       status: data.status || 'draft',
       category_ids: data.post_categories?.map((pc) => pc.category.id) || [],
       product_detail: {
-      ...form.value.product_detail,
-      ...data.product_detail,
-      brand_id: data.product_detail?.brand_id || null,
-      variations: data.product_detail?.variations || []
-    }
+        ...form.value.product_detail,
+        ...data.product_detail,
+        brand_id: data.product_detail?.brand_id || null,
+        variations: data.product_detail?.variations || []
+      }
     }
 
     if (data.meta?.length) {
@@ -253,11 +320,9 @@ const fetchProduct = async () => {
   }
 }
 
-
-// SUBMIT FORM
 const submit = async () => {
   try {
-    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
     const payload = {
       ...form.value,
       product_detail: {
@@ -265,28 +330,28 @@ const submit = async () => {
         discount_until: form.value.product_detail.discount_until
           ? new Date(form.value.product_detail.discount_until).toISOString()
           : null,
-         variations: form.value.product_detail.variations || []
+        variations: form.value.product_detail.variations || []
       },
       meta: [
         { meta_key: 'meta_title', meta_value: seo.value.meta_title },
         { meta_key: 'meta_description', meta_value: seo.value.meta_description },
         { meta_key: 'meta_keywords', meta_value: seo.value.meta_keywords }
       ]
-    };
+    }
 
     if (isEdit) {
-      await axios.put(`${API_ENDPOINTS.posts}/${route.params.id}`, payload, { headers });
-      toast.success('Product updated successfully.');
+      await axios.put(`${API_ENDPOINTS.posts}/${route.params.id}`, payload, { headers })
+      toast.success('Product updated successfully.')
     } else {
-      await axios.post(API_ENDPOINTS.posts, payload, { headers });
-      toast.success('Product created successfully.');
+      await axios.post(API_ENDPOINTS.posts, payload, { headers })
+      toast.success('Product created successfully.')
     }
-    router.push({ name: 'ProductList' });
-  } catch (err) {
-    toast.error('Failed to save product: ' + err.message);
-  }
-};
 
+    router.push({ name: 'ProductList' })
+  } catch (err) {
+    toast.error('Failed to save product: ' + err.message)
+  }
+}
 
 onMounted(async () => {
   isMediaPickerReady.value = true
