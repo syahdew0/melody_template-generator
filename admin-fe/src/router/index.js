@@ -120,17 +120,26 @@ const routes = [
   component: () => import("@/views/MLM/MlmPengaduanDetail.vue"),
   props: true,
 },
-
 {
-  path: '/admin/listing/:listingTypeId',
+  path: '/admin/listing/:listingTypeId/:postId?',
   name: 'ListingForm',
   component: () => import('@/views/listing/ListingForm.vue')
 },
 {
-  path: '/admin/listing',
+  path: '/admin/listing/',
   name: 'ListingList',
   component: () => import('@/views/listing/ListingList.vue')
 },
+// {
+//   path: '/admin/listing/:listingTypeId',
+//   name: 'ListingForm',
+//   component: () => import('@/views/listing/ListingForm.vue')
+// },
+// {
+//   path: '/admin/listing',
+//   name: 'ListingList',
+//   component: () => import('@/views/listing/ListingList.vue')
+// },
 
 
 ]

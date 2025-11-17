@@ -84,21 +84,37 @@
     </svg>
   </div>
 
-  <!-- LISTING TYPE DROPDOWN -->
-  <transition>
-    <ul v-show="subDropdownOpen === 'listing'" class="dropdown-submenu">
-   <li v-for="type in listingTypes" :key="type.id">
-  <router-link
-    :to="{ name: 'ListingForm', params: { listingTypeId: type.id } }"
-    class="px-4 py-2 block hover:bg-slate-700"
-    :class="{ 'bg-slate-700 text-amber-400': isActiveListing(type.id) }"
-  >
-    {{ type.name }}
-  </router-link>
+<!-- LISTING TYPE DROPDOWN -->
+<transition>
+  <ul v-show="subDropdownOpen === 'listing'" class="dropdown-submenu">
+    <!-- per type: buka halaman ListingList dengan filter type -->
+    <li v-for="type in listingTypes" :key="type.id">
+      <router-link
+        :to="{ 
+          name: 'ListingList', 
+          query: { type: type.id } 
+        }"
+        class="px-4 py-2 block hover:bg-slate-700"
+        :class="{ 'bg-slate-700 text-amber-400': isActiveListing(type.id) }"
+      >
+        {{ type.name }}
+      </router-link>
+    </li>
+
+    <!-- optional: semua listing tanpa filter -->
+    <!-- <li>
+      <router-link
+        :to="{ name: 'ListingList' }"
+        class="px-4 py-2 block hover:bg-slate-700"
+        :class="{ 'bg-slate-700 text-amber-400': $route.name === 'ListingList' && !$route.query.type }"
+      >
+        Semua Listing
+      </router-link>
+    </li> -->
+  </ul>
+</transition>
 </li>
-    </ul>
-  </transition>
-</li>
+
 
       <!-- Media -->
       <li class="relative">
@@ -630,8 +646,12 @@ export default {
   this.fetchListingTypes() 
 },
   methods: {
-     isActiveListing(id) {
-    return this.$route.name === 'ListingForm' && this.$route.params.listingTypeId == id
+  isActiveListing(typeId) {
+    // aktif kalau lagi di ListingList & query.type sama dengan typeId
+    return (
+      this.$route.name === 'ListingList' &&
+      String(this.$route.query.type || '') === String(typeId)
+    )
   },
     toggleDropdown(name) {
       const newState = this.dropdownOpen === name ? '' : name

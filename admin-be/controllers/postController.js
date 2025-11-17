@@ -1,4 +1,4 @@
-const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption, Brand, Listing, listing_type } = require('../models')
+const { Post, PostMeta, Category, ProductDetail, PostCategory, ProductType,  ProductVariant, ProductVariantValue, ProductVariantOption, Brand,  Listing, ListingValue, ListingTyp } = require('../models')
 const { Op } = require('sequelize')
 const cron = require('node-cron');
 
@@ -282,47 +282,56 @@ if (listing_type || (Array.isArray(listing_values) && listing_values.length > 0)
 exports.update = async (req, res) => {
   try {
     const postId = req.params.id;
+      // const postId = req.params.post_id;
+
     const {
       website_id, user_id, title, slug, content, excerpt,
-      thumbnail_url,other_images = [], status, type, template, parent_id, author_name, author_position,
-      meta = [], product_detail = {}, category_ids = [],
-      additional_kolom1,
-      additional_kolom2,
-      additional_kolom3,
-      additional_kolom4,
-      additional_kolom5
+      thumbnail_url, other_images = [], status, type, template, parent_id,
+      author_name, author_position, meta = [], category_ids = [],
+      additional_kolom1, additional_kolom2, additional_kolom3,
+      additional_kolom4, additional_kolom5,
+
+      // Listing
+      listing_type, price, kondisi, latitude, longitude,
+      provinsi, kabupaten, kecamatan, kelurahan,
+      listing_values = [],
+
+      // Product
+      product_detail = {}
     } = req.body;
 
-    const typeMap = {
-    post: 1,
-    page: 2,
-    product: 3,
-    testimonial: 4,
-    custom_page: 5
-  };
-
-    const type_id = typeMap[type] || null;
-
     const variations = product_detail?.variations || [];
+
+    const typeMap = {
+      post: 1,
+      page: 2,
+      product: 3,
+      testimonial: 4,
+      custom_page: 5
+    };
+    const type_id = typeMap[type] || null;
 
     const post = await Post.findByPk(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-
+    // =========================
     // UPDATE POST
+    // =========================
     await post.update({
       website_id,
       user_id,
       title,
       slug: slug || post.slug,
-      content: content !== undefined ? content : post.content,
+      content: content ?? post.content,
       excerpt,
       thumbnail_url,
-      status,
       other_images,
-      published_at: status === 'published' ? (post.published_at || new Date()) : null,
-      ...(type ? { type } : {}),
-      type_id, 
+      status,
+      published_at: status === 'published'
+        ? (post.published_at || new Date())
+        : null,
+      type,
+      type_id,
       template,
       parent_id,
       author_name,
@@ -334,136 +343,203 @@ exports.update = async (req, res) => {
       additional_kolom5
     });
 
-    
-    // META
+    // =========================
+    // UPDATE LISTING
+    // =========================
+    let listing = await Listing.findOne({ where: { post_id: postId } });
+
+    if (listing) {
+      await listing.update({
+        listing_type,
+        price,
+        kondisi,
+        latitude,
+        longitude,
+        provinsi,
+        kabupaten,
+        kecamatan,
+        kelurahan
+      });
+    } else {
+      listing = await Listing.create({
+        post_id: postId,
+        listing_type,
+        price,
+        kondisi,
+        latitude,
+        longitude,
+        provinsi,
+        kabupaten,
+        kecamatan,
+        kelurahan
+      });
+    }
+
+    // Listing Values → Replace All
+    await ListingValue.destroy({ where: { post_id: postId } });
+
+    if (Array.isArray(listing_values) && listing_values.length > 0) {
+      const values = listing_values.map(v => ({
+        post_id: postId,
+        tag_name: v.tag_name,
+        language_id: v.language_id || 1,
+        value: v.value
+      }));
+
+      await ListingValue.bulkCreate(values);
+    }
+
+    // =========================
+    // UPDATE META
+    // =========================
     await PostMeta.destroy({ where: { post_id: postId } });
+
     if (meta.length > 0) {
-      const metas = meta.map(m => ({ post_id: postId, meta_key: m.meta_key, meta_value: m.meta_value }));
+      const metas = meta.map(m => ({
+        post_id: postId,
+        meta_key: m.meta_key,
+        meta_value: m.meta_value
+      }));
       await PostMeta.bulkCreate(metas);
     }
 
-    // CATEGORY
-    if (category_ids?.length > 0) await post.setCategories(category_ids);
+    // =========================
+    // UPDATE CATEGORY (OPSIONAL)
+    // =========================
+    if (category_ids?.length > 0) {
+      await post.setCategories(category_ids);
+    }
 
+    // =========================
     // PRODUCT DETAIL + VARIANTS
+    // =========================
     if (type === 'product') {
-  const [detail, created] = await ProductDetail.findOrCreate({
-    where: { post_id: post.id },
-    defaults: { ...product_detail, post_id: post.id }
-  });
-
-  if (!created) await detail.update(product_detail, );
-
-  if (Array.isArray(variations) && variations.length) {
-    for (const v of variations) {
-  let variant;
-  if (v.id) {
-    // Update varian lama
-    variant = await ProductVariant.findByPk(v.id);
-    if (variant) {
-      await variant.update({
-        combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
-        sku: v.sku || null,
-        price: Number(v.price || 0),
-        stock: Number(v.stock || 0),
-        image: v.image || null
+      const [detail, created] = await ProductDetail.findOrCreate({
+        where: { post_id: post.id },
+        defaults: { ...product_detail, post_id: post.id }
       });
-    }
-  }
-  
-  if (!variant) {
-    // Buat varian baru
-    variant = await ProductVariant.create({
-      product_id: post.id,
-      combination: v.values.map(i => `${i.option}:${i.value}`).join(', '),
-      sku: v.sku || null,
-      price: Number(v.price || 0),
-      stock: Number(v.stock || 0),
-      image: v.image || null
-    });
-  }
 
-  // Handle values
-  for (const val of v.values) {
-    let option = await ProductVariantOption.findOne({
-      where: { product_id: post.id, name: val.option }
-    });
-    if (!option) {
-      option = await ProductVariantOption.create({ product_id: post.id, name: val.option });
-    }
+      if (!created) await detail.update(product_detail);
 
-    if (val.id) {
-      // Update value lama
-      const variantValue = await ProductVariantValue.findByPk(val.id);
-      if (variantValue) {
-        await variantValue.update({
-          value: val.value,
-          option_id: option.id
-        });
-        continue;
+      // UPDATE / CREATE VARIATIONS
+      if (Array.isArray(variations) && variations.length) {
+        for (const v of variations) {
+          let variant;
+
+          if (v.id) {
+            variant = await ProductVariant.findByPk(v.id);
+            if (variant) {
+              await variant.update({
+                combination: v.values.map(i => `${i.option}:${i.value}`).join(','),
+                sku: v.sku || null,
+                price: Number(v.price || 0),
+                stock: Number(v.stock || 0),
+                image: v.image || null
+              });
+            }
+          }
+
+          if (!variant) {
+            variant = await ProductVariant.create({
+              product_id: post.id,
+              combination: v.values.map(i => `${i.option}:${i.value}`).join(','),
+              sku: v.sku || null,
+              price: Number(v.price || 0),
+              stock: Number(v.stock || 0),
+              image: v.image || null
+            });
+          }
+
+          // VALUES
+          for (const val of v.values) {
+            let option = await ProductVariantOption.findOne({
+              where: { product_id: post.id, name: val.option }
+            });
+
+            if (!option) {
+              option = await ProductVariantOption.create({
+                product_id: post.id,
+                name: val.option
+              });
+            }
+
+            if (val.id) {
+              const variantValue = await ProductVariantValue.findByPk(val.id);
+              if (variantValue) {
+                await variantValue.update({
+                  value: val.value,
+                  option_id: option.id
+                });
+                continue;
+              }
+            }
+
+            // Create value baru
+            await ProductVariantValue.create({
+              variant_id: variant.id,
+              option_id: option.id,
+              value: val.value
+            });
+          }
+        }
       }
-    if (req.query.discount === 'true') {
-  if (!where[Op.or]) where[Op.or] = [];
-  where[Op.or].push({
-    is_discount_active: true
-  });
-  include.push({
-    model: ProductDetail,
-    as: 'product_detail',
-    required: true,
-    where: {
-      isDiscountActive: true,
-      discount_until: { [Op.gt]: new Date() }
     }
-  });
-}
 
-
-    // Buat value baru
-    await ProductVariantValue.create({
-      variant_id: variant.id,
-      option_id: option.id,
-      value: val.value
-    });
-  }
-}
-}
-}
-}
-    // Ambil ulang post lengkap
+    // =========================
+    // FETCH FINAL RESULT
+    // =========================
     const updatedPost = await Post.findOne({
       where: { id: post.id },
       include: [
         { model: PostMeta, as: 'meta' },
-        { model: PostCategory, as: 'post_categories', include: [{ model: Category, as: 'category' }] },
         {
           model: ProductDetail,
           as: 'product_detail',
-          include: [
-            {
-              model: ProductVariant,
-              as: 'variations',
-              include: [
-                { model: ProductVariantValue, as: 'values', include: [{ model: ProductVariantOption, as: 'option' }] }
-              ]
-            }
-          ]
+          include: [{
+            model: ProductVariant,
+            as: 'variations',
+            include: [{
+              model: ProductVariantValue,
+              as: 'values',
+              include: [{ model: ProductVariantOption, as: 'option' }]
+            }]
+          }]
         }
       ]
     });
 
+    const formatVariants = (variants) =>
+      variants.map(v => ({
+        id: v.id,
+        combination: v.combination,
+        sku: v.sku,
+        price: Number(v.price),
+        stock: Number(v.stock),
+        image: v.image,
+        values: (v.values || []).map(val => ({
+          value: val.value,
+          option: val.option?.name || val.option
+        }))
+      }));
+
     const postJSON = updatedPost.toJSON();
     if (postJSON.product_detail?.variations) {
-      postJSON.product_detail.variations = formatVariants(postJSON.product_detail.variations);
+      postJSON.product_detail.variations =
+        formatVariants(postJSON.product_detail.variations);
     }
 
-    res.json({ message: 'Post updated successfully', data: postJSON });
+    res.json({
+      message: 'Post updated successfully',
+      data: postJSON
+    });
 
   } catch (err) {
     console.error('Error updating post:', err);
-    res.status(500).json({ message: 'Error updating post', error: err.message });
+    res.status(500).json({
+      message: 'Error updating post',
+      error: err.message
+    });
   }
-
 };
 
 exports.getAll = async (req, res) => {
@@ -936,4 +1012,3 @@ exports.getTestimonialBySlug = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-

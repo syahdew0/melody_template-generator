@@ -107,7 +107,8 @@ async getDetail(req, res) {
  // UPDATE listing + values
   async update(req, res) {
     try {
-      const postId = req.params.id;
+      // const postId = req.params.id;
+       const postId = req.params.post_id || req.params.id;
       const {
         listing_type,
         price,
@@ -138,7 +139,7 @@ async getDetail(req, res) {
           post_id: postId,
           tag_name: v.tag_name,
           language_id: v.language_id || 1,
-          value: v.value
+          value: v.value == null ? '' : String(v.value)   // ⬅ aman
         }));
         await ListingValue.bulkCreate(insertData);
       }

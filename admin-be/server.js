@@ -190,7 +190,7 @@ app.use('/api/admin/settings-transaksi', require('./routes/settingTransaksiRoute
 app.use('/customer/settings-transaksi', require('./routes/customer/settingTransaksiRoutes'))
 
 app.use('/customer/address', require('./routes/customer/customerAddressRoutes'));
-// app.use('/api/address', require('./routes/customer/customerAddressRoutes'));
+app.use('/apis/address', require('./routes/addressRoutes'));
 // app.use('/customer/rajaongkir', require('./routes/customer/rajaongkirRoutes'));
 app.use('/customer/orders', require('./routes/customer/orderRoutes'));
 // server.js

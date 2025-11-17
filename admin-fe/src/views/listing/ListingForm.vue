@@ -254,8 +254,10 @@ import MediaPickerModal from '@/views/MediaPicker.vue'
 
 export default {
   components: { QuillEditor, MediaPickerModal },
+
   data() {
     return {
+      // POST / BLOG
       form: {
         id: null,
         title: '',
@@ -267,10 +269,14 @@ export default {
         thumbnail_url: '',
         other_images: [],
         website_id: 1,
-        user_id: 1,
+        user_id: 1
       },
+
+      // LISTING TYPE
       listingTypes: [],
       selectedListingType: null,
+
+      // DATA LISTING
       listingForm: {
         price: '',
         kondisi: '',
@@ -282,332 +288,368 @@ export default {
         kelurahan: '',
         additional: {}
       },
-        provinces: [],
-        regencies: [],
-        districts: [],
-        villages: [],
 
-        selectedProvince: '',
-        selectedRegency: '',
-        selectedDistrict: '',
-        selectedVillage: '',
+      // LOKASI DROPDOWN
+      provinces: [],
+      regencies: [],
+      districts: [],
+      villages: [],
+      selectedProvince: '',
+      selectedRegency: '',
+      selectedDistrict: '',
+      selectedVillage: '',
 
-      seo: { meta_title: '', meta_description: '' },
+      // SEO
+      seo: {
+        meta_title: '',
+        meta_description: ''
+      },
+
       isEdit: false,
       showMediaPicker: false,
       pickerTarget: 'thumbnail'
     }
   },
+
   methods: {
-  generateSlug() {
-    if (this.form.title) {
-      this.form.slug = this.form.title.toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-    }
-  },
+    // ------ UTIL DASAR ------
+    generateSlug() {
+      if (this.form.title) {
+        this.form.slug = this.form.title
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+      }
+    },
 
-  getImageUrl(path) {
-    return path?.startsWith('http') ? path : API_ENDPOINTS.media(path)
-  },
+    getImageUrl(path) {
+      return path?.startsWith('http') ? path : API_ENDPOINTS.media(path)
+    },
 
-  selectImage(url) {
-    if (this.pickerTarget === 'thumbnail') this.form.thumbnail_url = url
-    else if (this.pickerTarget === 'other_images' && !this.form.other_images.includes(url))
-      this.form.other_images.push(url)
-    this.showMediaPicker = false
-    this.pickerTarget = 'thumbnail'
-  },
+    selectImage(url) {
+      if (this.pickerTarget === 'thumbnail') {
+        this.form.thumbnail_url = url
+      } else if (
+        this.pickerTarget === 'other_images' &&
+        !this.form.other_images.includes(url)
+      ) {
+        this.form.other_images.push(url)
+      }
+      this.showMediaPicker = false
+      this.pickerTarget = 'thumbnail'
+    },
 
-  removeOtherImage(index) {
-    this.form.other_images.splice(index, 1)
-  },
+    removeOtherImage(index) {
+      this.form.other_images.splice(index, 1)
+    },
 
-  selectListingType(typeId) {
-    this.form.type_id = typeId
+    // ------ LISTING TYPE & DYNAMIC FIELDS ------
+    selectListingType(typeId) {
+      this.form.type_id = typeId
 
-    const type = this.listingTypes.find(t => t.id === typeId)
-    if (type && type.parameter) {
-      const params = JSON.parse(type.parameter)
-      this.listingForm.additional = {}
-      Object.keys(params).forEach(key => {
-        this.listingForm.additional[key] = params[key] || ''
-      })
-    }
-  },
+      const type = this.listingTypes.find(t => t.id === typeId)
+      if (type && type.parameter) {
+        try {
+          const params = JSON.parse(type.parameter)
+          this.listingForm.additional = {}
+          Object.keys(params).forEach(key => {
+            this.listingForm.additional[key] = params[key] || ''
+          })
+        } catch (e) {
+          console.error('Gagal parse parameter listing type:', e)
+          this.listingForm.additional = {}
+        }
+      } else {
+        this.listingForm.additional = {}
+      }
+    },
 
-  async fetchListingTypes() {
-    try {
-      const res = await axios.get(API_ENDPOINTS.listingType.list)
-      this.listingTypes = res.data.data
-    } catch (err) {
-      console.error('Gagal fetch listing types:', err)
-    }
-  },
+    async fetchListingTypes() {
+      try {
+        const res = await axios.get(API_ENDPOINTS.listingType.list)
+        this.listingTypes = res.data.data || []
+      } catch (err) {
+        console.error('Gagal fetch listing types:', err)
+      }
+    },
 
-  // 🔥 — Semuanya sekarang ADA DI DALAM methods
-  async fetchProvinces() {
-    try {
-      const res = await axios.get(API_ENDPOINTS.provinces)
-      this.provinces = res.data || []
-    } catch (err) {
-      console.error("Failed fetch provinces:", err)
-    }
-  },
+    // ------ LOKASI: FETCH DATA ------
+ async fetchProvinces() {
+  try {
+    const res = await axios.get(API_ENDPOINTS.provinces)
+    this.provinces = Array.isArray(res.data) ? res.data : []
+  } catch (err) {
+    console.error('Failed fetch provinces:', err)
+  }
+},
 
-  async fetchRegencies(provinceId) {
-    if (!provinceId) return []
-    try {
-      const res = await axios.get(API_ENDPOINTS.regencies, {
-        params: { province_id: provinceId }
-      })
-      return res.data || []
-    } catch (err) {
-      console.error("Failed fetch regencies:", err)
-      return []
-    }
-  },
+async fetchRegencies(provinceId) {
+  if (!provinceId) return []
+  try {
+    const res = await axios.get(API_ENDPOINTS.regencies, {
+      params: { province_id: provinceId }
+    })
+    const list = Array.isArray(res.data) ? res.data : []
+    console.log('Regencies response:', list) // boleh buat cek di console
+    return list
+  } catch (err) {
+    console.error('Failed fetch regencies:', err)
+    return []
+  }
+},
 
-  async fetchDistricts(regencyId) {
-    if (!regencyId) return []
-    try {
-      const res = await axios.get(API_ENDPOINTS.districts, {
-        params: { regency_id: regencyId }
-      })
-      return res.data || []
-    } catch (err) {
-      console.error("Failed fetch districts:", err)
-      return []
-    }
-  },
+async fetchDistricts(regencyId) {
+  if (!regencyId) return []
+  try {
+    const res = await axios.get(API_ENDPOINTS.districts, {
+      params: { regency_id: regencyId }
+    })
+    const list = Array.isArray(res.data) ? res.data : []
+    console.log('Districts response:', list)
+    return list
+  } catch (err) {
+    console.error('Failed fetch districts:', err)
+    return []
+  }
+},
 
-  async fetchVillages(districtId) {
-    if (!districtId) return []
-    try {
-      const res = await axios.get(API_ENDPOINTS.villages, {
-        params: { district_id: districtId }
-      })
-      return res.data || []
-    } catch (err) {
-      console.error("Failed fetch villages:", err)
-      return []
-    }
-  },
+async fetchVillages(districtId) {
+  if (!districtId) return []
+  try {
+    const res = await axios.get(API_ENDPOINTS.villages, {
+      params: { district_id: districtId }
+    })
+    const list = Array.isArray(res.data) ? res.data : []
+    console.log('Villages response:', list)
+    return list
+  } catch (err) {
+    console.error('Failed fetch villages:', err)
+    return []
+  }
+},
 
-  async onProvinceChange() {
-    this.listingForm.provinsi = this.provinces.find(p => p.id == this.selectedProvince)?.name || ''
+    // ------ LOKASI: HANDLER DROPDOWN ------
+    async onProvinceChange() {
+      this.listingForm.provinsi =
+        this.provinces.find(p => p.id == this.selectedProvince)?.name || ''
 
-    this.regencies = await this.fetchRegencies(this.selectedProvince)
-    this.selectedRegency = ''
-    this.districts = []
-    this.villages = []
+      this.regencies = await this.fetchRegencies(this.selectedProvince)
+      this.selectedRegency = ''
+      this.districts = []
+      this.villages = []
 
-    this.listingForm.kabupaten = ''
-    this.listingForm.kecamatan = ''
-    this.listingForm.kelurahan = ''
-  },
+      this.listingForm.kabupaten = ''
+      this.listingForm.kecamatan = ''
+      this.listingForm.kelurahan = ''
+    },
 
-  async onRegencyChange() {
-    this.listingForm.kabupaten = this.regencies.find(r => r.id == this.selectedRegency)?.name || ''
+    async onRegencyChange() {
+      this.listingForm.kabupaten =
+        this.regencies.find(r => r.id == this.selectedRegency)?.name || ''
 
-    this.districts = await this.fetchDistricts(this.selectedRegency)
-    this.selectedDistrict = ''
-    this.villages = []
+      this.districts = await this.fetchDistricts(this.selectedRegency)
+      this.selectedDistrict = ''
+      this.villages = []
 
-    this.listingForm.kecamatan = ''
-    this.listingForm.kelurahan = ''
-  },
+      this.listingForm.kecamatan = ''
+      this.listingForm.kelurahan = ''
+    },
 
-  async onDistrictChange() {
-    this.listingForm.kecamatan = this.districts.find(d => d.id == this.selectedDistrict)?.name || ''
+    async onDistrictChange() {
+      this.listingForm.kecamatan =
+        this.districts.find(d => d.id == this.selectedDistrict)?.name || ''
 
-    this.villages = await this.fetchVillages(this.selectedDistrict)
-    this.selectedVillage = ''
+      this.villages = await this.fetchVillages(this.selectedDistrict)
+      this.selectedVillage = ''
 
-    this.listingForm.kelurahan = ''
-  },
+      this.listingForm.kelurahan = ''
+    },
 
-  async onVillageChange() {
-    this.listingForm.kelurahan = this.villages.find(v => v.id == this.selectedVillage)?.name || ''
-  },
+    async onVillageChange() {
+      this.listingForm.kelurahan =
+        this.villages.find(v => v.id == this.selectedVillage)?.name || ''
+    },
+
+    // dipakai saat EDIT supaya dropdown ke-set dari nama yg sudah ada
+    async setLocationDropdownByName() {
+      // Provinsi
+      const p = this.provinces.find(
+        x => x.name === this.listingForm.provinsi
+      )
+      if (p) {
+        this.selectedProvince = p.id
+        this.regencies = await this.fetchRegencies(p.id)
+      }
+
+      // Kabupaten
+      const k = this.regencies.find(
+        x => x.name === this.listingForm.kabupaten
+      )
+      if (k) {
+        this.selectedRegency = k.id
+        this.districts = await this.fetchDistricts(k.id)
+      }
+
+      // Kecamatan
+      const c = this.districts.find(
+        x => x.name === this.listingForm.kecamatan
+      )
+      if (c) {
+        this.selectedDistrict = c.id
+        this.villages = await this.fetchVillages(c.id)
+      }
+
+      // Kelurahan
+      const v = this.villages.find(
+        x => x.name === this.listingForm.kelurahan
+      )
+      if (v) this.selectedVillage = v.id
+    },
+
+    // ------ LOAD DATA EDIT ------
+    async loadListingData(postId) {
+      try {
+        const res = await axios.get(API_ENDPOINTS.listing.detail(postId))
+        const listing = res.data.data
+
+        // POST / FORM UTAMA
+        this.form = {
+          ...this.form,
+          id: listing.post?.id || null,
+          title: listing.post?.title || '',
+          slug: listing.post?.slug || '',
+          excerpt: listing.post?.excerpt || '',
+          content: listing.post?.content || '',
+          status: listing.post?.status || 'draft',
+          thumbnail_url: listing.post?.thumbnail_url || '',
+          other_images: listing.post?.other_images || [],
+          type_id: listing.listing_type || null
+        }
+
+        // SEO META
+        const meta = listing.post?.meta || []
+        this.seo = {
+          meta_title:
+            meta.find(m => m.meta_key === 'meta_title')?.meta_value || '',
+          meta_description:
+            meta.find(m => m.meta_key === 'meta_description')?.meta_value || ''
+        }
+
+        // LISTING INFO
+        this.selectedListingType = listing.listing_type
+        await this.selectListingType(this.selectedListingType)
+
+        listing.values?.forEach(v => {
+          this.listingForm.additional[v.tag_name] = v.value
+        })
+            this.listingForm = {
+          ...this.listingForm,
+          price: listing.price || '',
+          kondisi: listing.kondisi || '',
+          latitude: listing.latitude || '',
+          longitude: listing.longitude || '',
+          provinsi: listing.provinsi || '',
+          kabupaten: listing.kabupaten || '',
+          kecamatan: listing.kecamatan || '',
+          kelurahan: listing.kelurahan || '',
+        }
+
+        // DYNAMIC FIELDS (values)
+        listing.values?.forEach(v => {
+          this.listingForm.additional[v.tag_name] = v.value
+        })
+      } catch (err) {
+        console.error('Gagal load listing:', err.response?.data || err)
+      }
+    },
+
+    // ------ SAVE POST + LISTING ------
     async savePost() {
       try {
+        // payload untuk post
         const postPayload = {
           ...this.form,
           meta: [
             { meta_key: 'meta_title', meta_value: this.seo.meta_title },
             { meta_key: 'meta_description', meta_value: this.seo.meta_description }
           ]
-        };
-
-        let postRes;
-        if (this.isEdit && this.form.id) {
-          postRes = await axios.put(`${API_ENDPOINTS.posts}/${this.form.id}`, postPayload);
-        } else {
-          postRes = await axios.post(API_ENDPOINTS.posts, postPayload);
         }
 
-        const postId = postRes.data.data.id;
+        let postRes
+        if (this.isEdit && this.form.id) {
+          postRes = await axios.put(
+            `${API_ENDPOINTS.posts}/${this.form.id}`,
+            postPayload
+          )
+        } else {
+          postRes = await axios.post(API_ENDPOINTS.posts, postPayload)
+        }
 
-        // Simpan listing
+        const postId = postRes.data.data.id
+
+        // payload untuk listing
         if (this.selectedListingType || Object.keys(this.listingForm.additional).length) {
-        const listingPayload = {
-        listing_type: this.selectedListingType,
-        price: this.listingForm.price || null,
-        kondisi: this.listingForm.kondisi || null,
-        latitude: this.listingForm.latitude || null,
-        longitude: this.listingForm.longitude || null,
-        provinsi: this.listingForm.provinsi || null,
-        kabupaten: this.listingForm.kabupaten || null,
-        kecamatan: this.listingForm.kecamatan || null,
-        kelurahan: this.listingForm.kelurahan || null,
-        listing_values: Object.keys(this.listingForm.additional).map(key => ({
-            tag_name: key,
-            value: this.listingForm.additional[key] || ''
-        }))
-        };
+          const listingPayload = {
+            listing_type: this.selectedListingType,
+            price: this.listingForm.price || null,
+            kondisi: this.listingForm.kondisi || null,
+            latitude: this.listingForm.latitude || null,
+            longitude: this.listingForm.longitude || null,
+            provinsi: this.listingForm.provinsi || null,
+            kabupaten: this.listingForm.kabupaten || null,
+            kecamatan: this.listingForm.kecamatan || null,
+            kelurahan: this.listingForm.kelurahan || null,
+            listing_values: Object.keys(this.listingForm.additional).map(
+              key => ({
+                tag_name: key,
+                value: this.listingForm.additional[key] || ''
+              })
+            )
+          }
 
-  if (this.isEdit) {
-    await axios.put(API_ENDPOINTS.listing.update(postId), listingPayload);
-  } else {
-    await axios.post(API_ENDPOINTS.listing.create, { post_id: postId, ...listingPayload });
-  }
-}
+          if (this.isEdit) {
+          await axios.put(
+            API_ENDPOINTS.listing.update(postId),
+            {
+              post_id: postId,       
+              ...listingPayload
+            }
+          )
+          } else {
+            await axios.post(API_ENDPOINTS.listing.create, {
+              post_id: postId,
+              ...listingPayload
+            })
+          }
+        }
 
-        this.$router.push('/admin/listing');
+        this.$router.push('/admin/listing')
       } catch (err) {
-        console.error('Gagal save post/listing:', err.response?.data || err);
-        alert('Gagal menyimpan post/listing. Cek console untuk detail.');
+        console.error('Gagal save post/listing:', err.response?.data || err)
+        alert('Gagal menyimpan post/listing. Cek console untuk detail.')
       }
     }
   },
-async fetchProvinces() {
-  try {
-    const res = await axios.get(API_ENDPOINTS.provinces);
-    this.provinces = res.data.data || [];
-  } catch (err) {
-    console.error("Failed fetch provinces:", err);
-  }
-},
 
-async fetchRegencies(provinceId) {
-  if (!provinceId) return [];
-  try {
-    const res = await axios.get(API_ENDPOINTS.regencies, {
-      params: { province_id: provinceId }
-    });
-    return res.data.data || [];
-  } catch (err) {
-    console.error("Failed fetch regencies:", err);
-    return [];
-  }
-},
-
-async fetchDistricts(regencyId) {
-  if (!regencyId) return [];
-  try {
-    const res = await axios.get(API_ENDPOINTS.districts, {
-      params: { regency_id: regencyId }
-    });
-    return res.data.data || [];
-  } catch (err) {
-    console.error("Failed fetch districts:", err);
-    return [];
-  }
-},
-
-async fetchVillages(districtId) {
-  if (!districtId) return [];
-  try {
-    const res = await axios.get(API_ENDPOINTS.villages, {
-      params: { district_id: districtId }
-    });
-    return res.data.data || [];
-  } catch (err) {
-    console.error("Failed fetch villages:", err);
-    return [];
-  }
-},
+  // ------ LIFECYCLE ------
   async mounted() {
+    // ambil master data dulu
     await this.fetchListingTypes()
-    await this.fetchProvinces();
+    await this.fetchProvinces()
 
-    // Jika edit
     const postId = this.$route.params.postId
-    if (postId) {
-  this.isEdit = true;
-  try {
-    const res = await axios.get(`${API_ENDPOINTS.listing.detail(postId)}`);
-    const listing = res.data.data;
-
-    // Prefill form
-    this.form = {
-      ...this.form,
-      title: listing.post?.title || '',
-      slug: listing.post?.slug || '',
-      excerpt: listing.post?.excerpt || '',
-      status: listing.post?.status || 'draft',
-      thumbnail_url: listing.post?.thumbnail_url || '',
-      other_images: listing.post?.other_images || [],
-      type_id: listing.listing_type || null,
-    };
-
-    this.seo = {
-      meta_title: listing.post?.meta?.find(m => m.meta_key === 'meta_title')?.meta_value || '',
-      meta_description: listing.post?.meta?.find(m => m.meta_key === 'meta_description')?.meta_value || ''
-    };
-
-    this.selectedListingType = listing.listing_type;
-    this.listingForm = {
-      ...this.listingForm,
-      price: listing.price || '',
-      kondisi: listing.kondisi || '',
-      latitude: listing.latitude || '',
-      longitude: listing.longitude || '',
-      provinsi: listing.provinsi || '',
-      kabupaten: listing.kabupaten || '',
-      kecamatan: listing.kecamatan || '',
-      kelurahan: listing.kelurahan || '',
-      additional: {}
-    };
-
-    listing.values?.forEach(v => {
-      this.listingForm.additional[v.tag_name] = v.value;
-    });
-// Auto-load dropdown values jika edit
-if (this.listingForm.provinsi) {
-  const prov = this.provinces.find(p => p.name === this.listingForm.provinsi)
-  if (prov) {
-    this.selectedProvince = prov.id
-    this.regencies = await this.fetchRegencies(prov.id)
-
-    const reg = this.regencies.find(r => r.name === this.listingForm.kabupaten)
-    if (reg) {
-      this.selectedRegency = reg.id
-      this.districts = await this.fetchDistricts(reg.id)
-
-      const dist = this.districts.find(d => d.name === this.listingForm.kecamatan)
-      if (dist) {
-        this.selectedDistrict = dist.id
-        this.villages = await this.fetchVillages(dist.id)
-
-        const vil = this.villages.find(v => v.name === this.listingForm.kelurahan)
-        if (vil) {
-          this.selectedVillage = vil.id
-        }
-      }
-    }
-  }
-}
-
-  } catch (err) {
-    console.error('Gagal fetch listing untuk edit:', err.response?.data || err);
-  }
-}
-
-    // Jika ada listingTypeId di route
     const typeId = this.$route.params.listingTypeId
-    if (typeId && !this.isEdit) {
+
+    // MODE EDIT
+    if (postId) {
+      this.isEdit = true
+      await this.loadListingData(postId)
+      await this.setLocationDropdownByName()
+      return
+    }
+
+    // MODE CREATE DARI LISTING TYPE TERTENTU
+    if (typeId) {
       this.selectedListingType = parseInt(typeId)
       this.selectListingType(this.selectedListingType)
     }
