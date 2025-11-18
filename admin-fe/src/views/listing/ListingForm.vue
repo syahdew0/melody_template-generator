@@ -51,22 +51,49 @@
         />
       </div>
 
-      <!-- Dynamic Listing Fields -->
-      <div
-        v-if="selectedListingType && Object.keys(listingForm.additional).length"
-        class="bg-white border rounded shadow-sm p-4 mb-4"
+<!-- Dynamic Listing Fields -->
+<div
+  v-if="selectedListingType && listingFields.length"
+  class="bg-white border rounded shadow-sm p-4 mb-4"
+>
+  <h3 class="font-semibold mb-2">Listing Fields</h3>
+
+  <div
+    v-for="field in listingFields"
+    :key="field.tagname"
+    class="mb-3"
+  >
+    <label class="block text-sm font-medium mb-1">
+      {{ field.label || field.tagname }}
+    </label>
+
+    <!-- JIKA PUNYA OPTIONS => DROPDOWN -->
+    <select
+      v-if="field.options && field.options.length"
+      v-model="listingForm.additional[field.tagname]"
+      class="w-full p-2 border rounded"
+    >
+      <option value="">-- Pilih {{ field.label || field.tagname }} --</option>
+      <option
+        v-for="opt in field.options"
+        :key="opt"
+        :value="opt"
       >
-        <h3 class="font-semibold mb-2">Listing Fields</h3>
-        <div v-for="(value, key) in listingForm.additional" :key="key" class="mb-3">
-          <label class="block text-sm font-medium mb-1">{{ key }}</label>
-          <input
-            v-model="listingForm.additional[key]"
-            type="text"
-            class="w-full p-2 border rounded"
-            :placeholder="key"
-          />
-        </div>
-      </div>
+        {{ opt }}
+      </option>
+    </select>
+
+    <!-- TANPA OPTIONS: INPUT -->
+    <input
+      v-else
+      v-model="listingForm.additional[field.tagname]"
+      :type="field.type === 'number' ? 'number' : 'text'"
+      class="w-full p-2 border rounded"
+      :placeholder="field.label || field.tagname"
+    />
+  </div>
+</div>
+
 <!-- Price -->
 <div v-if="selectedListingType" class="mb-4">
   <label class="block font-semibold text-gray-700 mb-1">Price</label>
@@ -259,22 +286,25 @@ export default {
     return {
       // POST / BLOG
       form: {
-        id: null,
-        title: '',
-        slug: '',
-        excerpt: '',
-        type_id: null,
-        content: '',
-        status: 'draft',
-        thumbnail_url: '',
-        other_images: [],
-        website_id: 1,
-        user_id: 1
-      },
+  id: null,
+  title: '',
+  slug: '',
+  excerpt: '',
+  type: 'listing',       
+  type_id: 6,           
+  content: '',
+  status: 'draft',
+  thumbnail_url: '',
+  other_images: [],
+  website_id: 1,
+  user_id: 1
+},
+
 
       // LISTING TYPE
       listingTypes: [],
       selectedListingType: null,
+       listingFields: [],
 
       // DATA LISTING
       listingForm: {
@@ -344,25 +374,55 @@ export default {
     },
 
     // ------ LISTING TYPE & DYNAMIC FIELDS ------
-    selectListingType(typeId) {
-      this.form.type_id = typeId
+  //  selectListingType(typeId) {
+  // this.form.type_id = typeId
+  selectListingType(typeId) {
+  this.selectedListingType = typeId;
 
-      const type = this.listingTypes.find(t => t.id === typeId)
-      if (type && type.parameter) {
-        try {
-          const params = JSON.parse(type.parameter)
-          this.listingForm.additional = {}
-          Object.keys(params).forEach(key => {
-            this.listingForm.additional[key] = params[key] || ''
-          })
-        } catch (e) {
-          console.error('Gagal parse parameter listing type:', e)
-          this.listingForm.additional = {}
-        }
-      } else {
-        this.listingForm.additional = {}
+  const type = this.listingTypes.find(t => t.id === typeId)
+
+  // reset dulu
+  this.listingFields = []
+  this.listingForm.additional = {}
+
+  if (type && type.parameter) {
+    try {
+      const params = JSON.parse(type.parameter)
+
+      // FORMAT BARU: ARRAY [{ tagname, type, options }]
+      if (Array.isArray(params)) {
+        this.listingFields = params
+
+        params.forEach(field => {
+          const key = field.tagname
+          // init nilai kosong, nanti kalau edit di-override dari listing.values
+          this.listingForm.additional[key] =
+            this.listingForm.additional[key] || ''
+        })
       }
-    },
+
+      // BACKWARD COMPAT: kalau masih object { merk:"", tahun:"" }
+      else if (params && typeof params === 'object') {
+        this.listingFields = Object.keys(params).map(k => ({
+          tagname: k,
+          type: 'string',
+          options: null
+        }))
+
+        Object.keys(params).forEach(key => {
+          this.listingForm.additional[key] = params[key] || ''
+        })
+      }
+    } catch (e) {
+      console.error('Gagal parse parameter listing type:', e)
+      this.listingFields = []
+      this.listingForm.additional = {}
+    }
+  } else {
+    this.listingFields = []
+    this.listingForm.additional = {}
+  }
+},
 
     async fetchListingTypes() {
       try {
@@ -523,7 +583,8 @@ async fetchVillages(districtId) {
           status: listing.post?.status || 'draft',
           thumbnail_url: listing.post?.thumbnail_url || '',
           other_images: listing.post?.other_images || [],
-          type_id: listing.listing_type || null
+            type: 'listing', 
+          type_id: listing.listing_type || 6,
         }
 
         // SEO META
@@ -565,10 +626,13 @@ async fetchVillages(districtId) {
 
     // ------ SAVE POST + LISTING ------
     async savePost() {
-      try {
-        // payload untuk post
+  try {
+    // pastikan type selalu 'listing'
+    this.form.type = 'listing';
+    this.form.type_id = 6; 
         const postPayload = {
           ...this.form,
+          
           meta: [
             { meta_key: 'meta_title', meta_value: this.seo.meta_title },
             { meta_key: 'meta_description', meta_value: this.seo.meta_description }

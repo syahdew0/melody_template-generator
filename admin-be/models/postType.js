@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     // Relasi ke Category
     PostType.hasMany(models.Category, {
       foreignKey: 'display_in',
-      sourceKey: 'name', // karena Category.display_in menyimpan 'name'
+      sourceKey: 'name', 
       as: 'categories'
     });
   };

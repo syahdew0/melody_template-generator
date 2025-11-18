@@ -106,7 +106,7 @@ cron.schedule('0 * * * *', async () => {
 //   res.json(types)
 // }
 exports.getTypes = (req, res) => {
-  const types = ['post', 'page', 'product', 'testimonial', 'custom_page'];
+  const types = ['post', 'page', 'product', 'testimonial', 'custom_page', 'listing'];
   res.json(types);
 }
 
@@ -149,7 +149,7 @@ exports.create = async (req, res) => {
       counter++;
     }
 
-    const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5 };
+    const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5, listing: 6 };
     const type_id = typeMap[type] || null;
     // const product_type_id = type_id; // untuk product_detail
 
@@ -307,7 +307,8 @@ exports.update = async (req, res) => {
       page: 2,
       product: 3,
       testimonial: 4,
-      custom_page: 5
+      custom_page: 5,
+      listing: 6
     };
     const type_id = typeMap[type] || null;
 
