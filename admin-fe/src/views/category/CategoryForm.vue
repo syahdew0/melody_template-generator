@@ -92,7 +92,7 @@ export default {
       const resTypes = await axios.get(API_ENDPOINTS.postTypes);
 
       // Mapping id sesuai database
-      const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5 };
+      const typeMap = { post: 1, page: 2, product: 3, testimonial: 4, custom_page: 5, listing: 6 };
       this.postTypes = resTypes.data.map(name => ({ id: typeMap[name], name }));
 
       // Jika edit mode, ambil data kategori

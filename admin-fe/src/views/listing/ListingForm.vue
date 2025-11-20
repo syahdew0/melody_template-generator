@@ -177,6 +177,25 @@
           </div>
         </div>
       </div>
+
+            <div class="bg-white border rounded shadow-sm p-4">
+        <h3 class="font-semibold mb-2">Categories</h3>
+        <div class="space-y-2 max-h-40 overflow-y-auto">
+          <div
+            v-for="cat in categories"
+            :key="cat.id"
+            class="flex items-center gap-2"
+          >
+            <input
+              type="checkbox"
+              :value="cat.id"
+              v-model="form.category_ids"
+            />
+            <label class="text-sm">{{ cat.name }}</label>
+          </div>
+        </div>
+      </div>
+
 <!-- Lokasi Listing -->
 <div v-if="selectedListingType" class="bg-white border rounded shadow-sm p-4 mb-4">
   <h3 class="font-semibold mb-2">Lokasi Listing</h3>
@@ -297,6 +316,7 @@ export default {
   thumbnail_url: '',
   other_images: [],
   website_id: 1,
+  category_ids: [],
   user_id: 1
 },
 
@@ -334,7 +354,7 @@ export default {
         meta_title: '',
         meta_description: ''
       },
-
+      categories: [],
       isEdit: false,
       showMediaPicker: false,
       pickerTarget: 'thumbnail'
@@ -586,6 +606,7 @@ async fetchVillages(districtId) {
             type: 'listing', 
           type_id: listing.listing_type || 6,
         }
+        this.form.category_ids = (listing.post?.categories || []).map(c => c.id);
 
         // SEO META
         const meta = listing.post?.meta || []
@@ -623,7 +644,33 @@ async fetchVillages(districtId) {
         console.error('Gagal load listing:', err.response?.data || err)
       }
     },
+async fetchCategories() {
+  try {
+    const res = await axios.get(API_ENDPOINTS.categories)
 
+    // Normalisasi bentuk response: bisa {data: []} atau langsung []
+    let categoriesData = Array.isArray(res.data?.data)
+      ? res.data.data
+      : Array.isArray(res.data)
+        ? res.data
+        : []
+
+    // Filter hanya kategori yang dipakai untuk listing (display_in = 6 / post_type listing)
+    categoriesData = categoriesData.filter(
+      c => c.display_in === 6 || (c.post_type && c.post_type.name === 'listing')
+    )
+
+    this.categories = categoriesData
+
+    // Default kategori saat CREATE (bukan edit)
+    if (!this.isEdit && this.categories.length > 0 && this.form.category_ids.length === 0) {
+      this.form.category_ids = [this.categories[0].id]
+    }
+  } catch (e) {
+    console.error('Failed to fetch categories:', e)
+    this.categories = []
+  }
+},
     // ------ SAVE POST + LISTING ------
     async savePost() {
   try {
@@ -632,6 +679,7 @@ async fetchVillages(districtId) {
     this.form.type_id = 6; 
         const postPayload = {
           ...this.form,
+          category_ids: [...this.form.category_ids],
           
           meta: [
             { meta_key: 'meta_title', meta_value: this.seo.meta_title },
@@ -700,6 +748,7 @@ async fetchVillages(districtId) {
     // ambil master data dulu
     await this.fetchListingTypes()
     await this.fetchProvinces()
+    await this.fetchCategories()
 
     const postId = this.$route.params.postId
     const typeId = this.$route.params.listingTypeId

@@ -209,6 +209,8 @@ app.use('/apis/brands', require('./routes/brandRoutes'));
 app.use('/apis/contact', require('./routes/contactRoutes'));
 
 app.use('/apis/admin', require('./routes/listing/listingRoutes'));
+app.use('/apis/customer', require('./routes/listing/listingcustomerRoutes'));
+
 // app.use('/apis/wallet', require('./routes/transaksiRoutes'));
 
 // app.use('/api/menu-groups', require('./routes/menuGroupRoutes'));

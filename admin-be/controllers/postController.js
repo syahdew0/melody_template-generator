@@ -120,7 +120,8 @@ exports.create = async (req, res) => {
       additional_kolom2,
       additional_kolom3,
       additional_kolom4,
-      additional_kolom5
+      additional_kolom5,
+      category_ids = []
     } = req.body;
 
     const {
@@ -154,29 +155,33 @@ exports.create = async (req, res) => {
     // const product_type_id = type_id; // untuk product_detail
 
     // CREATE POST
-    const post = await Post.create({
-      website_id,
-      user_id,
-      title,
-      slug: finalSlug,
-      content,
-      excerpt,
-      thumbnail_url,
-      other_images,
-      status,
-      published_at: status === 'published' ? new Date() : null,
-      type,
-      type_id,
-      template,
-      parent_id,
-      author_name,
-      author_position,
-      additional_kolom1,
-      additional_kolom2,
-      additional_kolom3,
-      additional_kolom4,
-      additional_kolom5
-    });
+const post = await Post.create({
+  website_id,
+  user_id,
+  title,
+  slug: finalSlug,
+  content,
+  excerpt,
+  thumbnail_url,
+  other_images,
+  status,
+  published_at: status === 'published' ? new Date() : null,
+  type,
+  type_id,
+  template,
+  parent_id,
+  author_name,
+  author_position,
+  additional_kolom1,
+  additional_kolom2,
+  additional_kolom3,
+  additional_kolom4,
+  additional_kolom5
+});
+
+if (Array.isArray(category_ids) && category_ids.length > 0) {
+  await post.setCategories(category_ids);
+}
 
 if (listing_type || (Array.isArray(listing_values) && listing_values.length > 0)) {
   await Listing.create({
@@ -342,6 +347,7 @@ exports.update = async (req, res) => {
       additional_kolom3,
       additional_kolom4,
       additional_kolom5
+      
     });
 
     // =========================
@@ -390,9 +396,6 @@ exports.update = async (req, res) => {
       await ListingValue.bulkCreate(values);
     }
 
-    // =========================
-    // UPDATE META
-    // =========================
     await PostMeta.destroy({ where: { post_id: postId } });
 
     if (meta.length > 0) {
@@ -404,16 +407,10 @@ exports.update = async (req, res) => {
       await PostMeta.bulkCreate(metas);
     }
 
-    // =========================
-    // UPDATE CATEGORY (OPSIONAL)
-    // =========================
     if (category_ids?.length > 0) {
       await post.setCategories(category_ids);
     }
 
-    // =========================
-    // PRODUCT DETAIL + VARIANTS
-    // =========================
     if (type === 'product') {
       const [detail, created] = await ProductDetail.findOrCreate({
         where: { post_id: post.id },
@@ -486,9 +483,6 @@ exports.update = async (req, res) => {
       }
     }
 
-    // =========================
-    // FETCH FINAL RESULT
-    // =========================
     const updatedPost = await Post.findOne({
       where: { id: post.id },
       include: [
@@ -524,6 +518,7 @@ exports.update = async (req, res) => {
       }));
 
     const postJSON = updatedPost.toJSON();
+    postJSON.category_ids = (postJSON.categories || []).map(c => c.id);
     if (postJSON.product_detail?.variations) {
       postJSON.product_detail.variations =
         formatVariants(postJSON.product_detail.variations);

@@ -1,13 +1,22 @@
-const { Listing, ListingValue, ListingType, Post, PostMeta } = require('../../models');
+const { Listing, ListingValue, ListingType, Post, PostMeta, Category } = require('../../models');
 
 module.exports = {
 
-  // GET all listings
 async getAll(req, res) {
   try {
     const listings = await Listing.findAll({
       include: [
-        { model: Post, as: "post" },
+        {
+          model: Post,
+          as: "post",
+          include: [
+            {
+              model: Category,
+              as: "categories",          
+              through: { attributes: [] }
+            }
+          ]
+        },
         { model: ListingType, as: "listingType" },
         { model: ListingValue, as: "values" },
       ],
@@ -19,8 +28,7 @@ async getAll(req, res) {
     console.error("getAll error:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
-}
-,
+},
   // GET detail listing by post_id
 async getDetail(req, res) {
   try {
@@ -29,7 +37,18 @@ async getDetail(req, res) {
     const listing = await Listing.findOne({
       where: { post_id: postId },
       include: [
-        { model: Post, as: "post", include: [{ model: PostMeta, as: "meta" }] },
+        {
+          model: Post,
+          as: "post",
+          include: [
+            { model: PostMeta, as: "meta" },
+            {
+              model: Category,
+              as: "categories",      
+              through: { attributes: [] }
+            }
+          ]
+        },
         { model: ListingType, as: "listingType" },
         { model: ListingValue, as: "values" },
       ],
@@ -39,8 +58,8 @@ async getDetail(req, res) {
       return res.status(404).json({ success: false, message: "Listing not found" });
     }
 
-    // Parse other_images agar frontend tidak blank
     const json = listing.toJSON();
+
     if (json.post?.other_images && typeof json.post.other_images === "string") {
       try {
         json.post.other_images = JSON.parse(json.post.other_images);
