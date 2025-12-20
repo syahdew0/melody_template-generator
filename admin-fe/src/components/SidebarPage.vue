@@ -4,8 +4,9 @@
     class="fixed top-0 left-0 z-40 w-52 h-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl transition-transform duration-300 ease-in-out"
     :class="[isOpen ? 'translate-x-0' : '-translate-x-full']">
     <!-- Header -->
-    <div class="p-6 border-b border-slate-700/50">
-     <H1 class="group flex items-center space-x-3 hover:text-amber-400 transition-colors duration-200"></H1>
+    <div class="p-6 border-b border-slate-700/50 flex flex-col items-center">
+      <img src="@/assets/logo.png" alt="Logo" class="w-16 h-16 mb-1" />
+      <H1 class="group flex items-center space-x-3 hover:text-amber-400 font-bold transition-colors duration-200">{{ userRole === 'admin' ? 'Melody V2' : userRole === 'editor' ? 'Editor Panel' : 'User Panel' }}</H1>
     </div>
 
     <!-- Navigation Menu -->
@@ -625,7 +626,8 @@ export default {
       sidebarOpen: true,
       dropdownOpen: '',
       subDropdownOpen: '',
-       listingTypes: []
+      listingTypes: [],
+      userRole: ''
     }
   },
   created() {
@@ -643,7 +645,13 @@ export default {
     this.subDropdownOpen = ''
   }
 
-  this.fetchListingTypes() 
+  this.fetchListingTypes()
+
+  // Get userRole from localStorage
+  const user = JSON.parse(localStorage.getItem('user'))
+  if (user) {
+    this.userRole = user.role || ''
+  }
 },
   methods: {
   isActiveListing(typeId) {

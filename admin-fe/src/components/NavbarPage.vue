@@ -9,7 +9,7 @@
         </svg>
       </button>
       <div class="text-xl font-bold capitalize">
-        {{ userRole === 'admin' ? 'Melody V2' : userRole === 'editor' ? 'Editor Panel' : 'User Panel' }}
+        <!-- {{ userRole === 'admin' ? 'Melody V2' : userRole === 'editor' ? 'Editor Panel' : 'User Panel' }} -->
       </div>
     </div>
 
