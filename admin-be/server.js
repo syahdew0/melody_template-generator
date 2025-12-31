@@ -34,7 +34,9 @@ const whitelist = [];
 if (process.env.NODE_ENV === 'production') {
   whitelist.push(
     'https://psggroup.id',
-    'https://office.psggroup.id'
+    'https://office.psggroup.id',
+    'https://admincompro.phisoft.co.id',
+    'https://apicompro.phisoft.co.id'
   );
 } else if (process.env.NODE_ENV === 'staging') {
   whitelist.push(
