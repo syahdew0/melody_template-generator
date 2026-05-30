@@ -47,6 +47,21 @@
               <button @click="saveSchema" class="bg-indigo-600 text-white px-3 py-1 rounded whitespace-nowrap">Save Schema</button>
             </div>
           </div>
+          <div class="mb-4 p-3 bg-gray-50 border rounded flex flex-wrap gap-2 items-center">
+            <button @click="selectAllTagsOnPage" class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm">
+              Centang Semua Tag
+            </button>
+            <button @click="clearSelectedTagsOnPage" class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm">
+              Hapus Centang
+            </button>
+            <button
+              @click="exportSelectedTags"
+              :disabled="exporting || selectedTagCount === 0"
+              class="bg-green-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+            >
+              {{ exporting ? 'Exporting...' : `Export Tag Terpilih (${selectedTagCount})` }}
+            </button>
+          </div>
 
           <div
             v-for="(tag, tagName) in getTagsForSelectedPage"
@@ -61,7 +76,17 @@
                 </span>
                 {{ tagName }}
               </h3>
-              <button @click.stop="deleteTag(tagName)" class="text-red-600 text-sm">Delete</button>
+              <div class="flex items-center gap-3">
+                <label class="text-sm text-gray-700 flex items-center gap-1" @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="isTagSelected(tagName)"
+                    @change="toggleTagSelection(tagName, $event.target.checked)"
+                  />
+                  Export
+                </label>
+                <button @click.stop="deleteTag(tagName)" class="text-red-600 text-sm">Delete</button>
+              </div>
             </div>
 
             <div v-show="!collapsedTags[tagName]" class="text-sm space-y-2">
@@ -109,7 +134,7 @@
 
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import API_ENDPOINTS from '@/config/api'
 import { useToast } from 'vue-toastification'
@@ -126,11 +151,18 @@ const newTagName = ref('static')
 const selectedPage = ref(null)
 const activeThemeName = ref('')
 const collapsedTags = reactive({})
+const selectedTagsByPage = reactive({})
+const themeId = ref(null)
+const exporting = ref(false)
 
 const pages = computed(() => Object.keys(state.custom_page).map(name => ({ name })))
 const getTagsForSelectedPage = computed(() => {
   if (!selectedPage.value) return {}
   return state.custom_page[selectedPage.value] || {}
+})
+const selectedTagCount = computed(() => {
+  if (!selectedPage.value) return 0
+  return (selectedTagsByPage[selectedPage.value] || []).length
 })
 
 
@@ -146,6 +178,9 @@ function addPage() {
 
 function selectPage(name) {
   selectedPage.value = name
+  if (!selectedTagsByPage[name]) {
+    selectedTagsByPage[name] = []
+  }
 }
 
 function addTag() {
@@ -169,6 +204,72 @@ function addTag() {
   newTagName.value = ''
 }
 
+function isTagSelected(tagName) {
+  if (!selectedPage.value) return false
+  return (selectedTagsByPage[selectedPage.value] || []).includes(tagName)
+}
+
+function toggleTagSelection(tagName, checked) {
+  if (!selectedPage.value) return
+  const current = selectedTagsByPage[selectedPage.value] || []
+  if (checked) {
+    if (!current.includes(tagName)) {
+      selectedTagsByPage[selectedPage.value] = [...current, tagName]
+    }
+    return
+  }
+  selectedTagsByPage[selectedPage.value] = current.filter(t => t !== tagName)
+}
+
+function selectAllTagsOnPage() {
+  if (!selectedPage.value) return
+  selectedTagsByPage[selectedPage.value] = Object.keys(getTagsForSelectedPage.value)
+}
+
+function clearSelectedTagsOnPage() {
+  if (!selectedPage.value) return
+  selectedTagsByPage[selectedPage.value] = []
+}
+
+async function exportSelectedTags() {
+  if (!selectedPage.value) return
+  const tagKeys = selectedTagsByPage[selectedPage.value] || []
+  if (tagKeys.length === 0) {
+    toast.warning('Pilih minimal 1 tag untuk export.')
+    return
+  }
+
+  exporting.value = true
+  try {
+    const fullTags = tagKeys.map(tag => `${selectedPage.value}-${tag}`)
+    const url = API_ENDPOINTS.customPagesExport(selectedPage.value, themeId.value, fullTags)
+    const res = await axios.get(url)
+
+    if (!res.data?.success) {
+      toast.error(res.data?.message || 'Export gagal')
+      return
+    }
+
+    const jsonStr = JSON.stringify(res.data, null, 2)
+    const blob = new Blob([jsonStr], { type: 'application/json' })
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `custom-pages-${selectedPage.value}-selected-tags.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(downloadUrl)
+
+    toast.success(`Export berhasil: ${res.data.meta?.count || 0} item`)
+  } catch (err) {
+    console.error('Gagal export tag terpilih:', err)
+    toast.error('Gagal export tag terpilih.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 
 async function deleteTag(tagName) {
   if (!selectedPage.value) return
@@ -181,6 +282,7 @@ async function deleteTag(tagName) {
     // 1. Hapus dari state
     delete state.custom_page[selectedPage.value][tagName]
     delete collapsedTags[tagName]
+    selectedTagsByPage[selectedPage.value] = (selectedTagsByPage[selectedPage.value] || []).filter(t => t !== tagName)
 
     // 2. Simpan ulang schema ke theme
     const res = await axios.get(API_ENDPOINTS.activeTheme(websiteId.value))
@@ -215,6 +317,7 @@ async function deletePage(pageName) {
     if (selectedPage.value === pageName) {
       selectedPage.value = null
     }
+    delete selectedTagsByPage[pageName]
 
     toast.success(`Halaman "${pageName}" dan semua tag-nya berhasil dihapus.`)
   } catch (err) {
@@ -252,9 +355,13 @@ async function loadSchema() {
     if (res.data.theme && res.data.theme.schema?.custom_page) {
       state.custom_page = res.data.theme.schema.custom_page
       activeThemeName.value = res.data.theme.name
+      themeId.value = res.data.theme.id || null
 
       for (const pageName in state.custom_page) {
         const tags = state.custom_page[pageName]
+        if (!selectedTagsByPage[pageName]) {
+          selectedTagsByPage[pageName] = []
+        }
         for (const tagName in tags) {
           collapsedTags[tagName] = true
         }
@@ -268,4 +375,11 @@ async function loadSchema() {
 onMounted(() => {
   loadSchema()
 })
+
+watch(getTagsForSelectedPage, (tags) => {
+  if (!selectedPage.value) return
+  const validTagNames = Object.keys(tags || {})
+  const current = selectedTagsByPage[selectedPage.value] || []
+  selectedTagsByPage[selectedPage.value] = current.filter(t => validTagNames.includes(t))
+}, { deep: true })
 </script>

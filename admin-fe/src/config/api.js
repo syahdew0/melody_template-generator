@@ -72,6 +72,16 @@ postTypes: `${API_URL}/apis/admin/posts/types`,
   pages: `${API_URL}/api/admin/posts`,
   pageBySlug: (slug) => `${API_URL}/api/admin/pages/slug/${slug}`,
   customPages: `${API_URL}/api/admin/custom-pages`,
+  customPagesExport: (page, themeId, tags = []) => {
+    const query = new URLSearchParams();
+    query.set('page', page);
+    if (themeId) query.set('theme_id', themeId);
+    if (Array.isArray(tags) && tags.length > 0) {
+      query.set('tags', tags.join(','));
+    }
+    return `${API_URL}/api/admin/custom-pages/export?${query.toString()}`;
+  },
+  customPagesImport: `${API_URL}/api/admin/custom-pages/import`,
   manifestThemes: `${API_URL}/apis/public/themes/manifest`,
   activeTheme: (websiteId) => `${API_URL}/api/admin/themes/${websiteId}/active-theme`,
   updateTheme: (id) => `${API_URL}/api/admin/themes/${id}`,

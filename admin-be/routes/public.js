@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { Theme, Website } = require('../models');
+const { Theme, Website, Icon } = require('../models');
 
 router.get('/site-info', async (req, res) => {
   try {
@@ -18,7 +18,8 @@ router.get('/site-info', async (req, res) => {
 
     const website = theme.website || {};
     const title = website.site_title || website.title || 'Website';
-    const icon = website.logo || '/favicon.ico';
+    const faviconSetting = await Icon.findOne({ where: { key: 'favicon' } });
+    const icon = faviconSetting?.value || website.logo || '/favicon.ico';
     const apiUrl = process.env.API_URL || `${req.protocol}://${req.get('host')}`;
 
     res.json({ 
@@ -28,6 +29,7 @@ router.get('/site-info', async (req, res) => {
       slug: theme.slug || null,
       title,
       icon,
+      favicon: icon,
       apiUrl 
     });
   } catch (err) {

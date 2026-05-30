@@ -1,15 +1,38 @@
 <template>
   <div class="p-6">
-    <!-- Tombol Kembali -->
-    <button
-      @click="goBack"
-      class="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded"
-    >
-      ← Kembali
-    </button>
+    <!-- Header dengan tombol -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div class="flex items-center gap-3">
+        <button
+          @click="goBack"
+          class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded"
+        >
+          ← Kembali
+        </button>
+        <h1 class="text-2xl font-bold capitalize">{{ page }} Sections</h1>
+      </div>
 
-    <h1 class="text-2xl font-bold mb-4 capitalize">{{ page }} Sections</h1>
+      <div class="flex items-center gap-2">
+        <!-- Tombol Export di-hide sesuai request -->
 
+        <!-- Tombol Import -->
+        <button
+          @click="handleImportClick"
+          class="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded"
+        >
+          ⬆ Import
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json"
+          class="hidden"
+          @change="handleFileSelected"
+        />
+      </div>
+    </div>
+
+    <!-- Section List -->
     <div
       v-for="(schema, sectionKey) in pageSections"
       :key="sectionKey"
@@ -65,6 +88,80 @@
         Tambah Item
       </button>
     </div>
+
+    <!-- =============== IMPORT PREVIEW MODAL =============== -->
+    <div
+      v-if="showImportPreview"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+        <!-- Modal Header -->
+        <div class="p-5 border-b">
+          <h3 class="text-lg font-bold">📦 Preview Import</h3>
+          <p class="text-sm text-gray-500 mt-1">
+            File: <strong>{{ importFileName }}</strong>
+          </p>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-5 overflow-y-auto flex-1">
+          <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+            <p><strong>Page:</strong> {{ importPreviewData?.meta?.page || '-' }}</p>
+            <p><strong>Theme ID:</strong> {{ importPreviewData?.theme_id || importPreviewData?.meta?.theme_id || themeId || '-' }}</p>
+            <p><strong>Schema pages:</strong> {{ importSchemaPageCount }}</p>
+            <p><strong>Schema tags:</strong> {{ importSchemaTagCount }}</p>
+            <p><strong>Jumlah item data:</strong> {{ importPreviewData?.data?.length || 0 }}</p>
+            <p><strong>Exported at:</strong> {{ importPreviewData?.meta?.exported_at || '-' }}</p>
+          </div>
+
+          <p class="text-sm font-semibold mb-2">Daftar tag data yang akan di-import:</p>
+          <div class="max-h-48 overflow-y-auto border rounded">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-100 sticky top-0">
+                <tr>
+                  <th class="px-3 py-1 text-left">#</th>
+                  <th class="px-3 py-1 text-left">Tag</th>
+                  <th class="px-3 py-1 text-left">Title</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(item, idx) in importPreviewData?.data || []"
+                  :key="idx"
+                  class="border-t"
+                >
+                  <td class="px-3 py-1">{{ idx + 1 }}</td>
+                  <td class="px-3 py-1 font-mono text-xs">{{ item.tag }}</td>
+                  <td class="px-3 py-1">{{ item.title || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            ⚠️ Schema akan <strong>merge</strong> ke theme aktif. Data dengan tag yang tidak ada di schema hasil merge akan <strong>di-skip</strong> dan muncul sebagai warning.
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-5 border-t flex justify-end gap-3">
+          <button
+            @click="cancelImport"
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded"
+          >
+            Batal
+          </button>
+          <button
+            @click="confirmImport"
+            :disabled="importing"
+            class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded disabled:opacity-50"
+          >
+            <span v-if="importing">⏳ Importing...</span>
+            <span v-else>✅ Konfirmasi Import</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -86,18 +183,39 @@ const items = ref([])
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 const websiteId = user?.website_id || 1
 
+// Export/Import state
+const importing = ref(false)
+const showImportPreview = ref(false)
+const importPreviewData = ref(null)
+const importFileName = ref('')
+const fileInput = ref(null)
+const themeId = ref(null)
+const importSchemaPageCount = computed(() => {
+  const cp = importPreviewData.value?.schema?.custom_page
+  if (!cp || typeof cp !== 'object') return 0
+  return Object.keys(cp).length
+})
+const importSchemaTagCount = computed(() => {
+  const cp = importPreviewData.value?.schema?.custom_page
+  if (!cp || typeof cp !== 'object') return 0
+  return Object.values(cp).reduce((total, tags) => {
+    if (!tags || typeof tags !== 'object') return total
+    return total + Object.keys(tags).length
+  }, 0)
+})
+
 function goBack() {
   router.push('/admin/custom-pages')
 }
 
-// === Tambahan: simpan dan restore posisi scroll ===
+// === Scroll position ===
 function saveScrollPosition() {
   localStorage.setItem('customPageScroll', window.scrollY)
 }
 
 async function restoreScrollPosition() {
   const y = Number(localStorage.getItem('customPageScroll') || 0)
-  await nextTick() // tunggu DOM selesai render
+  await nextTick()
   window.scrollTo({ top: y, behavior: 'smooth' })
 }
 
@@ -111,10 +229,11 @@ const fetchSchema = async () => {
           ? JSON.parse(theme.schema)
           : theme.schema
       customPages.value = schema.custom_page || {}
+      themeId.value = theme.id || null
     }
   } catch (err) {
     console.error('Gagal ambil schema:', err)
-    alert('Gagal memuat schema tema')
+    toast.error('Gagal memuat schema tema')
   }
 }
 
@@ -127,7 +246,7 @@ const fetchItems = async () => {
     }))
   } catch (err) {
     console.error('Gagal ambil items:', err)
-    alert('Gagal memuat data')
+    toast.error('Gagal memuat data')
   }
 }
 
@@ -159,6 +278,83 @@ const deleteItem = async (item) => {
   } catch (err) {
     console.error('Gagal menyimpan:', err)
     toast.error('Gagal menyimpan')
+  }
+}
+
+// ====================== IMPORT ====================== //
+const handleImportClick = () => {
+  if (fileInput.value) {
+    fileInput.value.value = ''
+    fileInput.value.click()
+  }
+}
+
+const handleFileSelected = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  importFileName.value = file.name
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result)
+
+      // Validasi format
+      const hasSchema = !!parsed.schema
+      const hasData = Array.isArray(parsed.data) && parsed.data.length > 0
+      if (!hasSchema && !hasData) {
+        toast.error('Format file tidak valid. File harus punya "schema" dan/atau "data".')
+        return
+      }
+
+      importPreviewData.value = parsed
+      showImportPreview.value = true
+    } catch (err) {
+      toast.error('File bukan JSON yang valid.')
+      console.error('Parse error:', err)
+    }
+  }
+  reader.readAsText(file)
+}
+
+const cancelImport = () => {
+  showImportPreview.value = false
+  importPreviewData.value = null
+  importFileName.value = ''
+}
+
+const confirmImport = async () => {
+  if (!importPreviewData.value) return
+
+  importing.value = true
+  try {
+    const payload = {
+      ...importPreviewData.value,
+      theme_id: importPreviewData.value?.theme_id || importPreviewData.value?.meta?.theme_id || themeId.value
+    }
+    const res = await axios.post(API_ENDPOINTS.customPagesImport, payload)
+
+    if (res.data.success) {
+      const warningCount = res.data.warnings?.length || 0
+      toast.success(
+        `Import berhasil! Schema tags merge: ${res.data.schema_merged_tags || 0}, data: ${res.data.created || 0} dibuat, ${res.data.updated || 0} diupdate, ${res.data.skipped || 0} di-skip.${warningCount ? ` Warning: ${warningCount}` : ''}`
+      )
+      showImportPreview.value = false
+      importPreviewData.value = null
+      importFileName.value = ''
+
+      // Refresh data
+      await fetchSchema()
+      await fetchItems()
+    } else {
+      toast.error(res.data.message || 'Import gagal')
+    }
+  } catch (err) {
+    console.error('Import error:', err)
+    toast.error('Gagal import data: ' + (err.response?.data?.message || err.message))
+  } finally {
+    importing.value = false
   }
 }
 

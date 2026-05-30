@@ -106,9 +106,8 @@ export default {
         .post(API_ENDPOINTS.mediaUpload, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            // 'Content-Type': 'multipart/form-data',
-            withCredentials: true,
           },
+          withCredentials: true,
         })
         .then((res) => {
           this.form.image = res.data?.url || ''
@@ -142,7 +141,9 @@ export default {
         this.addToLogoList(this.form.image)
       } catch (err) {
         console.error('Gagal menyimpan logo:', err)
-        alert('Gagal menyimpan logo.')
+        const apiMessage = err?.response?.data?.message
+        const status = err?.response?.status
+        alert(apiMessage ? `Gagal menyimpan logo: ${apiMessage}` : `Gagal menyimpan logo${status ? ` (HTTP ${status})` : ''}.`)
       }
     },
     addToLogoList(newLogo) {

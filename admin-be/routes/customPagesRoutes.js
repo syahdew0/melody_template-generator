@@ -32,6 +32,23 @@ router.get(
   customPageController.getAll
 );
 
+// ====================== EXPORT / IMPORT ====================== //
+// Export custom pages by page (harus sebelum /:id)
+router.get(
+  '/export',
+  requireAuth,
+  requireModulePermission("Custome Page", "canView"),
+  customPageController.exportByPage
+);
+
+// Import custom pages bulk (harus sebelum /:id)
+router.post(
+  '/import',
+  requireAuth,
+  requireModulePermission("Custome Page", "canAdd"),
+  customPageController.importBulk
+);
+
 // Ambil detail custom page
 router.get(
   '/:id',
