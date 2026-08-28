@@ -183,12 +183,14 @@ Setiap kolom `website_id` disertai index. Tanpa index, setiap query yang difilte
 | Identitas & izin | `Users`, `roles`, `Modules`, `RoleActiveModules`, `RoleOtherModules`, `role_categories` | Di luar cakupan yang dipilih |
 | Referensi | `banks`, `wallet_types`, `transaction_types`, `location` | Data master nasional |
 | Commerce | `product_details`, `product_variants*`, `orders`, `orderdetails`, `orderpayments`, `history_order_status` | Di luar cakupan |
-| Dompet | `wallet_histories`, `starting_balances`, `topups`, `withdraws`, `adjusts`, `wallet_summaries`, `userdailywallets` | Di luar cakupan |
+| Dompet | `wallet_histories`, `starting_balances`, `topups`, `withdraws`, `adjusts`, `wallet_summaries`, `userdailywallets` | Di luar cakupan **tenancy** — tapi punya cacat korektif, lihat §10 Fase 4 |
 | MLM | seluruh `mlm*` | Di luar cakupan |
 | Listing | `listings`, `listing_values` | Ikut tenant lewat `posts.website_id`, karena `listings.post_id` adalah PK sekaligus FK |
 | Customer | `Customers`, `customer_addresses`, `comments` | Di luar cakupan |
 
 > **Catatan.** `product_details` ikut tenant secara tidak langsung lewat `posts.website_id` (relasi 1:1). Tapi `orders` tidak punya jalur apa pun ke `websites` — kalau nanti butuh order per-tenant, itu perubahan cakupan, bukan penambahan kolom biasa.
+
+> **Catatan tentang dompet.** Tabel dompet tetap global — keputusan ini tidak berubah. Yang berubah: pembacaan kode pada 28 Agustus 2026 menemukan lima cacat korektif pada modul ini, dua di antaranya membuat saldo dapat menjadi negatif. Cacat itu **tidak berhubungan dengan tenancy** dan tidak memerlukan kolom `website_id`, tetapi harus selesai sebelum modul dompet dianggap layak jual. Karena itu ia masuk sebagai fase tersendiri (§10 Fase 4), bukan sebagai perluasan cakupan `website_id`.
 
 ---
 
@@ -326,11 +328,26 @@ Belum ada perubahan perilaku tenant. Tujuannya menu Website bisa dipakai.
 
 **Hasil:** tenant ditentukan backend, tidak bisa dilewati dari sisi klien.
 
+### Fase 4 — Perbaikan dompet saldo
+
+Tidak bergantung pada fase 1–3 dan boleh dikerjakan paralel. Dimasukkan ke dokumen ini karena modul dompet ikut dijual bersama CMS, sementara kondisinya sekarang tidak dapat dipertanggungjawabkan.
+
+14. Perbaiki guard saldo pada pembayaran order — `walletData.balance` selalu `undefined`
+15. Tetapkan satu sumber kebenaran saldo — `getWallet()` atau kolom `balance_after`, bukan keduanya
+16. Seragamkan aturan status pada perhitungan saldo
+17. Aktifkan cron snapshot saldo harian (sekarang tidak pernah berjalan)
+18. Bersihkan kode dompet yang tidak terpakai
+
+**Hasil:** saldo yang ditampilkan, saldo yang dipotong, dan saldo yang disnapshot memakai aturan yang sama.
+
+> **Urutan 14 → 18 mengikat.** Mengaktifkan cron (17) sebelum aturan status diseragamkan (16) justru memunculkan bug yang lebih parah dari kondisi sekarang: saldo setiap customer akan berubah sendiri lewat tengah malam, karena basis snapshot dihitung dengan aturan yang berbeda dari yang dipakai saat menampilkan.
+
 ```mermaid
 flowchart LR
   F1["Fase 1<br/>Fondasi<br/><br/>menu jalan<br/>0 tabel berubah"]
   F2["Fase 2<br/>Kolom tenancy<br/><br/>10 tabel + index<br/>backfill"]
   F3["Fase 3<br/>Isolasi<br/><br/>resolveTenant<br/>+ nginx/DNS"]
+  F4["Fase 4 · paralel<br/>Dompet<br/><br/>5 perbaikan korektif<br/>0 tabel berubah"]
   F1 --> F2 --> F3
 ```
 
@@ -346,6 +363,8 @@ flowchart LR
 | 2 | `GET /api/admin/websites` dan `GET /:id` mau ditutup? | Sekarang terbuka tanpa auth dan `GET /:id` membocorkan `admin_email`. Saya belum tahu apakah frontend publik memanggilnya. |
 | 3 | Website default untuk data lama — id `1`? | Menentukan isi backfill fase 2. |
 | 4 | Setelan transaksi mau pindah tabel sendiri atau tetap satu tabel dengan kolom `group`? | Menentukan bentuk perbaikan §4. |
+| 5 | Saldo negatif yang mungkin sudah terbentuk di produksi perlu direkonsiliasi, atau cukup dihentikan pendarahannya? | Guard saldo tidak pernah aktif, jadi order berbayar-saldo bisa lolos tanpa saldo. Menentukan apakah Fase 4 butuh langkah migrasi data. |
+| 6 | Kolom `wallet_histories.balance_before` / `balance_after` dipertahankan sebagai jejak audit, atau ditinggalkan? | Sekarang diisi tidak konsisten — nol pada jalur pembayaran order. Menentukan bentuk perbaikan Fase 4 nomor 15. |
 
 ### Risiko
 
@@ -356,5 +375,9 @@ flowchart LR
 **Tabel `Media` dan `Settings` berhuruf besar.** Aman di macOS, berbeda di Linux. Tulis nama tabel persis di migration.
 
 **Fase 2 tanpa fase 3 memberi rasa aman palsu.** Data sudah bertanda tenant tapi siapa pun bisa mengubah `website_id` lewat parameter. Jangan diperlakukan sebagai isolasi sampai fase 3 selesai.
+
+**Dompet memakai `username` sebagai kunci relasi.** `wallet_histories`, `starting_balances`, `topups`, `withdraws`, dan `adjusts` semuanya memakai string `username`, bukan `id`. Selama itu bertahan, username customer tidak dapat diubah tanpa memutus riwayat saldo. Mengganti ke `customer_id` adalah migrasi besar dan sengaja **tidak** dimasukkan ke Fase 4 — Fase 4 hanya memperbaiki kebenaran hitungan, bukan bentuk relasi.
+
+**Perbaikan dompet menyentuh uang, bukan tampilan.** Berbeda dari fase 1–3, kesalahan di sini berakibat langsung ke saldo customer. Setiap langkah Fase 4 mensyaratkan verifikasi kondisi awal yang terbukti lebih dulu, bukan asumsi dari membaca kode.
 
 **`orders` tidak punya jalur ke `websites`.** Kalau order per-tenant ternyata dibutuhkan, itu perluasan cakupan — bukan sekadar tambah kolom, karena `orders` juga belum punya asosiasi ke `Customers`.
