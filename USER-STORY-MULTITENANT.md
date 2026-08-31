@@ -36,7 +36,17 @@ Dokumen ini menurunkan [ARSITEKTUR-TARGET-MULTITENANT.md](ARSITEKTUR-TARGET-MULT
 
 **Catatan tentang Fase E.** Fase A–D menurunkan dokumen arsitektur. Fase E tidak: ia lahir dari pembacaan kode modul dompet pada 28 Agustus 2026, yang menemukan lima cacat — dua di antaranya membuat saldo dapat menjadi negatif. Cacat tersebut **tidak berhubungan dengan tenancy** dan tidak memerlukan kolom `website_id`. Fase E dimasukkan ke dokumen ini karena modul dompet ikut dijual bersama CMS, dan tidak ada dokumen lain yang menampungnya. Fase E boleh dikerjakan paralel dengan Fase A–D. Rujukan arsitektur: [ARSITEKTUR-TARGET-MULTITENANT.md §10 Fase 4](ARSITEKTUR-TARGET-MULTITENANT.md).
 
-**Catatan tentang Audit Trail.** Sistem ini **belum memiliki tabel log terpusat** seperti `user_logs`. Sebagian tabel punya kolom `created_by` / `updated_by`, sebagian tidak. Acceptance criteria di bawah karena itu tidak mensyaratkan pencatatan audit, kecuali disebut eksplisit. Pengadaan audit log terpusat diusulkan sebagai dokumen terpisah — lihat [Pertanyaan Terbuka](#-pertanyaan-terbuka) nomor 5.
+**Catatan tentang Proyek Melody v2.** Dokumen ini dan [USER-STORY-TEMPLATE-GENERATOR-FITUR.md](USER-STORY-TEMPLATE-GENERATOR-FITUR.md) sama-sama mengubah repositori ini, dan keduanya menyentuh tabel `websites` serta `Customers`. Aturan yang berlaku: **`websites` dan `Customers` adalah tabel bersama, seluruh migration-nya lahir di sini** — Melody memakainya, tidak membuat migration sendiri. Tiga titik singgungnya:
+
+| Titik singgung | Pemilik | Catatan |
+|---|---|---|
+| Kolom `websites.custom_domain`, `websites.is_active`, dan unique `subdomain` | **Dokumen ini**, US (2) | Semula dispesifikasikan di kedua dokumen. Sekarang hanya di sini. |
+| Kolom `websites.owner_customer_id`, `site_type_id`, `status`, `published_at`, `published_version_id` | **Dokumen ini**, US (2) | Dibutuhkan Melody, tapi migration-nya dititipkan ke US (2). |
+| Kolom `Customers.psg_account_id`, `is_site_owner`, `is_super_admin`, `avatar` | Melody | `Customers` tidak mendapat `website_id` dan tetap global, jadi tidak bertabrakan dengan cakupan dokumen ini. |
+
+Satu dampak berjalan ke arah sebaliknya: fitur (46) pada dokumen Melody mengubah `adminCustomerController.js` dan `CustomerList.vue` milik panel lama, supaya pemilik situs Melody tidak bercampur dengan pembeli toko. Perubahan itu terbatas pada penyaringan daftar dan tidak menyentuh `website_id`, sehingga tidak berbenturan dengan Fase C maupun Fase D.
+
+**Catatan tentang Audit Trail.** Sistem ini **belum memiliki tabel log terpusat** seperti `user_logs`. Sebagian tabel punya kolom `created_by` / `updated_by`, sebagian tidak. Sudah **diputuskan** bahwa tabel audit log terpusat tidak dibuat dalam cakupan ini: penolakan lintas tenant cukup dicatat ke log aplikasi. Acceptance criteria di bawah karena itu tidak mensyaratkan pencatatan audit ke database, kecuali disebut eksplisit. Lihat [Keputusan yang Ditetapkan](#-keputusan-yang-ditetapkan) nomor 5.
 
 ---
 
@@ -78,6 +88,8 @@ Dokumen ini menurunkan [ARSITEKTUR-TARGET-MULTITENANT.md](ARSITEKTUR-TARGET-MULT
 **Aktor:** Sistem / Developer
 
 **Prasyarat:** Tidak ada. Ini pekerjaan pertama sebelum fase mana pun dimulai.
+
+> **Catatan prioritas.** Pekerjaan ini sempat dianggap memblokir proyek Melody v2. Sudah tidak lagi: Keputusan Arsitektur nomor 9 menetapkan `melody-be` tidak membaca maupun menulis tabel `settings`, seluruh setelan Melody hidup di tabel `mv_*`. Jadi urgensinya murni datang dari dokumen ini — setelan logo dan setelan transaksi yang berebut ruang kunci, dan perbedaan perilaku macOS versus Linux.
 
 **Deskripsi (User Story):** Sebagai Sistem, Saya ingin hanya ada satu model bernama `Setting` yang terdaftar dan satu tabel setelan yang dipakai, Agar setelan logo dan setelan transaksi tidak berebut ruang kunci pada tabel yang sama, dan perilaku sistem tidak berbeda antara lingkungan macOS dan Linux.
 
@@ -126,7 +138,7 @@ f. **Alur Lanjutan (Post-Condition)**
 
 **Prasyarat:** User Story (1) telah selesai.
 
-**Deskripsi (User Story):** Sebagai Sistem, Saya ingin tabel `websites` memiliki kolom `domain` dan `is_active`, Agar setiap tenant dapat dikenali dari host pemanggil dan dapat dinonaktifkan tanpa harus menghapus datanya.
+**Deskripsi (User Story):** Sebagai Sistem, Saya ingin tabel `websites` memiliki kolom `custom_domain` dan `is_active`, Agar setiap tenant dapat dikenali dari host pemanggil dan dapat dinonaktifkan tanpa harus menghapus datanya.
 
 ### Detail Teknis & Alur Sistem
 
@@ -139,7 +151,7 @@ f. **Alur Lanjutan (Post-Condition)**
 a. **Penambahan Kolom Baru**
 - Migration menambahkan kolom pada tabel `websites`:
 
-  `domain`: `VARCHAR(255)`, `NULL`, `UNIQUE` — menyimpan host lengkap (contoh: `psggroup.id`).
+  `custom_domain`: `VARCHAR(255)`, `NULL`, `UNIQUE` — menyimpan host lengkap (contoh: `psggroup.id`).
 
   `is_active`: `BOOLEAN`, `NOT NULL`, default `true`.
 
@@ -148,20 +160,37 @@ b. **Penguatan Kolom `subdomain`**
 - Sebelum menerapkan constraint, migration wajib memeriksa duplikasi. Jika ditemukan duplikat, migration dibatalkan dengan pesan jelas dan data diperbaiki manual lebih dulu.
 - Nilai `subdomain` dinormalisasi menjadi huruf kecil.
 
-c. **Alasan Kolom `domain` Terpisah dari `subdomain`**
+c. **Alasan Kolom `custom_domain` Terpisah dari `subdomain`**
 - Kolom `subdomain` yang ada hanya menyimpan potongan nama (contoh: `default`, `psggroup`), sehingga tidak cukup untuk mencocokkan header `Origin` atau `Host` yang berisi host lengkap.
-- Kedua kolom dipertahankan: `subdomain` untuk identitas internal, `domain` untuk pencocokan request.
+- Kedua kolom dipertahankan: `subdomain` untuk identitas internal, `custom_domain` untuk pencocokan request.
 
 d. **Pengisian Nilai Awal**
 - Baris `websites` yang sudah ada diisi `is_active = true`.
-- Kolom `domain` dibiarkan `NULL` dan diisi manual oleh admin melalui form pada User Story (5).
+- Kolom `custom_domain` dibiarkan `NULL` dan diisi manual oleh admin melalui form pada User Story (5).
 
 e. **Rollback**
 - Migration menyediakan `down()` yang menghapus kedua kolom baru dan mencabut unique constraint pada `subdomain`.
 
-f. **Alur Lanjutan (Post-Condition)**
-- Model `Website` diperbarui agar memuat `domain` dan `is_active`.
+f. **Kolom Titipan Proyek Melody v2**
+- `websites` adalah tabel bersama. Sesuai aturan kepemilikan tabel, **seluruh migration-nya lahir di dokumen ini**, termasuk kolom yang hanya dipakai Melody.
+- Migration yang sama menambahkan lima kolom berikut, meski belum ada satu pun fitur di dokumen ini yang memakainya:
+
+| Kolom | Tipe | Dipakai oleh |
+|---|---|---|
+| `owner_customer_id` | `INT` `NULL`, FK → `Customers` | Kepemilikan situs Melody |
+| `site_type_id` | `INT` `NULL`, FK → `mv_site_types` | Tipe situs Melody |
+| `status` | `ENUM('draft','published','suspended')`, default `'draft'` | Publikasi & suspend situs Melody |
+| `published_at` | `DATETIME` `NULL` | Publikasi situs Melody |
+| `published_version_id` | `INT` `NULL` | Snapshot terbit Melody |
+
+- Kelimanya `NULL` atau berdefault, sehingga baris `websites` yang sudah ada tidak terpengaruh dan panel lama tetap berjalan tanpa perubahan.
+- Foreign key ke `mv_site_types` dan `mv_site_versions` **belum** dipasang di migration ini, karena kedua tabel itu lahir di `melody-be` dan belum tentu ada saat migration ini jalan. Kolomnya disiapkan sebagai `INT` biasa; constraint-nya menyusul dari sisi Melody.
+- Kolom-kolom ini **tidak** masuk daftar kolom yang boleh ditulis pada User Story (4) dan (5). Panel lama tidak boleh menyuntingnya.
+
+g. **Alur Lanjutan (Post-Condition)**
+- Model `Website` diperbarui agar memuat `custom_domain` dan `is_active`.
 - Kedua kolom masuk ke daftar kolom yang boleh ditulis pada User Story (4) dan (5).
+- Setelah User Story ini selesai, `melody-be` tidak perlu membuat migration apa pun untuk tabel `websites`.
 
 ---
 ---
@@ -174,7 +203,7 @@ f. **Alur Lanjutan (Post-Condition)**
 
 **Prasyarat:** Pengguna sudah login dan memiliki hak akses `canView` pada modul Website.
 
-**Deskripsi (User Story):** Sebagai Admin, Saya ingin melihat daftar seluruh website beserta ID, subdomain, domain, dan tema aktifnya, Agar saya mengetahui tenant apa saja yang dikelola panel ini dan `website_id` mana yang dipakai oleh setiap konten.
+**Deskripsi (User Story):** Sebagai Admin, Saya ingin melihat daftar seluruh website beserta ID, subdomain, custom domain, dan tema aktifnya, Agar saya mengetahui tenant apa saja yang dikelola panel ini dan `website_id` mana yang dipakai oleh setiap konten.
 
 ### Detail Teknis & Endpoint
 
@@ -230,7 +259,7 @@ f. **Alur Lanjutan (Post-Condition)**
 - **Komponen:** `admin-fe/src/views/website/WebsiteForm.vue`
 - **Method Akses Form:** `GET` (menampilkan form)
 - **Method Submit Data:** `POST /api/admin/websites`
-- **Payload (Form Fields):** `name`, `subdomain`, `domain`, `user_id`, `site_title`, `title`, `site_description`, `admin_email`, `logo`, `seo_keywords`, `seo_description`, `rate`, `is_active`
+- **Payload (Form Fields):** `name`, `subdomain`, `custom_domain`, `user_id`, `site_title`, `title`, `site_description`, `admin_email`, `logo`, `seo_keywords`, `seo_description`, `rate`, `is_active`
 - **Tabel Terkait:** `websites`, `Users`
 
 ### Acceptance Criteria (Kriteria Penerimaan)
@@ -239,14 +268,14 @@ a. **Validasi Input Data (Frontend & Backend)**
 - Sistem memastikan kelengkapan field wajib: `name` dan `subdomain`.
 - `subdomain` dinormalisasi menjadi huruf kecil dan hanya menerima karakter `a-z`, `0-9`, dan tanda hubung (`-`).
 - `subdomain` tidak boleh diawali atau diakhiri tanda hubung.
-- `domain` (jika diisi) dinormalisasi menjadi huruf kecil dan divalidasi sebagai hostname yang sah, tanpa skema `http://` dan tanpa garis miring.
+- `custom_domain` (jika diisi) dinormalisasi menjadi huruf kecil dan divalidasi sebagai hostname yang sah, tanpa skema `http://` dan tanpa garis miring.
 - `admin_email` (jika diisi) divalidasi sebagai alamat email.
 - `user_id` yang bernilai string kosong dikonversi menjadi `NULL` sebelum dikirim, karena kolomnya bertipe `INTEGER`.
 
 b. **Pengecekan Duplikasi (Database Validasi)**
 - Sistem melakukan `SELECT` ke tabel `websites` berdasarkan `subdomain` yang diinput.
 - Jika ditemukan, proses dibatalkan dengan `409 Conflict` dan pesan: "Subdomain sudah dipakai website lain."
-- Pemeriksaan yang sama dilakukan untuk `domain` bila diisi, dengan pesan: "Domain sudah dipakai website lain."
+- Pemeriksaan yang sama dilakukan untuk `custom_domain` bila diisi, dengan pesan: "Domain sudah dipakai website lain."
 
 c. **Whitelist Kolom (Mass Assignment Protection)**
 - Controller **tidak** menerima `req.body` apa adanya. Hanya kolom yang terdaftar pada konstanta `WRITABLE_FIELDS` yang diambil.
@@ -295,12 +324,12 @@ a. **Pemuatan Data Awal (Load)**
 - Halaman menampilkan badge `website_id: {id}` agar admin tahu ID yang sedang disunting.
 
 b. **Pengelompokan Field pada Antarmuka**
-- Form dibagi menjadi empat blok: **Identitas** (`name`, `subdomain`, `domain`, `user_id`, `is_active`), **Tampilan Situs** (`site_title`, `title`, `site_description`, `logo`), **SEO** (`seo_keywords`, `seo_description`), dan **Lainnya** (`admin_email`, `rate`).
+- Form dibagi menjadi empat blok: **Identitas** (`name`, `subdomain`, `custom_domain`, `user_id`, `is_active`), **Tampilan Situs** (`site_title`, `title`, `site_description`, `logo`), **SEO** (`seo_keywords`, `seo_description`), dan **Lainnya** (`admin_email`, `rate`).
 - Kolom `logo` menampilkan pratinjau gambar. Jika URL gagal dimuat, tampilkan peringatan tanpa membatalkan form.
 
 c. **Validasi Perubahan Subdomain & Domain**
 - Jika `subdomain` diubah, sistem memeriksa duplikasi terhadap website lain. Nilai yang tidak berubah tidak dianggap duplikat.
-- Aturan yang sama berlaku untuk `domain`.
+- Aturan yang sama berlaku untuk `custom_domain`.
 - Jika bentrok, kembalikan `409 Conflict`.
 
 d. **Whitelist Kolom & Eksekusi Update**
@@ -309,7 +338,7 @@ d. **Whitelist Kolom & Eksekusi Update**
 - Sistem melakukan `UPDATE` pada baris terkait.
 
 e. **Peringatan Dampak Perubahan**
-- Jika `subdomain` atau `domain` diubah pada website yang statusnya sedang dipakai, UI menampilkan konfirmasi: "Mengubah domain akan memutus resolusi tenant dari host lama. Lanjutkan?"
+- Jika `subdomain` atau `custom_domain` diubah pada website yang statusnya sedang dipakai, UI menampilkan konfirmasi: "Mengubah domain akan memutus resolusi tenant dari host lama. Lanjutkan?"
 
 f. **Alur Lanjutan (Post-Condition)**
 - Setelah sukses, pengguna diarahkan ke `/admin/websites`.
@@ -385,9 +414,11 @@ c. **Alasan Mount Tidak Boleh Dipindah**
 - Memindahkan seluruh mount ke bawah `requireAuth` akan memutus endpoint publik tersebut.
 - Komentar penjelas wajib ditulis di dalam file route agar developer berikutnya tidak salah memperbaiki.
 
-d. **Keputusan atas Endpoint Baca**
-- `GET /` dan `GET /:id` untuk sementara dibiarkan terbuka.
-- Catatan risiko: `GET /:id` mengembalikan kolom `admin_email`. Penutupan endpoint ini menunggu keputusan pada [Pertanyaan Terbuka](#-pertanyaan-terbuka) nomor 2.
+d. **Penutupan Endpoint Baca**
+- `GET /` dan `GET /:id` pada prefix `/api/admin/websites` **ditutup** dengan `requireAuth`, sama seperti endpoint tulis.
+- Sebagai gantinya disediakan satu endpoint publik minimal untuk frontend situs. Endpoint itu hanya mengembalikan kolom tampilan: `id`, `name`, `subdomain`, `site_title`, `title`, `site_description`, `logo`, `seo_keywords`, `seo_description`.
+- Kolom `admin_email`, `user_id`, `rate`, `custom_domain`, dan `is_active` **tidak boleh** ikut pada respons publik. Whitelist ditulis eksplisit di controller, bukan dengan menghapus kolom dari objek hasil query.
+- Verifikasi wajib membuktikan `GET /api/admin/websites/:id` tanpa token mengembalikan `401`, dan respons endpoint publik tidak memuat satu pun kolom terlarang di atas.
 
 e. **Verifikasi Hasil**
 - Request `POST`, `PUT`, dan `DELETE` tanpa token wajib mengembalikan `401` dengan pesan "Token tidak ditemukan".
@@ -476,7 +507,7 @@ a. **Hak Akses Endpoint Admin**
 
 b. **Perbaikan Whitelist pada Endpoint Simpan**
 - Implementasi lama menjalankan `website.update(req.body)` tanpa penyaringan.
-- Endpoint wajib memakai `WRITABLE_FIELDS` yang sama dengan User Story (4), agar `id`, `subdomain`, dan `domain` tidak dapat diubah lewat jalur ini.
+- Endpoint wajib memakai `WRITABLE_FIELDS` yang sama dengan User Story (4), agar `id`, `subdomain`, dan `custom_domain` tidak dapat diubah lewat jalur ini.
 
 c. **Perbaikan Endpoint Publik**
 - `getSettingsPublic` saat ini mengembalikan `website.favicon`, padahal kolom tersebut **tidak ada** pada model `Website` sehingga selalu bernilai `undefined`.
@@ -573,6 +604,8 @@ f. **Alur Lanjutan (Post-Condition)**
 
 a. **Penetapan Website Default**
 - Nilai `DEFAULT_WEBSITE_ID` ditambahkan ke `.env` dan ke dokumentasi deployment.
+- Nilainya **tidak boleh ditulis mati** di dalam migration maupun controller, termasuk tidak diasumsikan bernilai `1`. Staging dan produksi boleh memakai nilai berbeda.
+- Jika variabel tidak diisi, migration dibatalkan dengan pesan "DEFAULT_WEBSITE_ID belum dikonfigurasi."
 - Sebelum backfill berjalan, migration memvalidasi bahwa ID tersebut benar-benar ada pada tabel `websites`. Jika tidak ada, migration dibatalkan.
 
 b. **Eksekusi Backfill**
@@ -693,35 +726,40 @@ f. **Alur Lanjutan (Post-Condition)**
 
 ### Acceptance Criteria (Kriteria Penerimaan)
 
-a. **Alasan `Host` Saja Tidak Cukup**
-- API berdiri pada satu hostname, sehingga `req.headers.host` selalu bernilai sama apa pun tenant pemanggilnya.
+a. **Panel Admin Disajikan Per-Tenant**
+- Sudah **diputuskan**: panel admin tidak lagi berdiri di satu domain bersama. Tiap tenant memperoleh host admin sendiri, sehingga `Host` menjadi identitas tenant yang sesungguhnya bagi jalur admin.
+- Prasyarat infrastruktur: wildcard DNS, sertifikat SSL wildcard, dan `server_name` nginx yang mengarahkan seluruh host admin ke instalasi yang sama.
+- Keputusan ini yang membuat "tanpa switcher" tetap konsisten: admin tidak memilih tenant dari UI, tenant sudah ditentukan oleh host yang ia buka.
+
+b. **Alasan `Host` Saja Tidak Cukup untuk Situs Publik**
+- Untuk request dari situs publik, API berdiri pada satu hostname, sehingga `req.headers.host` selalu bernilai sama apa pun tenant pemanggilnya.
 - Header yang benar-benar bervariasi per tenant adalah `Origin`, yang dikirim browser dan sudah didaftarkan pada whitelist CORS.
 - Middleware karena itu tidak boleh mengandalkan `Host` sebagai satu-satunya sumber.
 
-b. **Rantai Prioritas Resolusi**
+c. **Rantai Prioritas Resolusi**
 - Middleware mengisi `req.websiteId` dengan urutan berikut. Yang lebih atas menang.
 
 | Prioritas | Sumber | Berlaku untuk |
 |---|---|---|
-| 1 | Header `Origin` atau `Referer` dicocokkan ke `websites.domain` | Situs publik |
-| 2 | Header `Host` dicocokkan ke `websites.domain` | API dengan hostname per-tenant |
+| 1 | Header `Origin` atau `Referer` dicocokkan ke `websites.custom_domain` | Situs publik |
+| 2 | Header `Host` dicocokkan ke `websites.custom_domain` | **Panel admin per-tenant** dan API dengan hostname per-tenant |
 | 3 | Parameter `website_id` eksplisit | Rute admin saja, dinonaktifkan pada akhir fase ini |
 | 4 | `DEFAULT_WEBSITE_ID` dari `.env` | Fallback |
 
-c. **Pembatasan Jalur Parameter**
+d. **Pembatasan Jalur Parameter**
 - Prioritas 3 hanya berlaku untuk path yang diawali `/api/admin`.
 - Jalur ini dimatikan melalui flag konfigurasi setelah User Story (17) selesai.
 - Jika dibiarkan hidup, isolasi apa pun dapat dilewati cukup dengan menambahkan `?website_id=` pada URL.
 
-d. **Cache Pemetaan Domain**
-- Pemetaan `domain → id` disimpan di memori proses agar tidak menghasilkan query database pada setiap request.
+e. **Cache Pemetaan Domain**
+- Pemetaan `custom_domain → id` disimpan di memori proses agar tidak menghasilkan query database pada setiap request.
 - Cache dikosongkan setiap kali ada operasi tulis pada tabel `websites`.
 
-e. **Normalisasi Nilai**
+f. **Normalisasi Nilai**
 - Nilai `Origin` dinormalisasi: skema (`https://`), port, dan garis miring akhir dibuang sebelum dicocokkan.
 - Pencocokan dilakukan case-insensitive.
 
-f. **Alur Lanjutan (Post-Condition)**
+g. **Alur Lanjutan (Post-Condition)**
 - Seluruh controller dapat membaca `req.websiteId` tanpa perlu mengurus header sendiri.
 - Nilai ini menjadi satu-satunya sumber kebenaran tenant pada User Story (15).
 
@@ -797,7 +835,7 @@ c. **Konsistensi Pesan**
 
 d. **Pencatatan Percobaan**
 - Setiap penolakan lintas tenant dicatat ke log aplikasi (stdout) dengan menyertakan path, `req.websiteId`, dan `website_id` yang diminta.
-- Pencatatan ke tabel database menunggu keputusan pada [Pertanyaan Terbuka](#-pertanyaan-terbuka) nomor 5.
+- Pencatatan ke tabel database **tidak dilakukan**. Sudah diputuskan bahwa audit log terpusat berada di luar cakupan dokumen ini; log aplikasi sudah cukup untuk mendiagnosis salah konfigurasi maupun percobaan akses.
 
 e. **Pengujian**
 - Disusun kumpulan uji yang mencakup: baca detail, ubah, hapus, dan daftar — masing-masing dengan `website_id` milik tenant lain.
@@ -952,9 +990,15 @@ e. **Pemotongan Saldo Ikut Transaksi Order**
 - Fungsi tersebut diberi parameter transaksi opsional, dan `orderController.js` meneruskan transaksi yang sedang berjalan.
 - Diuji dengan memaksa kegagalan setelah pemotongan saldo: tidak boleh ada baris ledger yang tersisa.
 
-f. **Alur Lanjutan (Post-Condition)**
+f. **Audit Saldo Negatif yang Sudah Terbentuk**
+- Setelah guard diperbaiki, dijalankan kueri yang mendaftar seluruh customer dengan saldo bernilai negatif, beserta nilai saldonya dan pesanan yang menyebabkannya.
+- Hasilnya dilaporkan ke tim bisnis sebagai daftar, bukan diperbaiki sendiri oleh developer.
+- Koreksi dilakukan lewat **modul Adjust yang sudah ada**, satu per satu, dengan `remarks` yang menyebut alasan koreksi. Migration **tidak boleh** menulis entri penyeimbang secara massal.
+- Alasannya, sebagian saldo negatif mungkin merupakan tagihan yang sah dan masih dapat ditagih. Menormalkannya otomatis akan menghapus piutang tanpa sepengetahuan tim bisnis.
+
+g. **Alur Lanjutan (Post-Condition)**
 - Saldo tidak dapat lagi menjadi negatif lewat jalur pembayaran order.
-- Penanganan saldo negatif yang mungkin **sudah** terbentuk di produksi ditentukan terpisah — lihat [Pertanyaan Terbuka](#-pertanyaan-terbuka) nomor 6.
+- Daftar saldo negatif sudah diserahkan ke tim bisnis, dan tindak lanjutnya tercatat sebagai baris `adjusts`.
 
 ---
 
@@ -997,13 +1041,11 @@ b. **Penetapan Sumber Tunggal**
 - Alasan: ia dihitung dari ledger, sehingga tidak dapat menyimpang karena satu penulis lupa memperbarui kolom.
 
 c. **Nasib Kolom `balance_before` / `balance_after`**
-- Keputusan dipilih lebih dulu — lihat [Pertanyaan Terbuka](#-pertanyaan-terbuka) nomor 7. Dua opsi:
-
-  **Dipertahankan sebagai jejak audit.** `updateWalletBalance()` wajib mengisinya, dan seluruh penulis ledger memakai satu helper yang sama. Kolom tidak boleh dibaca untuk mengambil keputusan.
-
-  **Ditinggalkan.** Kolom dibiarkan ada demi data historis, tetapi tidak lagi ditulis maupun dibaca, dan ditandai usang di model.
-
-- Yang tidak boleh: kolom tetap dibaca untuk mengambil keputusan seperti sekarang.
+- Sudah **diputuskan**: kedua kolom **dipertahankan sebagai jejak audit**, bukan ditinggalkan maupun dihapus.
+- Konsekuensinya mengikat. Seluruh penulisan ke `wallet_histories` wajib melewati **satu helper tunggal** yang mengisi `balance_before` dan `balance_after` dari nilai `getWallet()` sebelum mutasi. Tidak boleh ada `WalletHistory.create()` yang dipanggil langsung dari controller.
+- `updateWalletBalance()` diperluas untuk mengisi kedua kolom tersebut; baris yang saat ini dinonaktifkan sebagai komentar diaktifkan kembali dengan nilai yang benar.
+- Kolom ini **tidak boleh dibaca untuk mengambil keputusan** — bukan untuk memvalidasi kecukupan saldo, bukan untuk menghitung saldo berikutnya. Fungsinya murni menelusuri selisih saat terjadi sengketa.
+- Verifikasi: setelah seluruh jalur diperbaiki, tidak boleh ada baris baru `wallet_histories` yang punya `balance_after` bernilai `0` sementara saldo hasil `getWallet()` bukan nol.
 
 d. **Pembersihan Pembaca Kolom**
 - `topupController.js` berhenti membaca `latestHistory.balance_after` untuk menghitung saldo sebelumnya.
@@ -1162,19 +1204,19 @@ f. **Alur Lanjutan (Post-Condition)**
 
 ---
 
-## ● Pertanyaan Terbuka
+## ● Keputusan yang Ditetapkan
 
-Tujuh hal berikut belum dapat dijawab dari kode maupun dokumen arsitektur, dan memblokir user story yang disebut.
+Tujuh hal berikut sempat berstatus pertanyaan terbuka. Seluruhnya kini sudah diputuskan dan sudah dituangkan ke acceptance criteria masing-masing user story. Bagian ini adalah ringkasan, bukan daftar tugas.
 
-| # | Pertanyaan | Memblokir |
-|---|---|---|
-| 1 | Panel admin akan disajikan per-tenant (`admin.<tenant>.id`) atau tetap satu domain? Jika tetap satu domain, satu instalasi admin hanya dapat mengelola satu website. | US (14), (17) |
-| 2 | Endpoint `GET /api/admin/websites` dan `GET /:id` mau ditutup? Saat ini terbuka tanpa auth dan `GET /:id` memuat `admin_email`. | US (7) |
-| 3 | Website default untuk data lama — apakah `id = 1`? | US (11) |
-| 4 | Setelan transaksi mau pindah ke tabel sendiri atau tetap satu tabel dengan kolom `group`? | US (1) |
-| 5 | Apakah proyek ini memerlukan tabel audit log terpusat seperti `user_logs`? Saat ini tidak ada sama sekali. | US (16) |
-| 6 | Saldo negatif yang mungkin sudah terbentuk di produksi perlu direkonsiliasi, atau cukup dihentikan pendarahannya? | US (19) |
-| 7 | Kolom `wallet_histories.balance_before` / `balance_after` dipertahankan sebagai jejak audit, atau ditinggalkan? | US (20) |
+| # | Hal | Keputusan | Dituangkan ke |
+|---|---|---|---|
+| 1 | Domain panel admin | **Per-tenant.** Tiap tenant punya host admin sendiri, sehingga resolusi dari `Host` menjadi valid dan keputusan "tanpa switcher" tetap konsisten. Butuh wildcard DNS + SSL dan `server_name` nginx. | US (14), (17) |
+| 2 | Proteksi endpoint Website | **Tutup CRUD, sisakan satu endpoint publik minimal.** Endpoint publik hanya mengembalikan kolom tampilan — tanpa `admin_email`, `user_id`, maupun `rate`. | US (7) |
+| 3 | Website default untuk backfill | **Dari `DEFAULT_WEBSITE_ID` di `.env`**, bukan angka yang ditulis mati. Migration gagal bila variabel tidak diisi atau menunjuk baris yang tidak ada. | US (11) |
+| 4 | Tabel setelan | **Satu tabel `settings` dengan kolom `group`**, unique index komposit `(group, key)`. Sesuai acceptance criteria yang sudah ditulis. | US (1) |
+| 5 | Audit log terpusat | **Tidak dibuat.** Penolakan lintas tenant cukup dicatat ke log aplikasi. Tidak ada tabel `user_logs`, dan cakupan dokumen ini tidak melebar. | US (16) |
+| 6 | Saldo negatif di produksi | **Audit dulu, koreksi manual.** US (19) mendaftar customer bersaldo negatif dan melaporkannya; koreksi dilakukan lewat modul Adjust oleh tim bisnis, bukan otomatis oleh migration. | US (19) |
+| 7 | `balance_before` / `balance_after` | **Dipertahankan sebagai jejak audit.** Seluruh penulis ledger wajib lewat satu helper yang mengisinya konsisten. Kolom tidak boleh dibaca untuk mengambil keputusan. | US (20) |
 
 ---
 

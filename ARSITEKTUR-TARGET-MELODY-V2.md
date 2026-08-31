@@ -23,7 +23,7 @@
 9. [Peta wishlist → komponen](#9-peta-wishlist--komponen)
 10. [Rencana fase](#10-rencana-fase)
 11. [Risiko](#11-risiko)
-12. [Pertanyaan yang masih terbuka](#12-pertanyaan-yang-masih-terbuka)
+12. [Pertanyaan yang sudah terjawab](#12-pertanyaan-yang-sudah-terjawab)
 
 ---
 
@@ -113,7 +113,7 @@ Tiga aturan yang mengikat:
 
 ## 4. Resolusi tenant — revisi
 
-Dokumen sebelumnya menyimpulkan "tenant ditentukan dari subdomain, tanpa switcher". Wishlist mengubah kesimpulan itu jadi **dua jalur berbeda**, karena MLD-042 (Dashboard Situs Saya) pada dasarnya memang sebuah pemilih situs.
+Dokumen sebelumnya menyimpulkan "tenant ditentukan dari subdomain, tanpa switcher". Wishlist mengubah kesimpulan itu jadi **dua jalur berbeda**, karena Dashboard Situs Saya — fitur (30) — pada dasarnya memang sebuah pemilih situs.
 
 | Konteks | Cara resolusi | Alasan |
 |---|---|---|
@@ -158,14 +158,16 @@ Tanpa ini, seorang pengguna cukup mengubah angka di URL untuk menyunting situs o
 
 | Kolom | Tipe | Untuk |
 |---|---|---|
-| `owner_customer_id` | `INT` FK → `Customers` | MLD-042 kepemilikan situs |
-| `site_type_id` | `INT` FK → `mv_site_types` | MLD-008 tipe situs |
-| `status` | `ENUM('draft','published','suspended')` | MLD-036 publikasi, MLD-052 suspend |
-| `published_at` | `DATETIME` | MLD-036 |
-| `custom_domain` | `VARCHAR` unique nullable | MLD-047 domain sendiri pada paket berbayar |
-| `is_active` | `BOOLEAN` | MLD-052 |
+| `owner_customer_id` | `INT` FK → `Customers` | fitur (30) kepemilikan situs |
+| `site_type_id` | `INT` FK → `mv_site_types` | fitur (3) tipe situs |
+| `status` | `ENUM('draft','published','suspended')` | fitur (29) publikasi, fitur (40) suspend |
+| `published_at` | `DATETIME` | fitur (29) |
+| `custom_domain` | `VARCHAR` unique nullable | fitur (35) domain sendiri pada paket berbayar — **migration milik [USER-STORY-MULTITENANT.md](USER-STORY-MULTITENANT.md) US (2)** |
+| `is_active` | `BOOLEAN` | fitur (40) — **migration milik [USER-STORY-MULTITENANT.md](USER-STORY-MULTITENANT.md) US (2)** |
 
-`subdomain` sudah ada dan menjadi kunci resolusi tenant — perlu dijadikan **unique** dan divalidasi terhadap `mv_reserved_subdomains`.
+`subdomain` sudah ada dan menjadi kunci resolusi tenant — perlu dijadikan **unique** dan divalidasi terhadap `mv_reserved_subdomains`. Constraint unique-nya juga lahir di [USER-STORY-MULTITENANT.md](USER-STORY-MULTITENANT.md) US (2), bukan di migration Melody.
+
+> **Kepemilikan migration `websites`.** `websites` adalah tabel bersama, sehingga sesuai §3 seluruh migration-nya lahir di `admin-be` — yaitu di USER-STORY-MULTITENANT.md. Tiga baris di atas (`custom_domain`, `is_active`, dan unique `subdomain`) sudah dispesifikasikan di sana; Melody memakainya, tidak membuat migration sendiri. Empat kolom sisanya (`owner_customer_id`, `site_type_id`, `status`, `published_at`) dan `published_version_id` dari Keputusan 6 dititipkan ke migration yang sama.
 
 ### 5.2 `Customers`
 
@@ -173,26 +175,26 @@ Setelah keputusan #2, tabel ini melayani tiga peran sekaligus: pembeli toko lama
 
 | Kolom | Tipe | Untuk |
 |---|---|---|
-| `psg_account_id` | `VARCHAR` unique nullable | MLD-005 SSO, auto-link metode login |
+| `psg_account_id` | `VARCHAR` unique nullable | fitur (1) SSO, auto-link metode login |
 | `is_site_owner` | `BOOLEAN` default `false` | Pembeda peran |
-| `is_super_admin` | `BOOLEAN` default `false` | MLD-052 |
-| `avatar` | `VARCHAR` | MLD-006 |
+| `is_super_admin` | `BOOLEAN` default `false` | fitur (40) |
+| `avatar` | `VARCHAR` | fitur (2) |
 
-> **Perhatian.** `Customers.username` bersifat unique dan wajib. Pengguna yang masuk lewat SSO tidak punya username alami — perlu strategi pembangkitan (mis. dari bagian lokal email + sufiks angka bila bentrok). Ini harus diputuskan sebelum migration.
+> **Perhatian.** `Customers.username` bersifat unique dan wajib, sementara pengguna yang masuk lewat SSO tidak punya username alami. Strategi pembangkitannya **sudah ditetapkan** (Keputusan Arsitektur nomor 4): dari bagian lokal email, sufiks acak 4 karakter bila bentrok, di dalam transaksi, maksimal 5 percobaan.
 >
-> Efek samping lain: `CustomerList.vue` di panel lama akan menampilkan pemilik situs Melody bercampur pembeli toko. Perlu filter `is_site_owner = false`.
+> Efek samping lain: `CustomerList.vue` di panel lama akan menampilkan pemilik situs Melody bercampur pembeli toko. Sudah ditangani sebagai **fitur (46)** — penyaringan `is_site_owner = false` di sisi backend.
 
 ### 5.3 `contact_messages`
 
-Tambah `website_id` untuk MLD-023 dan MLD-044 (kotak masuk lintas situs).
+Tambah `website_id` untuk fitur (17) dan (32) (kotak masuk lintas situs).
 
 ### 5.4 `themes` dan `custom_pages`
 
 Tidak berubah strukturnya. `themes.schema` (JSON) dan `custom_pages.items` (JSON) **menjadi format keluaran AI Builder**. Ini alasan kuat memilih rendering schema-driven: formatnya sudah ada dan sudah dipakai.
 
-### 5.5 Blocker yang masih berlaku
+### 5.5 Blocker yang sudah tidak berlaku
 
-Bentrok model `Setting` (dua file mendaftarkan nama model sama, `settings` vs `Settings`) belum selesai. Selama `melody-be` juga akan membaca setelan, ini harus dibereskan lebih dulu. Rinciannya di [ARSITEKTUR-TARGET-MULTITENANT.md §4](ARSITEKTUR-TARGET-MULTITENANT.md).
+Bentrok model `Setting` (dua file mendaftarkan nama model sama, `settings` vs `Settings`) memang belum selesai, tapi **tidak lagi memblokir Melody**. Keputusan Arsitektur nomor 9 di [USER-STORY-TEMPLATE-GENERATOR-FITUR.md](USER-STORY-TEMPLATE-GENERATOR-FITUR.md) menetapkan `melody-be` tidak membaca maupun menulis tabel `settings` milik `admin-be` — seluruh setelan Melody hidup di tabel `mv_*`. Perbaikan bentrok itu tetap perlu dikerjakan, tapi sebagai Fitur 1 di [USER-STORY-MULTITENANT.md](USER-STORY-MULTITENANT.md), bukan prasyarat fase 1 Melody. Rinciannya di [ARSITEKTUR-TARGET-MULTITENANT.md §4](ARSITEKTUR-TARGET-MULTITENANT.md).
 
 ---
 
@@ -202,41 +204,41 @@ Bentrok model `Setting` (dua file mendaftarkan nama model sama, `settings` vs `S
 
 | Tabel | Isi | Wishlist |
 |---|---|---|
-| `mv_site_types` | company_profile, portfolio, ecommerce. Kolom `allowed_sections` (JSON) menentukan bagian halaman yang tersedia | MLD-008 |
-| `mv_section_catalog` | Katalog bagian halaman (Hero, Tentang, Layanan, …) beserta varian tata letak dan skema propertinya | MLD-017, MLD-055 |
-| `mv_templates` | Galeri template default per jenis usaha (kuliner, jasa, retail, kesehatan, pendidikan, otomotif) | MLD-012 |
+| `mv_site_types` | company_profile, portfolio, ecommerce. Kolom `allowed_sections` (JSON) menentukan bagian halaman yang tersedia | fitur (3) |
+| `mv_section_catalog` | Katalog bagian halaman (Hero, Tentang, Layanan, …) beserta varian tata letak dan skema propertinya | fitur (11), (43) |
+| `mv_templates` | Galeri template default per jenis usaha (kuliner, jasa, retail, kesehatan, pendidikan, otomotif) | fitur (7) |
 
-`mv_section_catalog` disimpan sebagai data, bukan kode. Itulah yang membuat MLD-055 ("kelola template tanpa deploy ulang") mungkin.
+`mv_section_catalog` disimpan sebagai data, bukan kode. Itulah yang membuat fitur (43) ("kelola template tanpa deploy ulang") mungkin.
 
 ### 6.2 AI Builder
 
 | Tabel | Isi | Wishlist |
 |---|---|---|
-| `mv_chat_sessions` | Satu sesi per situs. `website_id`, `customer_id`, status | MLD-009 |
-| `mv_chat_messages` | `role`, `content`, `tool_calls` (JSON), `tokens_in`, `tokens_out`, `cost` | MLD-009, MLD-054 |
-| `mv_site_versions` | Snapshot JSON penuh tiap perubahan + `label`, `created_by`, `parent_version_id` | MLD-013 |
-| `mv_ai_jobs` | Pekerjaan async: cari foto stock, buat gambar. `status`, `payload`, `result` | MLD-020, MLD-021 |
-| `mv_ai_suggestions` | Saran proaktif yang belum ditindaklanjuti | MLD-016 |
-| `mv_ai_config` | Model, effort, system prompt — dapat disunting dari console | MLD-057 |
+| `mv_chat_sessions` | Satu sesi per situs. `website_id`, `customer_id`, status | fitur (4) |
+| `mv_chat_messages` | `role`, `content`, `tool_calls` (JSON), `tokens_in`, `tokens_out`, `cost` | fitur (4), (42) |
+| `mv_site_versions` | Snapshot JSON penuh tiap perubahan + `label`, `created_by`, `parent_version_id` | fitur (8) |
+| `mv_ai_jobs` | Pekerjaan async: cari foto stock, buat gambar. `status`, `payload`, `result` | fitur (14), (15) |
+| `mv_ai_suggestions` | Saran proaktif yang belum ditindaklanjuti | fitur (10) |
+| `mv_ai_config` | Model, effort, system prompt — dapat disunting dari console | fitur (45) |
 
-`mv_site_versions` menyimpan snapshot penuh, bukan diff. Alasannya MLD-013 menuntut "membandingkan dan mengembalikan" — snapshot penuh membuat pemulihan jadi satu operasi tulis, dan ukurannya masih wajar karena isinya JSON schema, bukan aset.
+`mv_site_versions` menyimpan snapshot penuh, bukan diff. Alasannya fitur (8) menuntut "membandingkan dan mengembalikan" — snapshot penuh membuat pemulihan jadi satu operasi tulis, dan ukurannya masih wajar karena isinya JSON schema, bukan aset.
 
 ### 6.3 Subdomain & publikasi
 
 | Tabel | Isi | Wishlist |
 |---|---|---|
-| `mv_reserved_subdomains` | Kata terlarang + nama sistem (`www`, `api`, `admin`, `app`, …) | MLD-035, MLD-056 |
+| `mv_reserved_subdomains` | Kata terlarang + nama sistem (`www`, `api`, `admin`, `app`, …) | fitur (28), (44) |
 
 ### 6.4 Langganan & kuota
 
 | Tabel | Isi | Wishlist |
 |---|---|---|
-| `mv_plans` | Gratis / Pro / Bisnis. `limits` (JSON): jumlah situs, kuota pesan AI, penyimpanan, domain sendiri, riwayat versi | MLD-047 |
-| `mv_subscriptions` | `customer_id`, `plan_id`, `status`, periode, `trial_ends_at` | MLD-047 |
-| `mv_invoices` | Nomor, jumlah, status, tanggal | MLD-049 |
-| `mv_payments` | Gateway, `external_id`, payload webhook mentah | MLD-048 |
-| `mv_credit_ledger` | Ledger kredit AI: `balance_before`, `amount`, `balance_after`, `reference_type`, `reference_id` | MLD-015, MLD-050 |
-| `mv_usage_daily` | Agregat token & biaya per pengguna per hari | MLD-054 |
+| `mv_plans` | Gratis / Pro / Bisnis. `limits` (JSON): jumlah situs, kuota pesan AI, penyimpanan, domain sendiri, riwayat versi | fitur (35) |
+| `mv_subscriptions` | `customer_id`, `plan_id`, `status`, periode, `trial_ends_at` | fitur (35) |
+| `mv_invoices` | Nomor, jumlah, status, tanggal | fitur (37) |
+| `mv_payments` | Gateway, `external_id`, payload webhook mentah | fitur (36) |
+| `mv_credit_ledger` | Ledger kredit AI: `balance_before`, `amount`, `balance_after`, `reference_type`, `reference_id` | fitur (9), (38) |
+| `mv_usage_daily` | Agregat token & biaya per pengguna per hari | fitur (42) |
 
 > **Kenapa ledger kredit baru, bukan `wallet_histories` yang sudah ada?**
 > Ledger lama memakai `username` (string) sebagai kunci relasi dan sudah terikat erat ke MLM serta topup/withdraw. Menumpangkan kredit AI di sana akan mencampur dua domain uang yang berbeda dan mewarisi ketergantungan pada username yang tidak boleh berubah. Polanya ditiru, tabelnya baru.
@@ -245,8 +247,8 @@ Bentrok model `Setting` (dua file mendaftarkan nama model sama, `settings` vs `S
 
 | Tabel | Isi | Wishlist |
 |---|---|---|
-| `mv_site_stats_daily` | Kunjungan, halaman terpopuler, asal, perangkat — agregat harian per situs | MLD-043 |
-| `mv_moderation_flags` | Penandaan otomatis + laporan pengunjung, antrean tinjauan | MLD-053 |
+| `mv_site_stats_daily` | Kunjungan, halaman terpopuler, asal, perangkat — agregat harian per situs | fitur (31) |
+| `mv_moderation_flags` | Penandaan otomatis + laporan pengunjung, antrean tinjauan | fitur (41) |
 
 ---
 
@@ -356,22 +358,18 @@ Dua hal yang membuat alur ini bekerja:
 
 ---
 
-## 9. Peta wishlist → komponen
+## 9. Peta bagian → komponen
 
-| Bagian | Item | Komponen utama | Catatan |
+| Bagian | Fitur | Komponen utama | Catatan |
 |---|---|---|---|
-| A. Autentikasi | MLD-005, 006 | `Customers` + SSO OIDC | Butuh PSG Account sudah jadi OIDC provider |
-| B. AI Builder | MLD-008…016 | `melody-be` + `mv_chat_*`, `mv_site_versions` | Fitur inti |
-| C. Konten & tampilan | MLD-017…026 | `themes.schema`, `custom_pages`, `Media`, `posts` | Sebagian besar pakai ulang |
-| D. Ecommerce | MLD-027…034 | `mv_*` baru di `melody-be` | Tidak memakai `orders` lama |
-| E. Subdomain | MLD-035, 036 | `websites.subdomain` + `mv_reserved_subdomains` | Butuh wildcard DNS/SSL |
-| F. Dashboard | MLD-042…046 | `melody-fe` + `mv_site_stats_daily` | MLD-042 adalah pemilih situs |
-| G. Langganan | MLD-047…051 | `mv_plans`, `mv_subscriptions`, `mv_credit_ledger` | Ledger baru, bukan wallet lama |
-| H. Super Admin | MLD-052…057 | Console di `melody-fe` | `mv_ai_config` bikin model & prompt dapat disunting |
-
-### Nomor yang tidak ada di PDF
-
-`MLD-001` s/d `004`, `007`, `014`, `028`, dan `037` s/d `041` tidak muncul. Perlu dipastikan apakah memang dihapus atau ada di versi dokumen yang lebih lengkap — khususnya `037–041` yang jatuh tepat di antara bagian E (Subdomain) dan F (Dashboard), posisi yang biasanya diisi hal seperti SEO, sitemap, analytics, atau domain kustom.
+| A. Autentikasi | (1), (2) | `Customers` + SSO OIDC | Butuh PSG Account sudah jadi OIDC provider |
+| B. AI Builder | (3)–(10) | `melody-be` + `mv_chat_*`, `mv_site_versions` | Fitur inti |
+| C. Konten & tampilan | (11)–(20) | `themes.schema`, `custom_pages`, `Media`, `posts` | Sebagian besar pakai ulang |
+| D. Ecommerce | (21)–(27) | `mv_*` baru di `melody-be` | Tidak memakai `orders` lama |
+| E. Subdomain | (28), (29) | `websites.subdomain` + `mv_reserved_subdomains` | Butuh wildcard DNS/SSL |
+| F. Dashboard | (30)–(34) | `melody-fe` + `mv_site_stats_daily` | fitur (30) adalah pemilih situs |
+| G. Langganan | (35)–(39) | `mv_plans`, `mv_subscriptions`, `mv_credit_ledger` | Ledger baru, bukan wallet lama |
+| H. Super Admin | (40)–(45) | Console di `melody-fe` | `mv_ai_config` bikin model & prompt dapat disunting |
 
 ---
 
@@ -381,7 +379,7 @@ Dua hal yang membuat alur ini bekerja:
 
 Sebelum menambah apa pun.
 
-1. Selesaikan bentrok model `Setting`
+1. ~~Selesaikan bentrok model `Setting`~~ — tidak lagi prasyarat Melody, lihat §5.5
 2. Tetapkan aturan kepemilikan tabel §3 secara tertulis di kedua repo
 3. Wildcard DNS + SSL + `server_name` nginx
 
@@ -392,7 +390,7 @@ Sebelum menambah apa pun.
 6. `mv_site_types`, `mv_reserved_subdomains`
 7. `melody-be` kerangka + auth (SSO atau lokal) + validasi kepemilikan §4
 8. `melody-renderer` resolve `Host` → render `themes.schema`
-9. Klaim subdomain + publish/unpublish (MLD-035, 036)
+9. Klaim subdomain + publish/unpublish (fitur 28 dan 29)
 
 **Hasil:** situs bisa dibuat manual, diberi subdomain, dan tayang. Belum ada AI.
 
@@ -401,8 +399,8 @@ Sebelum menambah apa pun.
 10. `mv_section_catalog`, `mv_templates` + seeder katalog bagian halaman
 11. `mv_chat_sessions`, `mv_chat_messages`, `mv_site_versions`
 12. Endpoint chat streaming + tool call ke katalog
-13. Preview realtime berdampingan (MLD-010)
-14. Riwayat versi & pemulihan (MLD-013)
+13. Preview realtime berdampingan (fitur 5)
+14. Riwayat versi & pemulihan (fitur 8)
 
 **Hasil:** fitur inti jalan. Belum ada monetisasi.
 
@@ -410,11 +408,11 @@ Sebelum menambah apa pun.
 
 15. `mv_plans`, `mv_subscriptions`, `mv_credit_ledger`, `mv_invoices`, `mv_payments`
 16. Payment gateway + webhook
-17. Indikator kuota + ajakan upgrade (MLD-015)
+17. Indikator kuota + ajakan upgrade (fitur 9)
 
 ### Fase 4 — Console & ecommerce
 
-18. Console super admin (MLD-052…057)
+18. Console super admin (fitur 40–45)
 19. Ecommerce `mv_*` (bagian D)
 
 ```mermaid
@@ -439,21 +437,24 @@ flowchart LR
 
 **Rendering runtime butuh cache sejak awal.** Setiap pengunjung setiap tenant memicu query schema. Tanpa cache di `melody-renderer`, satu tenant viral bisa menjatuhkan seluruh platform.
 
-**Biaya AI tidak berbatas secara alami.** MLD-054 memantau, tapi pemantauan bukan pembatasan. Perlu hard limit per pengguna per hari yang berlaku bahkan saat kuota berbayar masih ada.
+**Biaya AI tidak berbatas secara alami.** Fitur (42) memantau, tapi pemantauan bukan pembatasan. Perlu hard limit per pengguna per hari yang berlaku bahkan saat kuota berbayar masih ada.
 
-**Moderasi adalah kewajiban, bukan fitur.** Situs publik yang dibuat pengguna anonim di subdomain perusahaan membawa risiko penyalahgunaan. MLD-053 sebaiknya masuk fase 1, bukan fase 4.
+**Moderasi adalah kewajiban, bukan fitur.** Situs publik yang dibuat pengguna anonim di subdomain perusahaan membawa risiko penyalahgunaan. Fitur (41) sebaiknya masuk fase 1, bukan fase 4.
 
 ---
 
-## 12. Pertanyaan yang masih terbuka
+## 12. Pertanyaan yang sudah terjawab
 
-| # | Pertanyaan | Kenapa perlu dijawab sebelum kode |
-|---|---|---|
-| 1 | Stack `melody-be` / `melody-fe` — lanjut Express + Vue 3, atau pindah (Nest/Fastify, Nuxt/Next)? | Streaming SSE dan preview realtime lebih ringan di sebagian stack. Menentukan struktur repo. |
-| 2 | LLM provider & model? | Menentukan bentuk `mv_ai_config`, cara menghitung token, dan format tool call. |
-| 3 | Strategi `username` untuk pengguna SSO? | Memblokir migration `Customers` di fase 1. |
-| 4 | PSG Account sudah jadi OIDC provider, atau perlu dibangun juga? | Kalau belum, fase 1 butuh auth lokal sementara. |
-| 5 | Payment gateway: Midtrans atau Xendit? | MLD-048 menyebut keduanya. Bentuk webhook berbeda. |
-| 6 | Statistik pengunjung: bangun sendiri atau pihak ketiga? | Menentukan apakah `mv_site_stats_daily` perlu ada. |
-| 7 | MLD-037…041 dan 001…004 — memang tidak ada? | Bisa jadi ada kebutuhan yang belum terpetakan. |
-| 8 | `melody-renderer` melayani ecommerce tenant juga, atau tipe ecommerce pakai SPA sendiri? | Rendering schema-driven cocok untuk halaman statis; keranjang & checkout butuh state klien. |
+Tujuh pertanyaan di bawah dulu memblokir penulisan kode. Seluruhnya kini sudah dijawab dan dikunci sebagai **Keputusan Arsitektur** di [USER-STORY-TEMPLATE-GENERATOR-FITUR.md](USER-STORY-TEMPLATE-GENERATOR-FITUR.md), yang menjadi acuan implementasi. Bagian ini dipertahankan sebagai jejak, bukan sebagai daftar tugas.
+
+| # | Pertanyaan | Jawaban | Dikunci sebagai |
+|---|---|---|---|
+| 1 | Stack `melody-be` / `melody-fe` — lanjut Express + Vue 3, atau pindah? | Lanjut Express + Vue 3. Streaming lewat SSE, pratinjau lewat iframe + `postMessage`, `melody-renderer` proses terpisah. | Keputusan 1 |
+| 2 | LLM provider & model? | DeepSeek sebagai penyedia utama, Gemini untuk baca gambar dan Imagen untuk buat gambar. Pemetaan per `feature_key` di `mv_ai_config`. | Keputusan 2 |
+| 3 | Strategi `username` untuk pengguna SSO? | Dibangkitkan dari bagian lokal email, sufiks acak 4 karakter bila bentrok, di dalam transaksi, maksimal 5 percobaan. | Keputusan 4 |
+| 4 | PSG Account sudah jadi OIDC provider, atau perlu dibangun juga? | Sudah berjalan di `account.psggroup.id` dan dipakai langsung. Tidak perlu auth lokal sementara. | Keputusan 3 |
+| 5 | Payment gateway: Midtrans atau Xendit? | Xendit untuk rilis pertama, dalam bentuk adapter. Webhook lewat `x-callback-token`, perpanjangan lewat pekerjaan berkala. | Keputusan 5 |
+| 6 | Statistik pengunjung: bangun sendiri atau pihak ketiga? | Bangun sendiri, agregat harian di `mv_site_stats_daily`. Tanpa corong konversi dan perekaman sesi. | Keputusan 7 |
+| 7 | `melody-renderer` melayani ecommerce tenant juga, atau SPA sendiri? | Tetap `melody-renderer`. Keranjang disimpan server-side di `mv_carts`, diikat `session_token` di peramban. | Keputusan 8 |
+
+Dua keputusan lain lahir setelah dokumen ini ditulis dan tidak punya baris di tabel atas: **Keputusan 6** (pemisahan draft dan live lewat `websites.published_version_id`) dan **Keputusan 9** (setelan Melody memakai tabel `mv_*`, tidak menyentuh `settings` milik `admin-be` — lihat §5.5).

@@ -5,7 +5,7 @@ Bagian "1. Identitas User Story" dan "3. Persetujuan" diisi sendiri.
 
 Ditulis tanpa heading Markdown, tanpa tabel pipa, dan tanpa backtick, supaya hasil
 salin-tempel ke Word tidak berantakan. Setelah ditempel, tinggal menebalkan baris
-nama fitur, yaitu 45 baris yang diawali nomor dalam kurung.
+nama fitur, yaitu 46 baris yang diawali nomor dalam kurung.
 
 Susunan tiap fitur mengikuti dokumen acuan ITM-001-16 - Dokumen User Story Detail
 Rev 1, yaitu nomor dan nama fitur, Aktor, Prasyarat bila ada, Deskripsi (User
@@ -22,10 +22,12 @@ multi-tenant. Yang ini untuk membangun produk SaaS baru di atasnya.
 ===============================================================================
 
 
-ASUMSI ARSITEKTUR YANG DIPAKAI
+DASAR ARSITEKTUR YANG DITETAPKAN
 
-Seluruh acceptance criteria di bawah berdiri di atas empat keputusan berikut.
-Jika salah satu keputusan berubah, dokumen ini wajib direvisi.
+Empat hal berikut sudah ditetapkan dan menjadi dasar seluruh acceptance criteria
+di dokumen ini. Statusnya final untuk rilis pertama, bukan asumsi kerja.
+Mengubah salah satunya berarti mengubah lingkup pekerjaan, sehingga menuntut
+persetujuan ulang dan peninjauan seluruh fitur yang terdampak.
 
 1. Satu database, dua aplikasi.
    melody-be dan admin-be berbagi MySQL yang sama. Tidak ada kontrak API antar
@@ -147,7 +149,7 @@ c. Auto-Link Metode Login
    - Sistem mencari baris Customers berdasarkan psg_account_id (klaim sub).
    - Jika tidak ditemukan, sistem mencari berdasarkan email hasil normalisasi huruf kecil.
    - Jika ditemukan lewat email, sistem mengisi psg_account_id pada baris tersebut, sehingga akun lama otomatis tertaut.
-   - Jika tetap tidak ditemukan, sistem membuat baris Customers baru dengan is_site_owner bernilai true dan email_verified bernilai true. Tidak ada klaim email_verified dari PSG Account, jadi nilai true diisi atas dasar asumsi bahwa PSG Account adalah penyedia identitas tepercaya.
+   - Jika tetap tidak ditemukan, sistem membuat baris Customers baru dengan is_site_owner bernilai true dan email_verified bernilai true. Tidak ada klaim email_verified dari PSG Account, jadi nilai true diisi karena PSG Account sudah ditetapkan sebagai penyedia identitas tepercaya, sesuai Keputusan Arsitektur nomor 3.
    - Tidak ada klaim foto profil. Kolom Customers.avatar tidak dapat diisi dari SSO dan hanya terisi lewat unggahan manual pada fitur (2).
    - Klaim phone_number disimpan karena akan dipakai ulang untuk verifikasi pembeli pada fitur (22).
 d. Pembangkitan Username untuk Pengguna SSO
@@ -1000,7 +1002,7 @@ a. Prasyarat sebelum Terbit
 b. Publikasi Instan lewat Snapshot
    - Publikasi membuat satu baris mv_site_versions berisi snapshot kondisi draft saat itu, lalu mengarahkan websites.published_version_id ke baris tersebut, mengubah websites.status menjadi published, dan mengisi published_at.
    - Seluruh langkah dilakukan dalam satu transaksi, sehingga publikasi situs multi-halaman bersifat satu kesatuan. Pengunjung tidak pernah melihat sebagian halaman versi lama dan sebagian versi baru.
-   - Tidak ada proses build. Menerbitkan tetap satu operasi tulis. Ini konsekuensi langsung dari keputusan rendering schema-driven pada asumsi nomor 3.
+   - Tidak ada proses build. Menerbitkan tetap satu operasi tulis. Ini konsekuensi langsung dari keputusan rendering schema-driven pada Dasar Arsitektur nomor 3.
    - Situs dapat diakses publik seketika setelah penunjuk versi berpindah.
    - Yang di-snapshot hanya tata letak, yaitu themes.schema dan custom_pages.items. Artikel blog pada fitur (20), produk pada fitur (21), dan pesanan pada fitur (25) adalah data, bukan tata letak, sehingga tetap tayang seketika tanpa perlu diterbitkan ulang.
 c. Batal Publikasi
@@ -1499,40 +1501,52 @@ f. Alur Lanjutan (Post-Condition)
    - Kunci API penyedia disimpan sebagai variabel lingkungan, tidak pernah disimpan di basis data maupun ditampilkan di antarmuka.
 
 
+(46) Pemisahan Pemilik Situs Melody dari Daftar Customer Panel Lama
+Aktor: Developer
+Prasyarat: Fitur (1) selesai, sehingga kolom is_site_owner sudah ada dan terisi.
+Deskripsi (User Story) : Sebagai Admin panel compro lama, Saya ingin daftar customer hanya menampilkan pembeli toko, Agar pemilik situs Melody yang mendaftar lewat PSG Account tidak bercampur dengan data pelanggan yang saya kelola.
+Detail Teknis & Endpoint
+   - Halaman (UI): daftar customer pada panel lama, berkas admin-fe/src/views/user/CustomerList.vue
+   - Endpoint: GET /customers, berkas admin-be/routes/adminCustomerRoutes.js dan admin-be/controllers/adminCustomerController.js
+   - Tabel Terkait: Customers.
+Acceptance Criteria (Kriteria Penerimaan)
+a. Penyaringan Bawaan
+   - getAllCustomers menyaring is_site_owner bernilai false secara bawaan.
+   - Penyaringan dilakukan di backend, bukan di frontend, agar jumlah baris dan penomoran halaman tetap benar.
+b. Perlakuan Data Lama
+   - Seluruh baris Customers yang sudah ada sebelum kolom ditambahkan bernilai false, sehingga pembeli toko yang sekarang tetap tampil.
+   - Kriteria ini tidak terpenuhi bila ada satu pun customer lama yang hilang dari daftar setelah perubahan diterapkan.
+c. Akun dengan Dua Peran
+   - Seorang pembeli toko yang kemudian membuat situs Melody akan bernilai is_site_owner true, sehingga hilang dari daftar bawaan.
+   - Untuk kasus ini disediakan penyaring opsional pada antarmuka dengan tiga pilihan: pembeli toko saja sebagai nilai bawaan, pemilik situs saja, dan semua.
+   - Alasannya, riwayat pesanan orang tersebut tetap perlu dapat ditelusuri dari panel lama.
+d. Kolom Penanda Peran
+   - Bila penyaring diatur ke pemilik situs saja atau semua, daftar menampilkan kolom penanda peran agar kedua kelompok dapat dibedakan.
+e. Hak Akses
+   - Perubahan ini tidak menambah modul baru pada RoleActiveModules. Hak akses tetap mengikuti modul Daftar Customer yang sudah ada.
+f. Alur Lanjutan (Post-Condition)
+   - Panel compro lama tidak lagi menampilkan data yang bukan miliknya secara bawaan.
+   - Ini satu-satunya fitur pada dokumen ini yang menyentuh admin-be dan admin-fe. Perubahannya terbatas pada penyaringan daftar, tidak menyentuh skema maupun modul lain.
+
+
 ===============================================================================
 
 
-PADANAN KODE MLD DAN NOMOR FITUR
+CATATAN PENOMORAN
 
-Penomoran fitur mengikuti format acuan, yaitu (1) sampai (45) berurutan tanpa
-lompatan. Daftar berikut menautkan nomor tersebut ke kode MLD yang dipakai pada
-wishlist 19 Agustus 2026 dan pada ARSITEKTUR-TARGET-MELODY-V2.md.
+Penomoran fitur mengikuti format acuan, yaitu (1) sampai (46) berurutan tanpa
+lompatan. Nomor inilah satu-satunya rujukan yang dipakai, baik di dalam dokumen
+ini maupun pada ARSITEKTUR-TARGET-MELODY-V2.md.
 
-   (1) MLD-005       (16) MLD-022      (31) MLD-043
-   (2) MLD-006       (17) MLD-023      (32) MLD-044
-   (3) MLD-008       (18) MLD-024      (33) MLD-045
-   (4) MLD-009       (19) MLD-025      (34) MLD-046
-   (5) MLD-010       (20) MLD-026      (35) MLD-047
-   (6) MLD-011       (21) MLD-027      (36) MLD-048
-   (7) MLD-012       (22) MLD-029      (37) MLD-049
-   (8) MLD-013       (23) MLD-030      (38) MLD-050
-   (9) MLD-015       (24) MLD-031      (39) MLD-051
-   (10) MLD-016      (25) MLD-032      (40) MLD-052
-   (11) MLD-017      (26) MLD-033      (41) MLD-053
-   (12) MLD-018      (27) MLD-034      (42) MLD-054
-   (13) MLD-019      (28) MLD-035      (43) MLD-055
-   (14) MLD-020      (29) MLD-036      (44) MLD-056
-   (15) MLD-021      (30) MLD-042      (45) MLD-057
-
-Kode berikut ada pada penomoran lama tetapi tidak muncul pada wishlist, sehingga
-tidak memiliki fitur pada dokumen ini: MLD-001 sampai MLD-004, MLD-007, MLD-014,
-MLD-028, dan MLD-037 sampai MLD-041.
+Kode MLD yang sempat muncul pada wishlist 19 Agustus 2026 tidak dipakai. Kode
+tersebut hanya contoh penomoran, tidak pernah menjadi penomoran resmi, sehingga
+tidak perlu dicari padanannya.
 
 Rincian kolom setiap tabel tidak diulang pada tiap fitur. Bagian Detail Teknis
 hanya menyebut nama tabel, sedangkan daftar kolom lengkapnya ada pada Ringkasan
 Tabel Baru di bagian awal dokumen.
 
-Total fitur yang tercakup dokumen ini: 45.
+Total fitur yang tercakup dokumen ini: 46.
 
 
 ===============================================================================
@@ -1540,8 +1554,7 @@ Total fitur yang tercakup dokumen ini: 45.
 
 KEPUTUSAN ARSITEKTUR
 
-Enam hal berikut sebelumnya berstatus pertanyaan terbuka dan kini sudah
-diputuskan. Seluruh acceptance criteria di dokumen ini sudah mengikuti
+Sembilan hal berikut sebelumnya belum tertutup dan kini sudah diputuskan. Seluruh acceptance criteria di dokumen ini sudah mengikuti
 keputusan tersebut. Jika salah satunya berubah, fitur yang disebut wajib
 ditinjau ulang.
 
@@ -1631,3 +1644,36 @@ ditinjau ulang.
    custom_pages.items. Artikel blog, produk, dan pesanan adalah data, bukan
    tata letak, sehingga tetap tayang seketika tanpa perlu diterbitkan ulang.
    Berlaku pada: fitur (29), dan berdampak pada fitur (5) serta fitur (8).
+
+7. Statistik pengunjung.
+   Diputuskan: dibangun sendiri, tidak memakai layanan analitik pihak ketiga.
+   Agregat harian disimpan pada mv_site_stats_daily dan diisi pekerjaan berkala.
+   - Alasannya, data kunjungan tenant tidak perlu keluar ke penyedia lain, dan
+     yang dibutuhkan hanya angka ringkas, bukan analitik mendalam.
+   - Konsekuensinya, yang tersedia adalah jumlah kunjungan, pengunjung unik,
+     halaman terpopuler, asal rujukan, dan jenis perangkat. Corong konversi dan
+     perekaman sesi tidak termasuk rilis pertama.
+   Berlaku pada: fitur (31).
+
+8. Rendering situs ecommerce tenant.
+   Diputuskan: tetap dilayani melody-renderer, tanpa aplikasi SPA terpisah.
+   Keadaan keranjang disimpan di sisi server pada mv_carts dan mv_cart_items,
+   diikat pada session_token yang disimpan di peramban pembeli.
+   - Alasannya, memindahkan keranjang ke sisi klien berarti membangun aplikasi
+     kedua yang ikut merender schema. Dua implementasi render akan selalu
+     berbeda hasilnya, dan itu justru menyalahi Keputusan Arsitektur nomor 1.
+   - Seluruh perhitungan harga, ongkos kirim, dan potongan dilakukan ulang di
+     backend. Nilai yang dikirim peramban tidak dipercaya.
+   Berlaku pada: fitur (21) sampai fitur (27).
+
+9. Setelan platform Melody.
+   Diputuskan: melody-be tidak membaca maupun menulis tabel settings milik
+   admin-be. Seluruh setelan Melody disimpan pada tabel berprefix mv_.
+   - Untuk rilis pertama kebutuhannya sudah tertampung pada mv_ai_config,
+     mv_plans, dan mv_reserved_subdomains. Bila kelak dibutuhkan setelan umum,
+     tabel mv_settings dibuat di melody-be, bukan menumpang tabel lama.
+   - Konsekuensinya, bentrok model Setting pada admin-be yang disebut
+     ARSITEKTUR-TARGET-MELODY-V2.md bagian 5.5 tidak memblokir dokumen ini.
+     Perbaikan bentrok tersebut tetap perlu dikerjakan, tetapi sebagai Fitur 1
+     pada USER-STORY-MULTITENANT dan bukan sebagai prasyarat Melody.
+   Berlaku pada: seluruh fitur console, yaitu fitur (40) sampai fitur (45).

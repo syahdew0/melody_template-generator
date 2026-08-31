@@ -19,7 +19,7 @@
 8. [Delta backend](#8-delta-backend)
 9. [Delta frontend](#9-delta-frontend)
 10. [Rencana fase](#10-rencana-fase)
-11. [Risiko & keputusan yang masih terbuka](#11-risiko--keputusan-yang-masih-terbuka)
+11. [Risiko & keputusan yang sudah diambil](#11-risiko--keputusan-yang-sudah-diambil)
 
 ---
 
@@ -87,6 +87,8 @@ admin.tenant-lain.id   → tenant lain
 
 Ini butuh DNS wildcard, sertifikat SSL wildcard, dan `server_name` di nginx. Selama itu belum siap, panel admin memakai jembatan `website_id` eksplisit — dan itu persis yang dimaksud "bertahap" di fase 1–2.
 
+> **Sudah diputuskan.** Panel admin **disajikan per-tenant**, sesuai bentuk di atas. Lihat §11 keputusan nomor 1. Wildcard DNS dan SSL karena itu menjadi prasyarat rilis fase 3, bukan pilihan. Jembatan `website_id` eksplisit tetap dipakai selama fase 1–2, lalu dimatikan permanen di fase 3.
+
 ---
 
 ## 4. Blocker: bentrok model `Setting`
@@ -124,9 +126,9 @@ Middleware baru `middlewares/resolveTenant.js` mengisi `req.websiteId` dengan ur
 
 ```mermaid
 flowchart TB
-  A["Request masuk"] --> B{"Header Origin / Referer<br/>cocok websites.domain?"}
+  A["Request masuk"] --> B{"Header Origin / Referer<br/>cocok websites.custom_domain?"}
   B -->|ya| R["req.websiteId"]
-  B -->|tidak| C{"Header Host<br/>cocok websites.domain?"}
+  B -->|tidak| C{"Header Host<br/>cocok websites.custom_domain?"}
   C -->|ya| R
   C -->|tidak| D{"Rute admin +<br/>website_id eksplisit?"}
   D -->|ya, fase 1-2| R
@@ -136,8 +138,8 @@ flowchart TB
 
 | Prioritas | Sumber | Berlaku untuk | Aktif di fase |
 |---|---|---|---|
-| 1 | `Origin` / `Referer` → `websites.domain` | Situs publik | 3 |
-| 2 | `Host` → `websites.domain` | API per-tenant hostname (kalau nanti dipakai) | 3 |
+| 1 | `Origin` / `Referer` → `websites.custom_domain` | Situs publik | 3 |
+| 2 | `Host` → `websites.custom_domain` | API per-tenant hostname (kalau nanti dipakai) | 3 |
 | 3 | `website_id` eksplisit di query/body | Rute admin saja | 1–2 (jembatan) |
 | 4 | `DEFAULT_WEBSITE_ID` dari `.env` | Fallback | semua |
 
@@ -151,7 +153,7 @@ Langkah 3 sengaja **dibatasi hanya untuk rute admin** dan dimatikan di fase 3. K
 
 | Kolom | Tipe | Alasan |
 |---|---|---|
-| `domain` | `VARCHAR` unique | Host lengkap untuk pencocokan `Origin`/`Host`. `subdomain` yang ada sekarang hanya menyimpan potongan (`default`, `psggroup`) sehingga tidak cukup. |
+| `custom_domain` | `VARCHAR` unique | Host lengkap untuk pencocokan `Origin`/`Host`. `subdomain` yang ada sekarang hanya menyimpan potongan (`default`, `psggroup`) sehingga tidak cukup. |
 | `is_active` | `BOOLEAN` default `true` | Menonaktifkan tenant tanpa menghapus datanya. |
 
 ### 6.2 Tabel yang mendapat `website_id`
@@ -223,7 +225,7 @@ erDiagram
     int id PK
     string name
     string subdomain
-    string domain "BARU - unique"
+    string custom_domain "BARU - unique"
     bool is_active "BARU"
     int user_id
     string site_title
@@ -241,17 +243,17 @@ erDiagram
 
 | File | Fase | Isi |
 |---|---|---|
-| `middlewares/resolveTenant.js` | 3 | Rantai resolusi §5, mengisi `req.websiteId`. Cache pemetaan domain→id di memori. |
+| `middlewares/resolveTenant.js` | 3 | Rantai resolusi §5, mengisi `req.websiteId`. Cache pemetaan custom_domain→id di memori. |
 | `middlewares/tenantScope.js` | 3 | Helper `scoped(where, req)` yang menyisipkan `website_id`, dipakai controller yang tabelnya sudah tenant-aware. |
 | `migrations/*-add-website-id-*.js` | 2 | 10 migration kolom + index + backfill ke `DEFAULT_WEBSITE_ID`. |
-| `migrations/*-add-domain-to-websites.js` | 1 | Kolom `domain` + `is_active`. |
+| `migrations/*-add-custom-domain-to-websites.js` | 1 | Kolom `custom_domain` + `is_active`. |
 
 ### 8.2 File yang berubah
 
 | File | Perubahan |
 |---|---|
 | `server.js` | Pasang `resolveTenant` sebelum semua route. Perbaiki urutan mount — lihat §11. |
-| `controllers/websiteController.js` | Whitelist kolom yang boleh ditulis; tolak hapus website yang masih punya konten; validasi `domain` unik. |
+| `controllers/websiteController.js` | Whitelist kolom yang boleh ditulis; tolak hapus website yang masih punya konten; validasi `custom_domain` unik. |
 | `routes/websiteRoutes.js` | `requireAuth` pada POST/PUT/DELETE (lihat §11). |
 | `models/setting.js`, `models/logoSettings.js` | Selesaikan bentrok §4. |
 | 10 controller pemilik tabel di §6.2 | Terima & simpan `website_id`; fase 3 filter otomatis. |
@@ -303,8 +305,8 @@ State `websiteId` di `src/store/index.js` beserta action `fetchWebsiteIdFromServ
 Belum ada perubahan perilaku tenant. Tujuannya menu Website bisa dipakai.
 
 1. Selesaikan bentrok model `Setting` (§4)
-2. Migration `websites.domain` + `websites.is_active`
-3. Perkuat `websiteController` — whitelist kolom, validasi domain unik, cegah hapus website berisi konten
+2. Migration `websites.custom_domain` + `websites.is_active`
+3. Perkuat `websiteController` — whitelist kolom, validasi custom_domain unik, cegah hapus website berisi konten
 4. `requireAuth` pada POST/PUT/DELETE `websiteRoutes`
 5. Frontend: menu, `WebsiteList.vue`, `WebsiteForm.vue`, 3 rute
 
@@ -353,18 +355,23 @@ flowchart LR
 
 ---
 
-## 11. Risiko & keputusan yang masih terbuka
+## 11. Risiko & keputusan yang sudah diambil
 
-### Perlu diputuskan
+### Sudah diputuskan
 
-| # | Pertanyaan | Kenapa penting |
-|---|---|---|
-| 1 | Panel admin akan disajikan per-tenant (`admin.<tenant>.id`) atau tetap satu domain? | Kalau tetap satu domain, "tanpa switcher" berarti satu instalasi admin = satu website. Fase 3 tidak bisa selesai tanpa keputusan ini. |
-| 2 | `GET /api/admin/websites` dan `GET /:id` mau ditutup? | Sekarang terbuka tanpa auth dan `GET /:id` membocorkan `admin_email`. Saya belum tahu apakah frontend publik memanggilnya. |
-| 3 | Website default untuk data lama — id `1`? | Menentukan isi backfill fase 2. |
-| 4 | Setelan transaksi mau pindah tabel sendiri atau tetap satu tabel dengan kolom `group`? | Menentukan bentuk perbaikan §4. |
-| 5 | Saldo negatif yang mungkin sudah terbentuk di produksi perlu direkonsiliasi, atau cukup dihentikan pendarahannya? | Guard saldo tidak pernah aktif, jadi order berbayar-saldo bisa lolos tanpa saldo. Menentukan apakah Fase 4 butuh langkah migrasi data. |
-| 6 | Kolom `wallet_histories.balance_before` / `balance_after` dipertahankan sebagai jejak audit, atau ditinggalkan? | Sekarang diisi tidak konsisten — nol pada jalur pembayaran order. Menentukan bentuk perbaikan Fase 4 nomor 15. |
+Tujuh hal berikut sempat menggantung dan kini sudah dijawab. Seluruhnya sudah dituangkan ke acceptance criteria di [USER-STORY-MULTITENANT.md](USER-STORY-MULTITENANT.md), yang menjadi acuan implementasi.
+
+| # | Hal | Keputusan | Dituangkan ke |
+|---|---|---|---|
+| 1 | Domain panel admin | **Per-tenant.** Tiap tenant punya host admin sendiri, sehingga resolusi dari `Host` valid dan "tanpa switcher" tetap konsisten. Butuh wildcard DNS + SSL dan `server_name` nginx. | US (14), (17) |
+| 2 | Proteksi endpoint Website | **Tutup seluruh CRUD dengan `requireAuth`**, sisakan satu endpoint publik minimal yang hanya mengembalikan kolom tampilan — tanpa `admin_email`, `user_id`, maupun `rate`. | US (7) |
+| 3 | Website default untuk backfill | **Dari `DEFAULT_WEBSITE_ID` di `.env`**, tidak ditulis mati dan tidak diasumsikan bernilai `1`. | US (11) |
+| 4 | Tabel setelan | **Satu tabel `settings` dengan kolom `group`**, unique index komposit `(group, key)`. | US (1) |
+| 5 | Audit log terpusat | **Tidak dibuat.** Penolakan lintas tenant cukup dicatat ke log aplikasi; tidak ada tabel `user_logs`. | US (16) |
+| 6 | Saldo negatif di produksi | **Audit dulu, koreksi manual** lewat modul Adjust oleh tim bisnis. Migration tidak menulis entri penyeimbang massal. | US (19) |
+| 7 | `balance_before` / `balance_after` | **Dipertahankan sebagai jejak audit.** Seluruh penulis ledger lewat satu helper; kolomnya tidak boleh dibaca untuk mengambil keputusan. | US (20) |
+
+Keputusan nomor 1 menutup ketegangan yang dibahas di §3: karena panel admin kini punya host per tenant, `Host` menjadi identitas tenant yang sesungguhnya untuk jalur admin, sehingga rantai resolusi §5 dapat berdiri tanpa switcher di UI.
 
 ### Risiko
 
